@@ -28,3 +28,11 @@ def test(ctx):
 @task
 def run(ctx):
     ctx.run("./build/bin/CNN_CPP", pty=True)
+
+
+@task
+def download(ctx, clean=False):
+    cmd = "./download.sh"
+    if clean:
+        cmd += " --clean"
+    ctx.run(cmd, pty=True)
