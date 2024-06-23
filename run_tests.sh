@@ -7,7 +7,7 @@ if [ ! -d "build" ]; then
 fi
 
 # Navigate to the build directory
-cd build/bin
+cd build
 
 # Run the tests using the built executable
 if [ -f "./CNN_CPP" ]; then

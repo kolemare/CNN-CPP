@@ -9,16 +9,28 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_subdirectory(external/eigen)
 include_directories(external/eigen)
 
-# Include OpenCV
-add_subdirectory(external/opencv)
-include_directories(external/opencv/include)
-
 # Include GoogleTest
 add_subdirectory(external/googletest)
 enable_testing()
 
 # Include project headers
 include_directories(include)
+
+# Build OpenCV as a submodule
+include(ExternalProject)
+ExternalProject_Add(opencv
+    PREFIX ${CMAKE_BINARY_DIR}/opencv
+    SOURCE_DIR ${CMAKE_SOURCE_DIR}/external/opencv
+    BINARY_DIR ${CMAKE_BINARY_DIR}/opencv-build
+    INSTALL_DIR ${CMAKE_BINARY_DIR}/opencv-install
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/opencv-install
+               -DCMAKE_BUILD_TYPE=Release
+)
+
+# Set OpenCV include and library directories
+ExternalProject_Get_Property(opencv INSTALL_DIR)
+include_directories(${INSTALL_DIR}/include/opencv4)
+link_directories(${INSTALL_DIR}/lib)
 
 # Source files
 file(GLOB_RECURSE SOURCES "src/*.cpp")
@@ -29,15 +41,16 @@ file(GLOB_RECURSE TEST_SOURCES "tests/*.cpp")
 # Create the executable for the main application
 add_executable(CNN_CPP ${SOURCES} ${TEST_SOURCES})
 
-# Link libraries
-target_link_libraries(CNN_CPP Eigen3::Eigen ${OpenCV_LIBS} gtest gtest_main)
+# Link Eigen, GoogleTest, and OpenCV libraries
+target_link_libraries(CNN_CPP Eigen3::Eigen gtest gtest_main
+    ${INSTALL_DIR}/lib/libopencv_core.so
+    ${INSTALL_DIR}/lib/libopencv_highgui.so
+    ${INSTALL_DIR}/lib/libopencv_imgproc.so
+    ${INSTALL_DIR}/lib/libopencv_imgcodecs.so
+)
 
-# Find OpenCV
-find_package(OpenCV REQUIRED)
-if (OpenCV_FOUND)
-    include_directories(${OpenCV_INCLUDE_DIRS})
-    target_link_libraries(CNN_CPP ${OpenCV_LIBS})
-endif()
+# Ensure OpenCV is built before building the main project
+add_dependencies(CNN_CPP opencv)
 
 # Add tests
 add_test(NAME runTests COMMAND CNN_CPP)

@@ -27,7 +27,7 @@ def test(ctx):
 
 @task
 def run(ctx):
-    ctx.run("./build/bin/CNN_CPP", pty=True)
+    ctx.run("./build/CNN_CPP", pty=True)
 
 
 @task
