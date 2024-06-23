@@ -1,13 +1,92 @@
 #include "ImageAugmentor.hpp"
-#include <cmath>
 #include <iostream>
 
-ImageAugmentor::ImageAugmentor(float rescaleFactor, float shearAngle, float zoomFactor, bool horizontalFlip)
-    : rescaleFactor(rescaleFactor), shearAngle(shearAngle), zoomFactor(zoomFactor), horizontalFlipFlag(horizontalFlip) {}
+ImageAugmentor::ImageAugmentor(float rescaleFactor,
+                               float zoomFactor,
+                               bool horizontalFlipFlag,
+                               bool verticalFlipFlag,
+                               float gaussianNoiseStdDev,
+                               int gaussianBlurKernelSize,
+                               int targetWidth,
+                               int targetHeight)
+    : rescaleFactor(rescaleFactor),
+      zoomFactor(zoomFactor),
+      horizontalFlipFlag(horizontalFlipFlag),
+      verticalFlipFlag(verticalFlipFlag),
+      gaussianNoiseStdDev(gaussianNoiseStdDev),
+      gaussianBlurKernelSize(gaussianBlurKernelSize),
+      targetWidth(targetWidth),
+      targetHeight(targetHeight),
+      zoomChance(0.3f),
+      horizontalFlipChance(0.3f),
+      verticalFlipChance(0.3f),
+      gaussianNoiseChance(0.3f),
+      gaussianBlurChance(0.3f),
+      distribution(0.0f, 1.0f) {}
 
-std::shared_ptr<cv::Mat> ImageAugmentor::rescale(const std::shared_ptr<cv::Mat> &image)
+void ImageAugmentor::augmentImages(ImageContainer &container)
 {
-    if (image->empty())
+    auto &trainingImages = container.getTrainingImages();
+    auto &testImages = container.getTestImages();
+
+    std::cout << "Augmenting images..." << std::endl;
+    int trainingImagesCount = trainingImages.size();
+    int testImagesCount = testImages.size();
+    int processedTrainingImages = 0;
+    int processedTestImages = 0;
+
+    for (auto &image : trainingImages)
+    {
+        *image = rescale(*image);
+        if (distribution(generator) < zoomChance)
+            *image = zoom(*image);
+        if (distribution(generator) < horizontalFlipChance)
+            *image = horizontalFlip(*image);
+        if (distribution(generator) < verticalFlipChance)
+            *image = verticalFlip(*image);
+        if (distribution(generator) < gaussianNoiseChance)
+            *image = addGaussianNoise(*image);
+        if (distribution(generator) < gaussianBlurChance)
+            *image = applyGaussianBlur(*image);
+        processedTrainingImages++;
+        int progress = (processedTrainingImages * 100) / trainingImagesCount;
+        std::cout << "\rAugmenting training images... " << progress << "%" << std::flush;
+    }
+
+    std::cout << std::endl
+              << "Augmentation complete for train_set!" << std::endl;
+
+    for (auto &image : testImages)
+    {
+        *image = rescale(*image);
+        if (distribution(generator) < zoomChance)
+            *image = zoom(*image);
+        if (distribution(generator) < horizontalFlipChance)
+            *image = horizontalFlip(*image);
+        if (distribution(generator) < verticalFlipChance)
+            *image = verticalFlip(*image);
+        if (distribution(generator) < gaussianNoiseChance)
+            *image = addGaussianNoise(*image);
+        if (distribution(generator) < gaussianBlurChance)
+            *image = applyGaussianBlur(*image);
+        processedTestImages++;
+        int progress = (processedTestImages * 100) / testImagesCount;
+        std::cout << "\rAugmenting test images... " << progress << "%" << std::flush;
+    }
+
+    std::cout << std::endl
+              << "Augmentation complete for test_set!" << std::endl;
+}
+
+void ImageAugmentor::setZoomChance(float chance) { zoomChance = chance; }
+void ImageAugmentor::setHorizontalFlipChance(float chance) { horizontalFlipChance = chance; }
+void ImageAugmentor::setVerticalFlipChance(float chance) { verticalFlipChance = chance; }
+void ImageAugmentor::setGaussianNoiseChance(float chance) { gaussianNoiseChance = chance; }
+void ImageAugmentor::setGaussianBlurChance(float chance) { gaussianBlurChance = chance; }
+
+cv::Mat ImageAugmentor::rescale(const cv::Mat &image)
+{
+    if (image.empty())
     {
         std::cerr << "Error: Empty image provided to rescale." << std::endl;
         return image;
@@ -19,31 +98,14 @@ std::shared_ptr<cv::Mat> ImageAugmentor::rescale(const std::shared_ptr<cv::Mat> 
         return image;
     }
 
-    std::cout << "Rescaling image of size: " << image->cols << "x" << image->rows << " with factor: " << rescaleFactor << std::endl;
-    auto rescaledImage = std::make_shared<cv::Mat>();
-    cv::resize(*image, *rescaledImage, cv::Size(image->cols * rescaleFactor, image->rows * rescaleFactor));
+    cv::Mat rescaledImage;
+    cv::resize(image, rescaledImage, cv::Size(targetWidth, targetHeight));
     return rescaledImage;
 }
 
-std::shared_ptr<cv::Mat> ImageAugmentor::shear(const std::shared_ptr<cv::Mat> &image)
+cv::Mat ImageAugmentor::zoom(const cv::Mat &image)
 {
-    if (image->empty())
-    {
-        std::cerr << "Error: Empty image provided to shear." << std::endl;
-        return image;
-    }
-    int width = image->cols;
-    int height = image->rows;
-    std::cout << "Shearing image of size: " << width << "x" << height << " with angle: " << shearAngle << std::endl;
-    cv::Mat shearMatrix = (cv::Mat_<double>(2, 3) << 1, shearAngle, 0, 0, 1, 0);
-    auto shearedImage = std::make_shared<cv::Mat>();
-    cv::warpAffine(*image, *shearedImage, shearMatrix, cv::Size(width + height * shearAngle, height));
-    return shearedImage;
-}
-
-std::shared_ptr<cv::Mat> ImageAugmentor::zoom(const std::shared_ptr<cv::Mat> &image)
-{
-    if (image->empty())
+    if (image.empty())
     {
         std::cerr << "Error: Empty image provided to zoom." << std::endl;
         return image;
@@ -55,23 +117,64 @@ std::shared_ptr<cv::Mat> ImageAugmentor::zoom(const std::shared_ptr<cv::Mat> &im
         return image;
     }
 
-    std::cout << "Zooming image of size: " << image->cols << "x" << image->rows << " with factor: " << zoomFactor << std::endl;
-    auto zoomedImage = std::make_shared<cv::Mat>();
-    cv::resize(*image, *zoomedImage, cv::Size(image->cols * zoomFactor, image->rows * zoomFactor));
-    return zoomedImage;
+    cv::Mat zoomedImage;
+    cv::resize(image, zoomedImage, cv::Size(), zoomFactor, zoomFactor);
+    cv::Rect roi((zoomedImage.cols - targetWidth) / 2, (zoomedImage.rows - targetHeight) / 2, targetWidth, targetHeight);
+    return zoomedImage(roi).clone();
 }
 
-std::shared_ptr<cv::Mat> ImageAugmentor::horizontalFlip(const std::shared_ptr<cv::Mat> &image)
+cv::Mat ImageAugmentor::horizontalFlip(const cv::Mat &image)
 {
     if (!horizontalFlipFlag)
         return image;
-    if (image->empty())
+    if (image.empty())
     {
         std::cerr << "Error: Empty image provided to horizontal flip." << std::endl;
         return image;
     }
-    std::cout << "Flipping image horizontally of size: " << image->cols << "x" << image->rows << std::endl;
-    auto flippedImage = std::make_shared<cv::Mat>();
-    cv::flip(*image, *flippedImage, 1);
+    cv::Mat flippedImage;
+    cv::flip(image, flippedImage, 1);
     return flippedImage;
+}
+
+cv::Mat ImageAugmentor::verticalFlip(const cv::Mat &image)
+{
+    if (!verticalFlipFlag)
+        return image;
+    if (image.empty())
+    {
+        std::cerr << "Error: Empty image provided to vertical flip." << std::endl;
+        return image;
+    }
+    cv::Mat flippedImage;
+    cv::flip(image, flippedImage, 0);
+    return flippedImage;
+}
+
+cv::Mat ImageAugmentor::addGaussianNoise(const cv::Mat &image)
+{
+    if (image.empty())
+    {
+        std::cerr << "Error: Empty image provided to add Gaussian noise." << std::endl;
+        return image;
+    }
+
+    cv::Mat noisyImage = image.clone();
+    cv::Mat noise(image.size(), image.type());
+    cv::randn(noise, 0, gaussianNoiseStdDev);
+    noisyImage += noise;
+    return noisyImage;
+}
+
+cv::Mat ImageAugmentor::applyGaussianBlur(const cv::Mat &image)
+{
+    if (image.empty())
+    {
+        std::cerr << "Error: Empty image provided to apply Gaussian blur." << std::endl;
+        return image;
+    }
+
+    cv::Mat blurredImage;
+    cv::GaussianBlur(image, blurredImage, cv::Size(gaussianBlurKernelSize, gaussianBlurKernelSize), 0);
+    return blurredImage;
 }

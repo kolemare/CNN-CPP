@@ -5,6 +5,7 @@
 #include <thread>
 #include "ImageLoader.hpp"
 #include "ImageAugmentor.hpp"
+#include "ImageContainer.hpp"
 #include "convolution_layer.hpp"
 
 namespace fs = std::filesystem;
@@ -42,25 +43,16 @@ int main(int argc, char **argv)
         }
 
         // Step 1: Load the images
-        ImageLoader loader(150, 150);
-        loader.loadImagesFromDirectory(datasetPath);
+        ImageLoader loader;
+        ImageContainer container;
+        loader.loadImagesFromDirectory(datasetPath, container);
 
-        std::vector<std::shared_ptr<cv::Mat>> images = loader.getImages();
-        std::vector<std::string> labels = loader.getLabels();
-        std::unordered_map<std::string, std::string> labelMapping = loader.getLabelMapping();
+        std::cout << "\nProcessed " << container.getImages().size() << " images successfully!" << std::endl;
+        printLabelCombinations(container.getImages(), container.getLabels(), container.getLabelMapping());
 
-        std::cout << "\nProcessed " << images.size() << " images successfully!" << std::endl;
-        printLabelCombinations(images, labels, labelMapping);
-
-        std::vector<std::shared_ptr<cv::Mat>> trainingImages = loader.getTrainingImages();
-        std::vector<std::shared_ptr<cv::Mat>> testImages = loader.getTestImages();
-        std::vector<std::shared_ptr<cv::Mat>> singlePredictionImages = loader.getSinglePredictionImages();
-        std::vector<std::string> trainingLabels = loader.getTrainingLabels();
-        std::vector<std::string> testLabels = loader.getTestLabels();
-
-        std::cout << "Training set size: " << trainingImages.size() << std::endl;
-        std::cout << "Test set size: " << testImages.size() << std::endl;
-        std::cout << "Single prediction set size: " << singlePredictionImages.size() << std::endl;
+        std::cout << "Training set size: " << container.getTrainingImages().size() << std::endl;
+        std::cout << "Test set size: " << container.getTestImages().size() << std::endl;
+        std::cout << "Single prediction set size: " << container.getSinglePredictionImages().size() << std::endl;
 
         // Example usage of Eigen
         Eigen::MatrixXd mat(2, 2);
@@ -73,33 +65,63 @@ int main(int argc, char **argv)
 
         // Get training images for the "cats" category
         std::string category = "cats";
-        std::vector<std::shared_ptr<cv::Mat>> catImages = loader.getTrainingImagesByCategory(category);
+        std::vector<std::shared_ptr<cv::Mat>> catImages = container.getTrainingImagesByCategory(category);
         std::cout << "Number of training images for " << category << ": " << catImages.size() << std::endl;
 
         std::this_thread::sleep_for(std::chrono::seconds(10));
 
         // Step 2: Augment the images
-        float rescaleFactor = 0.5f;
-        float shearAngle = 0.2f; // in radians, e.g., 0.2 rad
+        float rescaleFactor = 1.0f / 255.0f;
         float zoomFactor = 1.2f;
         bool horizontalFlipFlag = true;
+        bool verticalFlipFlag = true;
+        float gaussianNoiseStdDev = 10.0f;
+        int gaussianBlurKernelSize = 5;
+        int targetWidth = 64;
+        int targetHeight = 64;
 
-        ImageAugmentor augmentor(rescaleFactor, shearAngle, zoomFactor, horizontalFlipFlag);
+        ImageAugmentor augmentor(rescaleFactor, zoomFactor, horizontalFlipFlag, verticalFlipFlag, gaussianNoiseStdDev, gaussianBlurKernelSize, targetWidth, targetHeight);
 
-        for (auto &image : trainingImages)
+        // Set augmentation chances
+        augmentor.setZoomChance(0.3f);
+        augmentor.setHorizontalFlipChance(0.3f);
+        augmentor.setVerticalFlipChance(0.3f);
+        augmentor.setGaussianNoiseChance(0.3f);
+        augmentor.setGaussianBlurChance(0.3f);
+
+        augmentor.augmentImages(container);
+
+        std::vector<std::shared_ptr<cv::Mat>> catImagesCheck = container.getTrainingImagesByCategory(category);
+        if (!catImagesCheck.empty())
         {
-            image = augmentor.rescale(image);
-            image = augmentor.shear(image);
-            image = augmentor.zoom(image);
-            image = augmentor.horizontalFlip(image);
+            int width = catImagesCheck[0]->cols;
+            int height = catImagesCheck[0]->rows;
+            bool allSameSize = true;
+
+            for (const auto &image : catImagesCheck)
+            {
+                if (image->cols != width || image->rows != height)
+                {
+                    allSameSize = false;
+                    break;
+                }
+            }
+
+            if (allSameSize)
+            {
+                std::cout << "All images are of the same size: " << width << "x" << height << std::endl;
+            }
+            else
+            {
+                std::cout << "Not all images are of the same size." << std::endl;
+            }
         }
 
-        for (auto &image : testImages)
+        fs::create_directory("abcd");
+        for (size_t i = 0; i < catImagesCheck.size(); ++i)
         {
-            image = augmentor.rescale(image);
-            image = augmentor.shear(image);
-            image = augmentor.zoom(image);
-            image = augmentor.horizontalFlip(image);
+            std::string filename = "abcd/image_" + std::to_string(i) + ".jpg";
+            cv::imwrite(filename, *catImagesCheck[i]);
         }
 
         std::this_thread::sleep_for(std::chrono::seconds(10));
