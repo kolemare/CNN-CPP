@@ -5,6 +5,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     git \
     cmake \
+    wget \
+    unzip \
     build-essential \
     libeigen3-dev \
     libopencv-dev \
