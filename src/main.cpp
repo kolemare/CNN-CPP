@@ -6,7 +6,7 @@
 #include "ImageLoader.hpp"
 #include "ImageAugmentor.hpp"
 #include "ImageContainer.hpp"
-#include "convolution_layer.hpp"
+#include <Eigen/Dense>
 
 namespace fs = std::filesystem;
 

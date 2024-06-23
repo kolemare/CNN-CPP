@@ -14,7 +14,8 @@ add_subdirectory(external/googletest)
 enable_testing()
 
 # Include project headers
-include_directories(include)
+include_directories(include/Image)
+include_directories(include/CNN)
 
 # Build OpenCV as a submodule
 include(ExternalProject)
@@ -33,7 +34,8 @@ include_directories(${INSTALL_DIR}/include/opencv4)
 link_directories(${INSTALL_DIR}/lib)
 
 # Source files
-file(GLOB_RECURSE SOURCES "src/*.cpp")
+file(GLOB_RECURSE SOURCES "src/Image/*.cpp")
+file(GLOB_RECURSE SOURCES "src/CNN/*.cpp")
 
 # Test files
 file(GLOB_RECURSE TEST_SOURCES "tests/*.cpp")
