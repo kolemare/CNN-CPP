@@ -1,7 +1,33 @@
 #include "ActivationLayer.hpp"
 #include <cmath>
+#include <stdexcept>
 
-ActivationLayer::ActivationLayer(ActivationType type) : type(type) {}
+ActivationLayer::ActivationLayer(ActivationType type) : type(type)
+{
+    // Set sensible defaults for alpha
+    if (type == LEAKY_RELU)
+    {
+        alpha = 0.01;
+    }
+    else if (type == ELU)
+    {
+        alpha = 1.0;
+    }
+    else
+    {
+        alpha = 0.0; // Not used for other types
+    }
+}
+
+void ActivationLayer::setAlpha(double alphaValue)
+{
+    alpha = alphaValue;
+}
+
+double ActivationLayer::getAlpha() const
+{
+    return alpha;
+}
 
 Eigen::MatrixXd ActivationLayer::forward(const Eigen::MatrixXd &input)
 {
@@ -20,7 +46,7 @@ Eigen::MatrixXd ActivationLayer::forward(const Eigen::MatrixXd &input)
     case ELU:
         return elu(input);
     default:
-        return input; // Default case should not occur
+        throw std::invalid_argument("Unsupported activation type");
     }
 }
 
@@ -30,9 +56,9 @@ Eigen::MatrixXd ActivationLayer::relu(const Eigen::MatrixXd &input)
                            { return std::max(0.0, x); });
 }
 
-Eigen::MatrixXd ActivationLayer::leakyRelu(const Eigen::MatrixXd &input, double alpha)
+Eigen::MatrixXd ActivationLayer::leakyRelu(const Eigen::MatrixXd &input)
 {
-    return input.unaryExpr([alpha](double x)
+    return input.unaryExpr([this](double x)
                            { return x > 0 ? x : alpha * x; });
 }
 
@@ -56,8 +82,8 @@ Eigen::MatrixXd ActivationLayer::softmax(const Eigen::MatrixXd &input)
     return expInput.array().colwise() / sumExpInput.array();
 }
 
-Eigen::MatrixXd ActivationLayer::elu(const Eigen::MatrixXd &input, double alpha)
+Eigen::MatrixXd ActivationLayer::elu(const Eigen::MatrixXd &input)
 {
-    return input.unaryExpr([alpha](double x)
+    return input.unaryExpr([this](double x)
                            { return x >= 0 ? x : alpha * (std::exp(x) - 1); });
 }

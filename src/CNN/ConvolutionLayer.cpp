@@ -1,28 +1,39 @@
 #include "ConvolutionLayer.hpp"
 #include <iostream>
+#include <Eigen/Dense>
 
 ConvolutionLayer::ConvolutionLayer(int filters, int kernel_size, int input_depth, int stride, int padding, const Eigen::VectorXd &biases)
     : filters(filters), kernel_size(kernel_size), input_depth(input_depth), stride(stride), padding(padding), biases(biases)
 {
-    // Initialize filters with fixed values for testing
     kernels.resize(filters);
     for (int f = 0; f < filters; ++f)
     {
         kernels[f].resize(input_depth);
         for (int d = 0; d < input_depth; ++d)
         {
-            kernels[f][d] = Eigen::MatrixXd::Constant(kernel_size, kernel_size, 1.0); // Using constant value for predictability
+            kernels[f][d] = Eigen::MatrixXd::Random(kernel_size, kernel_size);
         }
     }
     if (biases.size() != filters)
     {
-        this->biases = Eigen::VectorXd::Zero(filters); // Initialize biases to zero if size mismatch
+        std::cerr << "Warning: Mismatch in biases size, initializing to zero.\n";
+        this->biases = Eigen::VectorXd::Zero(filters);
     }
 }
 
 std::vector<Eigen::MatrixXd> ConvolutionLayer::forward(const std::vector<Eigen::MatrixXd> &input)
 {
+    if (input.size() != input_depth)
+    {
+        throw std::invalid_argument("Input depth does not match the expected depth.");
+    }
+
     int input_size = input[0].rows();
+    if (input_size < kernel_size || (input_size - kernel_size + 2 * padding) / stride + 1 <= 0)
+    {
+        throw std::invalid_argument("Invalid input size relative to kernel size and stride.");
+    }
+
     int output_size = (input_size - kernel_size + 2 * padding) / stride + 1;
     std::vector<Eigen::MatrixXd> output(filters, Eigen::MatrixXd::Zero(output_size, output_size));
 
@@ -56,6 +67,15 @@ void ConvolutionLayer::setBiases(const Eigen::VectorXd &new_biases)
     {
         biases = new_biases;
     }
+    else
+    {
+        std::cerr << "Error: The size of new_biases must match the number of filters.\n";
+    }
+}
+
+Eigen::VectorXd ConvolutionLayer::getBiases() const
+{
+    return biases;
 }
 
 Eigen::MatrixXd ConvolutionLayer::padInput(const Eigen::MatrixXd &input, int pad)
@@ -80,4 +100,16 @@ double ConvolutionLayer::convolve(const Eigen::MatrixXd &input, const Eigen::Mat
         }
     }
     return sum;
+}
+
+void ConvolutionLayer::setKernels(const std::vector<std::vector<Eigen::MatrixXd>> &new_kernels)
+{
+    if (new_kernels.size() == filters && new_kernels[0].size() == input_depth)
+    {
+        kernels = new_kernels;
+    }
+    else
+    {
+        std::cerr << "Error: The size of new_kernels must match the number of filters and input depth." << std::endl;
+    }
 }

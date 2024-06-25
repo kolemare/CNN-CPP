@@ -13,6 +13,10 @@ public:
 
     void setBiases(const Eigen::VectorXd &new_biases);
 
+    void setKernels(const std::vector<std::vector<Eigen::MatrixXd>> &new_kernels);
+
+    Eigen::VectorXd getBiases() const;
+
     // Make these methods public for testing
     Eigen::MatrixXd padInput(const Eigen::MatrixXd &input, int pad);
     double convolve(const Eigen::MatrixXd &input, const Eigen::MatrixXd &kernel, int start_row, int start_col);
