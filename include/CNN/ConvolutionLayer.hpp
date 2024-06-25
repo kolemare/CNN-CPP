@@ -1,23 +1,23 @@
-#ifndef CONVOLUTION_LAYER_HPP
-#define CONVOLUTION_LAYER_HPP
+#ifndef CONVOLUTIONLAYER_HPP
+#define CONVOLUTIONLAYER_HPP
 
 #include <vector>
 #include <Eigen/Dense>
+#include "Layer.hpp"
 
-class ConvolutionLayer
+class ConvolutionLayer : public Layer
 {
 public:
-    ConvolutionLayer(int filters, int kernel_size, int input_depth, int stride, int padding, const Eigen::VectorXd &biases = Eigen::VectorXd::Zero(1));
+    ConvolutionLayer(int filters, int kernel_size, int input_depth, int stride, int padding, const Eigen::VectorXd &biases);
 
-    std::vector<Eigen::MatrixXd> forward(const std::vector<Eigen::MatrixXd> &input);
+    Eigen::MatrixXd forward(const Eigen::MatrixXd &input_batch) override;
+    Eigen::MatrixXd backward(const Eigen::MatrixXd &d_output_batch, const Eigen::MatrixXd &input_batch, double learning_rate) override;
 
     void setBiases(const Eigen::VectorXd &new_biases);
+    Eigen::VectorXd getBiases() const;
 
     void setKernels(const std::vector<std::vector<Eigen::MatrixXd>> &new_kernels);
 
-    Eigen::VectorXd getBiases() const;
-
-    // Make these methods public for testing
     Eigen::MatrixXd padInput(const Eigen::MatrixXd &input, int pad);
     double convolve(const Eigen::MatrixXd &input, const Eigen::MatrixXd &kernel, int start_row, int start_col);
 
@@ -32,4 +32,4 @@ private:
     int padding;
 };
 
-#endif // CONVOLUTION_LAYER_HPP
+#endif // CONVOLUTIONLAYER_HPP

@@ -17,12 +17,12 @@ protected:
 
     virtual void SetUp()
     {
-        reluLayer = new ActivationLayer(ActivationLayer::RELU);
-        leakyReluLayer = new ActivationLayer(ActivationLayer::LEAKY_RELU);
-        sigmoidLayer = new ActivationLayer(ActivationLayer::SIGMOID);
-        tanhLayer = new ActivationLayer(ActivationLayer::TANH);
-        softmaxLayer = new ActivationLayer(ActivationLayer::SOFTMAX);
-        eluLayer = new ActivationLayer(ActivationLayer::ELU);
+        reluLayer = new ActivationLayer(ActivationType::RELU);
+        leakyReluLayer = new ActivationLayer(ActivationType::LEAKY_RELU);
+        sigmoidLayer = new ActivationLayer(ActivationType::SIGMOID);
+        tanhLayer = new ActivationLayer(ActivationType::TANH);
+        softmaxLayer = new ActivationLayer(ActivationType::SOFTMAX);
+        eluLayer = new ActivationLayer(ActivationType::ELU);
 
         input.resize(2, 2);
     }
