@@ -78,3 +78,16 @@ std::vector<std::shared_ptr<cv::Mat>> ImageContainer::getTrainingImagesByCategor
     }
     return categoryImages;
 }
+
+std::vector<std::shared_ptr<cv::Mat>> ImageContainer::getTestImagesByCategory(const std::string &category) const
+{
+    std::vector<std::shared_ptr<cv::Mat>> categoryImages;
+    for (size_t i = 0; i < testLabels.size(); ++i)
+    {
+        if (testLabels[i] == category)
+        {
+            categoryImages.push_back(testImages[i]);
+        }
+    }
+    return categoryImages;
+}

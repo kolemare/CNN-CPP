@@ -2,10 +2,10 @@
 #define IMAGECONTAINER_HPP
 
 #include <opencv2/opencv.hpp>
-#include <vector>
 #include <string>
-#include <unordered_map>
+#include <vector>
 #include <memory>
+#include <unordered_map>
 
 class ImageContainer
 {
@@ -24,6 +24,7 @@ public:
 
     const std::vector<std::shared_ptr<cv::Mat>> &getSinglePredictionImages() const;
     std::vector<std::shared_ptr<cv::Mat>> getTrainingImagesByCategory(const std::string &category) const;
+    std::vector<std::shared_ptr<cv::Mat>> getTestImagesByCategory(const std::string &category) const;
 
 private:
     std::vector<std::shared_ptr<cv::Mat>> images;

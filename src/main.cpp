@@ -5,7 +5,7 @@
 #include <thread>
 #include "ImageLoader.hpp"
 #include "ImageAugmentor.hpp"
-#include "ImageContainer.hpp"
+#include "BatchManager.hpp"
 #include <Eigen/Dense>
 
 namespace fs = std::filesystem;
@@ -64,9 +64,18 @@ int main(int argc, char **argv)
                   << mat << std::endl;
 
         // Get training images for the "cats" category
-        std::string category = "cats";
-        std::vector<std::shared_ptr<cv::Mat>> catImages = container.getTrainingImagesByCategory(category);
-        std::cout << "Number of training images for " << category << ": " << catImages.size() << std::endl;
+        std::string cats = "cats";
+        std::string dogs = "dogs";
+        std::vector<std::shared_ptr<cv::Mat>> catImagesTrain = container.getTrainingImagesByCategory(cats);
+        std::vector<std::shared_ptr<cv::Mat>> dogImagesTrain = container.getTrainingImagesByCategory(dogs);
+
+        std::vector<std::shared_ptr<cv::Mat>> catImagesTest = container.getTestImagesByCategory(cats);
+        std::vector<std::shared_ptr<cv::Mat>> dogImagesTest = container.getTestImagesByCategory(dogs);
+
+        std::cout << "Number of training images for " << cats << ": " << catImagesTrain.size() << std::endl;
+        std::cout << "Number of training images for " << dogs << ": " << dogImagesTrain.size() << std::endl;
+        std::cout << "Number of test images for " << cats << ": " << catImagesTest.size() << std::endl;
+        std::cout << "Number of test images for " << dogs << ": " << dogImagesTest.size() << std::endl;
 
         std::this_thread::sleep_for(std::chrono::seconds(10));
 
@@ -91,7 +100,7 @@ int main(int argc, char **argv)
 
         augmentor.augmentImages(container);
 
-        std::vector<std::shared_ptr<cv::Mat>> catImagesCheck = container.getTrainingImagesByCategory(category);
+        std::vector<std::shared_ptr<cv::Mat>> catImagesCheck = container.getTrainingImagesByCategory(cats);
         if (!catImagesCheck.empty())
         {
             int width = catImagesCheck[0]->cols;

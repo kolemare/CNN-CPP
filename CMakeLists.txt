@@ -34,14 +34,17 @@ include_directories(${INSTALL_DIR}/include/opencv4)
 link_directories(${INSTALL_DIR}/lib)
 
 # Source files
-file(GLOB_RECURSE SOURCES "src/Image/*.cpp")
-file(GLOB_RECURSE SOURCES "src/CNN/*.cpp")
+file(GLOB_RECURSE IMAGE_SOURCES "src/Image/*.cpp")
+file(GLOB_RECURSE CNN_SOURCES "src/CNN/*.cpp")
+
+# Include main.cpp directly
+set(MAIN_SOURCE src/main.cpp)
 
 # Test files
 file(GLOB_RECURSE TEST_SOURCES "tests/*.cpp")
 
 # Create the executable for the main application
-add_executable(CNN_CPP ${SOURCES} ${TEST_SOURCES})
+add_executable(CNN_CPP ${IMAGE_SOURCES} ${CNN_SOURCES} ${MAIN_SOURCE} ${TEST_SOURCES})
 
 # Link Eigen, GoogleTest, and OpenCV libraries
 target_link_libraries(CNN_CPP Eigen3::Eigen gtest gtest_main

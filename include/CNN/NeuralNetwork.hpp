@@ -8,6 +8,7 @@
 #include "MaxPoolingLayer.hpp"
 #include "AveragePoolingLayer.hpp"
 #include "LossFunction.hpp"
+#include "BatchManager.hpp"
 #include <iostream>
 #include <vector>
 #include <memory>
@@ -29,7 +30,7 @@ public:
 
     Eigen::MatrixXd forward(const Eigen::MatrixXd &input);
     void backward(const Eigen::MatrixXd &d_output, double learning_rate);
-    void train(const std::vector<Eigen::MatrixXd> &inputs, const std::vector<Eigen::MatrixXd> &labels, int epochs, double learning_rate, int batch_size);
+    void train(const ImageContainer &imageContainer, int epochs, double learning_rate, int batch_size, const std::vector<std::string> &categories);
     void evaluate(const std::vector<Eigen::MatrixXd> &inputs, const std::vector<Eigen::MatrixXd> &labels);
 
 private:

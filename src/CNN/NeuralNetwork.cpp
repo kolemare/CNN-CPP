@@ -69,37 +69,20 @@ void NeuralNetwork::backward(const Eigen::MatrixXd &d_output, double learning_ra
     }
 }
 
-void NeuralNetwork::train(const std::vector<Eigen::MatrixXd> &inputs, const std::vector<Eigen::MatrixXd> &labels, int epochs, double learning_rate, int batch_size)
+void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, double learning_rate, int batch_size, const std::vector<std::string> &categories)
 {
     if (!lossFunction)
     {
         throw std::runtime_error("Loss function must be set before training.");
     }
 
-    int num_samples = inputs.size();
+    BatchManager batchManager(imageContainer, batch_size, categories);
 
     for (int epoch = 0; epoch < epochs; ++epoch)
     {
-        // Shuffle the data
-        std::vector<int> indices(num_samples);
-        std::iota(indices.begin(), indices.end(), 0);
-        std::shuffle(indices.begin(), indices.end(), std::default_random_engine{});
-
-        for (int i = 0; i < num_samples; i += batch_size)
+        Eigen::MatrixXd batch_input, batch_label;
+        while (batchManager.getNextBatch(batch_input, batch_label))
         {
-            int batch_end = std::min(i + batch_size, num_samples);
-            std::vector<Eigen::MatrixXd> batch_inputs(inputs.begin() + i, inputs.begin() + batch_end);
-            std::vector<Eigen::MatrixXd> batch_labels(labels.begin() + i, labels.begin() + batch_end);
-
-            Eigen::MatrixXd batch_input = Eigen::MatrixXd::Zero(batch_inputs.size(), batch_inputs[0].size());
-            Eigen::MatrixXd batch_label = Eigen::MatrixXd::Zero(batch_labels.size(), batch_labels[0].size());
-
-            for (size_t j = 0; j < batch_inputs.size(); ++j)
-            {
-                batch_input.row(j) = batch_inputs[j];
-                batch_label.row(j) = batch_labels[j];
-            }
-
             // Forward pass
             Eigen::MatrixXd predictions = forward(batch_input);
 
