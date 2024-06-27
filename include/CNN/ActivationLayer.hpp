@@ -3,6 +3,7 @@
 
 #include <Eigen/Dense>
 #include "Layer.hpp"
+#include <iostream>
 
 enum ActivationType
 {

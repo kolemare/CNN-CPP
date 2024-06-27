@@ -4,6 +4,7 @@
 #include <vector>
 #include <Eigen/Dense>
 #include "Layer.hpp"
+#include "MaxPoolingLayer.hpp"
 
 class ConvolutionLayer : public Layer
 {

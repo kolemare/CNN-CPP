@@ -1,25 +1,35 @@
-#ifndef MAXPOOLINGLAYER_HPP
-#define MAXPOOLINGLAYER_HPP
+#ifndef MAX_POOLING_LAYER_HPP
+#define MAX_POOLING_LAYER_HPP
 
-#include "Layer.hpp"
 #include <Eigen/Dense>
+#include <vector>
+#include "Layer.hpp"
 
 class MaxPoolingLayer : public Layer
 {
 public:
     MaxPoolingLayer(int pool_size, int stride);
 
-    Eigen::MatrixXd forward(const Eigen::MatrixXd &input_batch) override;
-    Eigen::MatrixXd backward(const Eigen::MatrixXd &d_output_batch, const Eigen::MatrixXd &input_batch, double learning_rate) override;
+    Eigen::MatrixXd forward(const Eigen::MatrixXd &input_batch);
+    Eigen::MatrixXd backward(const Eigen::MatrixXd &d_output_batch, const Eigen::MatrixXd &input_batch, double learning_rate);
+
+    // Static variable getters and setters
+    static void setInputSize(int size);
+    static void setInputDepth(int depth);
+    static int getInputSize();
+    static int getInputDepth();
 
 private:
     int pool_size;
     int stride;
 
+    static int input_size;
+    static int input_depth;
+
+    std::vector<Eigen::MatrixXd> max_indices;
+
     Eigen::MatrixXd maxPool(const Eigen::MatrixXd &input);
     Eigen::MatrixXd maxPoolBackward(const Eigen::MatrixXd &d_output, const Eigen::MatrixXd &input);
-
-    std::vector<Eigen::MatrixXd> max_indices; // To store indices of max values during forward pass
 };
 
-#endif // MAXPOOLINGLAYER_HPP
+#endif

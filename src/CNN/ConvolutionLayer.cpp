@@ -1,4 +1,5 @@
 #include "ConvolutionLayer.hpp"
+#include "MaxPoolingLayer.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <cmath>
@@ -34,6 +35,12 @@ Eigen::MatrixXd ConvolutionLayer::forward(const Eigen::MatrixXd &input_batch)
     int output_size = (input_size - kernel_size + 2 * padding) / stride + 1;
     Eigen::MatrixXd output_batch(batch_size, filters * output_size * output_size);
 
+    std::cout << "Forward pass:" << std::endl;
+    std::cout << "Batch size: " << batch_size << std::endl;
+    std::cout << "Input size: " << input_size << std::endl;
+    std::cout << "Input depth: " << input_depth << std::endl;
+    std::cout << "Output size: " << output_size << std::endl;
+
     for (int b = 0; b < batch_size; ++b)
     {
         Eigen::Map<const Eigen::MatrixXd> input(input_batch.row(b).data(), input_size, input_size * input_depth);
@@ -62,6 +69,11 @@ Eigen::MatrixXd ConvolutionLayer::forward(const Eigen::MatrixXd &input_batch)
             Eigen::Map<Eigen::RowVectorXd>(output_batch.row(b).data() + f * output_size * output_size, output_size * output_size) = Eigen::Map<Eigen::RowVectorXd>(feature_map.data(), feature_map.size());
         }
     }
+
+    // Update the static variables in MaxPoolingLayer
+    MaxPoolingLayer::setInputSize(output_size);
+    MaxPoolingLayer::setInputDepth(filters);
+
     return output_batch;
 }
 

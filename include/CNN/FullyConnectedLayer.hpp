@@ -9,7 +9,7 @@
 class FullyConnectedLayer : public Layer
 {
 public:
-    FullyConnectedLayer(int input_size, int output_size, std::unique_ptr<Optimizer> optimizer, unsigned int seed = 0);
+    FullyConnectedLayer(int input_size, int output_size, std::unique_ptr<Optimizer> optimizer, unsigned int seed = 42);
 
     Eigen::MatrixXd forward(const Eigen::MatrixXd &input_batch) override;
     Eigen::MatrixXd backward(const Eigen::MatrixXd &d_output_batch, const Eigen::MatrixXd &input_batch, double learning_rate) override;

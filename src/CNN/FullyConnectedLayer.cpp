@@ -1,6 +1,7 @@
 #include "FullyConnectedLayer.hpp"
 #include <stdexcept>
 #include <random>
+#include <iostream>
 
 FullyConnectedLayer::FullyConnectedLayer(int input_size, int output_size, std::unique_ptr<Optimizer> optimizer, unsigned int seed)
     : input_size(input_size), output_size(output_size), optimizer(std::move(optimizer))
@@ -11,7 +12,7 @@ FullyConnectedLayer::FullyConnectedLayer(int input_size, int output_size, std::u
     }
 
     std::default_random_engine generator(seed);
-    std::uniform_real_distribution<double> distribution(-1.0, 1.0);
+    std::normal_distribution<double> distribution(0.0, std::sqrt(2.0 / input_size)); // Xavier initialization for weights
 
     weights = Eigen::MatrixXd(output_size, input_size);
     for (int i = 0; i < output_size; ++i)
@@ -22,7 +23,14 @@ FullyConnectedLayer::FullyConnectedLayer(int input_size, int output_size, std::u
         }
     }
 
-    biases = Eigen::VectorXd::Zero(output_size);
+    std::normal_distribution<double> bias_distribution(0.0, 0.01); // Small random values for biases
+    biases = Eigen::VectorXd(output_size);
+    for (int i = 0; i < output_size; ++i)
+    {
+        biases(i) = bias_distribution(generator);
+    }
+
+    std::cout << "Initialized FullyConnectedLayer with random weights and biases." << std::endl;
 }
 
 Eigen::MatrixXd FullyConnectedLayer::forward(const Eigen::MatrixXd &input_batch)
@@ -32,16 +40,34 @@ Eigen::MatrixXd FullyConnectedLayer::forward(const Eigen::MatrixXd &input_batch)
         throw std::invalid_argument("Input size does not match the expected size.");
     }
 
-    return (input_batch * weights.transpose()).rowwise() + biases.transpose();
+    Eigen::MatrixXd output = (input_batch * weights.transpose()).rowwise() + biases.transpose();
+    std::cout << "Fully Connected Layer forward pass output dimensions: " << output.rows() << "x" << output.cols() << std::endl;
+
+    // Add debugging output
+    std::cout << "Forward pass weights: " << weights << std::endl;
+    std::cout << "Forward pass biases: " << biases << std::endl;
+    std::cout << "Forward pass output: " << output << std::endl;
+
+    return output;
 }
 
 Eigen::MatrixXd FullyConnectedLayer::backward(const Eigen::MatrixXd &d_output_batch, const Eigen::MatrixXd &input_batch, double learning_rate)
 {
+    if (d_output_batch.rows() != input_batch.rows())
+    {
+        throw std::invalid_argument("Output batch size does not match input batch size.");
+    }
+
     Eigen::MatrixXd d_weights = d_output_batch.transpose() * input_batch;
     Eigen::VectorXd d_biases = d_output_batch.colwise().sum();
     Eigen::MatrixXd d_input = d_output_batch * weights;
 
     optimizer->update(weights, biases, d_weights, d_biases, learning_rate);
+
+    // Add debugging output
+    std::cout << "Backward pass d_weights: " << d_weights << std::endl;
+    std::cout << "Backward pass d_biases: " << d_biases << std::endl;
+    std::cout << "Backward pass d_input: " << d_input << std::endl;
 
     return d_input;
 }
