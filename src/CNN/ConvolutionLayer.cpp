@@ -25,6 +25,7 @@ ConvolutionLayer::ConvolutionLayer(int filters, int kernel_size, int input_depth
 
 Eigen::MatrixXd ConvolutionLayer::forward(const Eigen::MatrixXd &input_batch)
 {
+    std::cout << "FORWARDIIIING|" << std::endl;
     int batch_size = input_batch.rows();
     int input_size = std::sqrt(input_batch.cols() / input_depth);
     if (input_size * input_size * input_depth != input_batch.cols())
@@ -34,12 +35,6 @@ Eigen::MatrixXd ConvolutionLayer::forward(const Eigen::MatrixXd &input_batch)
 
     int output_size = (input_size - kernel_size + 2 * padding) / stride + 1;
     Eigen::MatrixXd output_batch(batch_size, filters * output_size * output_size);
-
-    std::cout << "Forward pass:" << std::endl;
-    std::cout << "Batch size: " << batch_size << std::endl;
-    std::cout << "Input size: " << input_size << std::endl;
-    std::cout << "Input depth: " << input_depth << std::endl;
-    std::cout << "Output size: " << output_size << std::endl;
 
     for (int b = 0; b < batch_size; ++b)
     {
@@ -64,8 +59,21 @@ Eigen::MatrixXd ConvolutionLayer::forward(const Eigen::MatrixXd &input_batch)
                         feature_map(i, j) += conv_sum;
                     }
                 }
+                std::cout << "Feature map before activation (filter " << f << ", depth " << d << "):\n"
+                          << feature_map << std::endl;
             }
+
             feature_map.array() += biases(f);
+            std::cout << "Feature map before activation (filter " << f << "):\n"
+                      << feature_map << std::endl;
+
+            // Apply activation function
+            feature_map = feature_map.unaryExpr([](double x)
+                                                { return std::max(0.0, x); }); // ReLU example
+
+            std::cout << "Feature map after activation (filter " << f << "):\n"
+                      << feature_map << std::endl;
+
             Eigen::Map<Eigen::RowVectorXd>(output_batch.row(b).data() + f * output_size * output_size, output_size * output_size) = Eigen::Map<Eigen::RowVectorXd>(feature_map.data(), feature_map.size());
         }
     }

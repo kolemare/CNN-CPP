@@ -1,6 +1,12 @@
 # Ignore the vscode directory
 .vscode
 
+# Ignore all .txt files
+*.txt
+
+# Do not ignore help.txt
+!help.txt
+
 # Ignore build directory
 /build/
 

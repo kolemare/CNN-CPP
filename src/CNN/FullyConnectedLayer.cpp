@@ -23,14 +23,10 @@ FullyConnectedLayer::FullyConnectedLayer(int input_size, int output_size, std::u
         }
     }
 
-    std::normal_distribution<double> bias_distribution(0.0, 0.01); // Small random values for biases
-    biases = Eigen::VectorXd(output_size);
-    for (int i = 0; i < output_size; ++i)
-    {
-        biases(i) = bias_distribution(generator);
-    }
+    // Initialize biases to zero
+    biases = Eigen::VectorXd::Zero(output_size);
 
-    std::cout << "Initialized FullyConnectedLayer with random weights and biases." << std::endl;
+    std::cout << "Initialized FullyConnectedLayer with random weights and zero biases." << std::endl;
 }
 
 Eigen::MatrixXd FullyConnectedLayer::forward(const Eigen::MatrixXd &input_batch)
@@ -40,13 +36,20 @@ Eigen::MatrixXd FullyConnectedLayer::forward(const Eigen::MatrixXd &input_batch)
         throw std::invalid_argument("Input size does not match the expected size.");
     }
 
+    // Debugging output for the input
+    std::cout << "Forward pass input: \n"
+              << input_batch << std::endl;
+
     Eigen::MatrixXd output = (input_batch * weights.transpose()).rowwise() + biases.transpose();
     std::cout << "Fully Connected Layer forward pass output dimensions: " << output.rows() << "x" << output.cols() << std::endl;
 
     // Add debugging output
-    std::cout << "Forward pass weights: " << weights << std::endl;
-    std::cout << "Forward pass biases: " << biases << std::endl;
-    std::cout << "Forward pass output: " << output << std::endl;
+    std::cout << "Forward pass weights: \n"
+              << weights << std::endl;
+    std::cout << "Forward pass biases: \n"
+              << biases << std::endl;
+    std::cout << "Forward pass output: \n"
+              << output << std::endl;
 
     return output;
 }
@@ -65,9 +68,12 @@ Eigen::MatrixXd FullyConnectedLayer::backward(const Eigen::MatrixXd &d_output_ba
     optimizer->update(weights, biases, d_weights, d_biases, learning_rate);
 
     // Add debugging output
-    std::cout << "Backward pass d_weights: " << d_weights << std::endl;
-    std::cout << "Backward pass d_biases: " << d_biases << std::endl;
-    std::cout << "Backward pass d_input: " << d_input << std::endl;
+    std::cout << "Backward pass d_weights: \n"
+              << d_weights << std::endl;
+    std::cout << "Backward pass d_biases: \n"
+              << d_biases << std::endl;
+    std::cout << "Backward pass d_input: \n"
+              << d_input << std::endl;
 
     return d_input;
 }

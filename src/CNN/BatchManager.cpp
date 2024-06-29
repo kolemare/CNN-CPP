@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <random>
 
-
 BatchManager::BatchManager(const ImageContainer &imageContainer, int batchSize, const std::vector<std::string> &categories)
     : imageContainer(imageContainer), batchSize(batchSize), categories(categories), currentBatchIndex(0)
 {
@@ -64,8 +63,9 @@ bool BatchManager::getNextBatch(Eigen::MatrixXd &batchImages, Eigen::MatrixXd &b
     {
         cv::Mat &image = *allImages[startIndex + i];
         cv::Mat flatImage = image.reshape(1, 1);
-        Eigen::Map<Eigen::MatrixXd> eigenImage(flatImage.ptr<double>(), 1, imageSize);
-        batchImages.row(i) = eigenImage;
+
+        Eigen::Map<Eigen::MatrixXf> eigenImage(flatImage.ptr<float>(), 1, imageSize); // Use float type for Eigen::Matrix mapping
+        batchImages.row(i) = eigenImage.cast<double>();
 
         batchLabels(i, 0) = std::find(categories.begin(), categories.end(), allLabels[startIndex + i]) - categories.begin();
     }

@@ -25,6 +25,7 @@ private:
     cv::Mat verticalFlip(const cv::Mat &image);
     cv::Mat addGaussianNoise(const cv::Mat &image);
     cv::Mat applyGaussianBlur(const cv::Mat &image);
+    void normalizeImage(cv::Mat &image);
 
     float rescaleFactor;
     float zoomFactor;

@@ -48,6 +48,9 @@ void ImageAugmentor::augmentImages(ImageContainer &container)
             *image = addGaussianNoise(*image);
         if (distribution(generator) < gaussianBlurChance)
             *image = applyGaussianBlur(*image);
+
+        normalizeImage(*image);
+
         processedTrainingImages++;
         int progress = (processedTrainingImages * 100) / trainingImagesCount;
         std::cout << "\rAugmenting training images... " << progress << "%" << std::flush;
@@ -69,6 +72,9 @@ void ImageAugmentor::augmentImages(ImageContainer &container)
             *image = addGaussianNoise(*image);
         if (distribution(generator) < gaussianBlurChance)
             *image = applyGaussianBlur(*image);
+
+        normalizeImage(*image);
+
         processedTestImages++;
         int progress = (processedTestImages * 100) / testImagesCount;
         std::cout << "\rAugmenting test images... " << progress << "%" << std::flush;
@@ -177,4 +183,10 @@ cv::Mat ImageAugmentor::applyGaussianBlur(const cv::Mat &image)
     cv::Mat blurredImage;
     cv::GaussianBlur(image, blurredImage, cv::Size(gaussianBlurKernelSize, gaussianBlurKernelSize), 0);
     return blurredImage;
+}
+
+void ImageAugmentor::normalizeImage(cv::Mat &image)
+{
+    // Normalize image to range [0, 1]
+    image.convertTo(image, CV_32F, 1.0 / 255.0);
 }
