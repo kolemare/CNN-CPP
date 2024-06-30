@@ -2,7 +2,6 @@
 
 clean_build() {
   echo "Cleaning build directory and submodules..."
-  rm -rf .vscode
   rm -rf build
   rm -rf external/opencv/build
   rm -rf external/googletest/build
@@ -18,6 +17,7 @@ clean_dataset() {
 }
 
 delete_txts() {
+  rm -rf .vscode
   echo "Deleting all .txt files..."
   find . -maxdepth 1 -type f -name '*.txt' ! -name 'CMakeLists.txt' -delete
   echo "TXT files deletion completed."

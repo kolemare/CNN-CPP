@@ -39,11 +39,11 @@ Eigen::MatrixXd MaxPoolingLayer::forward(const Eigen::MatrixXd &input_batch)
     int input_depth = MaxPoolingLayer::input_depth;
 
     // Debugging
-    std::cout << "Forward Pass: " << std::endl;
-    std::cout << "Batch size: " << batch_size << std::endl;
-    std::cout << "Input depth: " << input_depth << std::endl;
-    std::cout << "Input size: " << input_size << std::endl;
-    std::cout << "Total elements: " << total_elements << std::endl;
+    // std::cout << "Forward Pass: " << std::endl;
+    // std::cout << "Batch size: " << batch_size << std::endl;
+    // std::cout << "Input depth: " << input_depth << std::endl;
+    // std::cout << "Input size: " << input_size << std::endl;
+    // std::cout << "Total elements: " << total_elements << std::endl;
 
     if (input_size * input_size * input_depth != total_elements)
     {
@@ -69,13 +69,13 @@ Eigen::MatrixXd MaxPoolingLayer::forward(const Eigen::MatrixXd &input_batch)
             output_batch.row(b).segment(d * output_size * output_size, output_size * output_size) = Eigen::Map<Eigen::RowVectorXd>(pooled_output.data(), pooled_output.size());
 
             // Debugging
-            std::cout << "Pooled output for batch " << b << ", depth " << d << ": " << pooled_output << std::endl;
+            // std::cout << "Pooled output for batch " << b << ", depth " << d << ": " << pooled_output << std::endl;
         }
     }
 
     // Debugging
-    std::cout << "Output batch size: " << output_batch.rows() << " x " << output_batch.cols() << std::endl;
-    std::cout << "Output batch values: " << output_batch << std::endl;
+    // std::cout << "Output batch size: " << output_batch.rows() << " x " << output_batch.cols() << std::endl;
+    // std::cout << "Output batch values: " << output_batch << std::endl;
 
     return output_batch;
 }
@@ -94,7 +94,7 @@ Eigen::MatrixXd MaxPoolingLayer::maxPool(const Eigen::MatrixXd &input)
     Eigen::MatrixXd indices = Eigen::MatrixXd::Zero(output_size, output_size);
 
     // Debugging
-    std::cout << "Max Pooling: Input size: " << input_size << ", Output size: " << output_size << std::endl;
+    // std::cout << "Max Pooling: Input size: " << input_size << ", Output size: " << output_size << std::endl;
 
     for (int i = 0; i < output_size; ++i)
     {
@@ -124,9 +124,9 @@ Eigen::MatrixXd MaxPoolingLayer::maxPool(const Eigen::MatrixXd &input)
     }
 
     // Debugging
-    std::cout << "Max Pooling completed. Indices and Output matrices created." << std::endl;
-    std::cout << "Max Pooled Output: " << output << std::endl;
-    std::cout << "Max Pooled Indices: " << indices << std::endl;
+    // std::cout << "Max Pooling completed. Indices and Output matrices created." << std::endl;
+    // std::cout << "Max Pooled Output: " << output << std::endl;
+    // std::cout << "Max Pooled Indices: " << indices << std::endl;
 
     max_indices.push_back(indices);
     return output;
@@ -154,8 +154,8 @@ Eigen::MatrixXd MaxPoolingLayer::backward(const Eigen::MatrixXd &d_output_batch,
     }
 
     // Debugging
-    std::cout << "Backward Pass completed. d_input_batch size: " << d_input_batch.rows() << " x " << d_input_batch.cols() << std::endl;
-    std::cout << "d_input_batch values: " << d_input_batch << std::endl;
+    // std::cout << "Backward Pass completed. d_input_batch size: " << d_input_batch.rows() << " x " << d_input_batch.cols() << std::endl;
+    // std::cout << "d_input_batch values: " << d_input_batch << std::endl;
 
     return d_input_batch;
 }
@@ -170,7 +170,7 @@ Eigen::MatrixXd MaxPoolingLayer::maxPoolBackward(const Eigen::MatrixXd &d_output
     max_indices.pop_back();
 
     // Debugging
-    std::cout << "Max Pool Backward: Input size: " << input_size << ", Output size: " << output_size << std::endl;
+    // std::cout << "Max Pool Backward: Input size: " << input_size << ", Output size: " << output_size << std::endl;
 
     for (int i = 0; i < output_size; ++i)
     {
@@ -184,8 +184,8 @@ Eigen::MatrixXd MaxPoolingLayer::maxPoolBackward(const Eigen::MatrixXd &d_output
     }
 
     // Debugging
-    std::cout << "Max Pool Backward completed. d_input matrix created." << std::endl;
-    std::cout << "d_input values: " << d_input << std::endl;
+    // std::cout << "Max Pool Backward completed. d_input matrix created." << std::endl;
+    // std::cout << "d_input values: " << d_input << std::endl;
 
     return d_input;
 }

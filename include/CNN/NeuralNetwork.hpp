@@ -16,6 +16,12 @@
 #include "FullyConnectedLayer.hpp"
 #include "ActivationLayer.hpp"
 
+enum PropagationType
+{
+    FORWARD,
+    BACK
+};
+
 class NeuralNetwork
 {
 public:
@@ -41,6 +47,8 @@ private:
     bool flattenAdded;
     int current_depth;
     int input_size; // Assuming square input dimensions, can be modified to handle non-square inputs
+
+    void printMatrixSummary(const Eigen::MatrixXd &matrix, const std::string &layerType, PropagationType propagationType);
 };
 
 #endif

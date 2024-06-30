@@ -53,7 +53,7 @@ void ImageAugmentor::augmentImages(ImageContainer &container)
 
         processedTrainingImages++;
         int progress = (processedTrainingImages * 100) / trainingImagesCount;
-        std::cout << "\rAugmenting training images... " << progress << "%" << std::flush;
+        // std::cout << "\rAugmenting training images... " << progress << "%" << std::flush;
     }
 
     std::cout << std::endl
@@ -77,7 +77,7 @@ void ImageAugmentor::augmentImages(ImageContainer &container)
 
         processedTestImages++;
         int progress = (processedTestImages * 100) / testImagesCount;
-        std::cout << "\rAugmenting test images... " << progress << "%" << std::flush;
+        // std::cout << "\rAugmenting test images... " << progress << "%" << std::flush;
     }
 
     std::cout << std::endl

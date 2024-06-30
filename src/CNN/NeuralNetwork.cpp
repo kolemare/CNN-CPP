@@ -59,6 +59,9 @@ void NeuralNetwork::setLossFunction(LossType type)
 
 Eigen::MatrixXd NeuralNetwork::forward(const Eigen::MatrixXd &input)
 {
+    std::cout << "-------------------------------------------------------------------" << std::endl;
+    printMatrixSummary(input, "INPUT", PropagationType::FORWARD);
+    std::cout << "-------------------------------------------------------------------" << std::endl;
     Eigen::MatrixXd output = input;
     layerInputs.clear();
 
@@ -93,10 +96,44 @@ Eigen::MatrixXd NeuralNetwork::forward(const Eigen::MatrixXd &input)
             layerType = "Activation Layer";
         }
 
-        std::cout << layerType << " forward pass output dimensions: " << output.rows() << "x" << output.cols() << std::endl;
+        std::cout << "-------------------------------------------------------------------" << std::endl;
+        printMatrixSummary(output, layerType, PropagationType::FORWARD);
+        std::cout << "-------------------------------------------------------------------" << std::endl;
     }
 
     return output;
+}
+
+void NeuralNetwork::printMatrixSummary(const Eigen::MatrixXd &matrix, const std::string &layerType, PropagationType propagationType)
+{
+    double mean = matrix.mean();
+    double stddev = std::sqrt((matrix.array() - mean).square().sum() / (matrix.size() - 1));
+    double minCoeff = matrix.minCoeff();
+    double maxCoeff = matrix.maxCoeff();
+    double zeroPercentage = (matrix.array() == 0).count() / static_cast<double>(matrix.size()) * 100.0;
+    double negativeCount = (matrix.array() < 0).count();
+    double positiveCount = (matrix.array() > 0).count();
+    switch (propagationType)
+    {
+    case PropagationType::FORWARD:
+        std::cout << layerType << " Forward pass summary:\n";
+        break;
+
+    case PropagationType::BACK:
+        std::cout << layerType << " Back pass summary:\n";
+        break;
+
+    default:
+        break;
+    }
+    std::cout << "Dimensions: " << matrix.rows() << "x" << matrix.cols() << "\n";
+    std::cout << "Mean: " << mean << "\n";
+    std::cout << "Standard Deviation: " << stddev << "\n";
+    std::cout << "Min: " << minCoeff << "\n";
+    std::cout << "Max: " << maxCoeff << "\n";
+    std::cout << "Percentage of Zeros: " << zeroPercentage << "%\n";
+    std::cout << "Number of Negative Values: " << negativeCount << "\n";
+    std::cout << "Number of Positive Values: " << positiveCount << "\n\n";
 }
 
 void NeuralNetwork::backward(const Eigen::MatrixXd &d_output, double learning_rate)

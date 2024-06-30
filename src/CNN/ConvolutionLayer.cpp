@@ -8,12 +8,24 @@ ConvolutionLayer::ConvolutionLayer(int filters, int kernel_size, int input_depth
     : filters(filters), kernel_size(kernel_size), input_depth(input_depth), stride(stride), padding(padding), biases(biases)
 {
     kernels.resize(filters);
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::normal_distribution<> dis(0, std::sqrt(2.0 / (input_depth * kernel_size * kernel_size)));
+
     for (int f = 0; f < filters; ++f)
     {
         kernels[f].resize(input_depth);
         for (int d = 0; d < input_depth; ++d)
         {
-            kernels[f][d] = Eigen::MatrixXd::Random(kernel_size, kernel_size);
+            Eigen::MatrixXd kernel(kernel_size, kernel_size);
+            for (int i = 0; i < kernel_size; ++i)
+            {
+                for (int j = 0; j < kernel_size; ++j)
+                {
+                    kernel(i, j) = dis(gen);
+                }
+            }
+            kernels[f][d] = kernel;
         }
     }
     if (biases.size() != filters)
@@ -25,7 +37,6 @@ ConvolutionLayer::ConvolutionLayer(int filters, int kernel_size, int input_depth
 
 Eigen::MatrixXd ConvolutionLayer::forward(const Eigen::MatrixXd &input_batch)
 {
-    std::cout << "FORWARDIIIING|" << std::endl;
     int batch_size = input_batch.rows();
     int input_size = std::sqrt(input_batch.cols() / input_depth);
     if (input_size * input_size * input_depth != input_batch.cols())
@@ -59,30 +70,13 @@ Eigen::MatrixXd ConvolutionLayer::forward(const Eigen::MatrixXd &input_batch)
                         feature_map(i, j) += conv_sum;
                     }
                 }
-
-                if (debugging == true)
-                {
-                    std::cout << "Feature map before biases and activation (filter " << f << ", depth " << d << "):\n"
-                              << feature_map << std::endl;
-                }
             }
 
+            // Apply biases
             feature_map.array() += biases(f);
 
-            if (debugging == true)
-            {
-                std::cout << "Feature map before activation with biases applied (filter " << f << "):\n"
-                          << feature_map << std::endl;
-
-                // Apply activation function
-                feature_map = feature_map.unaryExpr([](double x)
-                                                    { return std::max(0.0, x); }); // ReLU example
-
-                std::cout << "Feature map after activation (filter " << f << "):\n"
-                          << feature_map << std::endl;
-            }
-
-            Eigen::Map<Eigen::RowVectorXd>(output_batch.row(b).data() + f * output_size * output_size, output_size * output_size) = Eigen::Map<Eigen::RowVectorXd>(feature_map.data(), feature_map.size());
+            // Copy feature_map to output_batch
+            output_batch.block(b, f * output_size * output_size, 1, output_size * output_size) = Eigen::Map<Eigen::RowVectorXd>(feature_map.data(), feature_map.size());
         }
     }
 
@@ -90,7 +84,6 @@ Eigen::MatrixXd ConvolutionLayer::forward(const Eigen::MatrixXd &input_batch)
     MaxPoolingLayer::setInputSize(output_size);
     MaxPoolingLayer::setInputDepth(filters);
 
-    debugging = true;
     return output_batch;
 }
 
