@@ -10,10 +10,15 @@ clean_build() {
   echo "Build clean completed."
 }
 
-clean_dataset() {
-  echo "Cleaning dataset directory..."
-  find datasets -mindepth 1 ! -name '.gitkeep' -exec rm -rf {} +
-  echo "Dataset clean completed."
+clean_datasets() {
+  echo "Cleaning datasets directory..."
+  if [ -d "datasets" ]; then
+    # Use -prune to avoid descending into non-existent directories
+    find datasets -mindepth 1 ! -name '.gitkeep' -exec rm -rf {} + 2>/dev/null
+    echo "Datasets clean completed."
+  else
+    echo "Datasets directory does not exist. Skipping."
+  fi
 }
 
 delete_txts() {
@@ -25,7 +30,7 @@ delete_txts() {
 
 # Flags
 CLEAN_BUILD=false
-CLEAN_DATASET=false
+CLEAN_DATASETS=false
 CLEAN_ALL=false
 
 # Parse arguments
@@ -34,8 +39,8 @@ for arg in "$@"; do
     --build)
       CLEAN_BUILD=true
       ;;
-    --dataset)
-      CLEAN_DATASET=true
+    --datasets)
+      CLEAN_DATASETS=true
       ;;
     --all)
       CLEAN_ALL=true
@@ -49,13 +54,13 @@ done
 # Execute based on flags
 if $CLEAN_ALL; then
   clean_build
-  clean_dataset
+  clean_datasets
 else
   if $CLEAN_BUILD; then
     clean_build
   fi
-  if $CLEAN_DATASET; then
-    clean_dataset
+  if $CLEAN_DATASETS; then
+    clean_datasets
   fi
 fi
 
