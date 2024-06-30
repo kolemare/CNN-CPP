@@ -25,6 +25,8 @@ public:
     std::vector<std::vector<Eigen::MatrixXd>> kernels; // Kernels for each filter, each filter has a kernel for each input depth
     Eigen::VectorXd biases;                            // Biases for each filter
 
+    static inline bool debugging = true;
+
 private:
     int filters;
     int kernel_size;

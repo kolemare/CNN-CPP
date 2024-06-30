@@ -4,8 +4,8 @@
 # Ignore all .txt files
 *.txt
 
-# Do not ignore help.txt
-!help.txt
+# Do not ignore CMakeLists.txt
+!CMakeLists.txt
 
 # Ignore build directory
 /build/

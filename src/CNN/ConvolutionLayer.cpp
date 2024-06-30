@@ -59,20 +59,28 @@ Eigen::MatrixXd ConvolutionLayer::forward(const Eigen::MatrixXd &input_batch)
                         feature_map(i, j) += conv_sum;
                     }
                 }
-                std::cout << "Feature map before activation (filter " << f << ", depth " << d << "):\n"
-                          << feature_map << std::endl;
+
+                if (debugging == true)
+                {
+                    std::cout << "Feature map before biases and activation (filter " << f << ", depth " << d << "):\n"
+                              << feature_map << std::endl;
+                }
             }
 
             feature_map.array() += biases(f);
-            std::cout << "Feature map before activation (filter " << f << "):\n"
-                      << feature_map << std::endl;
 
-            // Apply activation function
-            feature_map = feature_map.unaryExpr([](double x)
-                                                { return std::max(0.0, x); }); // ReLU example
+            if (debugging == true)
+            {
+                std::cout << "Feature map before activation with biases applied (filter " << f << "):\n"
+                          << feature_map << std::endl;
 
-            std::cout << "Feature map after activation (filter " << f << "):\n"
-                      << feature_map << std::endl;
+                // Apply activation function
+                feature_map = feature_map.unaryExpr([](double x)
+                                                    { return std::max(0.0, x); }); // ReLU example
+
+                std::cout << "Feature map after activation (filter " << f << "):\n"
+                          << feature_map << std::endl;
+            }
 
             Eigen::Map<Eigen::RowVectorXd>(output_batch.row(b).data() + f * output_size * output_size, output_size * output_size) = Eigen::Map<Eigen::RowVectorXd>(feature_map.data(), feature_map.size());
         }
@@ -82,6 +90,7 @@ Eigen::MatrixXd ConvolutionLayer::forward(const Eigen::MatrixXd &input_batch)
     MaxPoolingLayer::setInputSize(output_size);
     MaxPoolingLayer::setInputDepth(filters);
 
+    debugging = true;
     return output_batch;
 }
 
