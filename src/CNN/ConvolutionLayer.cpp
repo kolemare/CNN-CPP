@@ -4,8 +4,9 @@
 #include <stdexcept>
 #include <cmath>
 
+// Constructor with He initialization and thread pool initialization
 ConvolutionLayer::ConvolutionLayer(int filters, int kernel_size, int input_depth, int stride, int padding, const Eigen::VectorXd &biases)
-    : filters(filters), kernel_size(kernel_size), input_depth(input_depth), stride(stride), padding(padding), biases(biases)
+    : filters(filters), kernel_size(kernel_size), input_depth(input_depth), stride(stride), padding(padding), biases(biases), forwardThreadPool(std::thread::hardware_concurrency())
 {
     kernels.resize(filters);
     std::random_device rd;
@@ -35,6 +36,7 @@ ConvolutionLayer::ConvolutionLayer(int filters, int kernel_size, int input_depth
     }
 }
 
+// Forward pass with parallel processing
 Eigen::MatrixXd ConvolutionLayer::forward(const Eigen::MatrixXd &input_batch)
 {
     int batch_size = input_batch.rows();
@@ -47,37 +49,17 @@ Eigen::MatrixXd ConvolutionLayer::forward(const Eigen::MatrixXd &input_batch)
     int output_size = (input_size - kernel_size + 2 * padding) / stride + 1;
     Eigen::MatrixXd output_batch(batch_size, filters * output_size * output_size);
 
+    std::vector<std::future<void>> futures;
+
     for (int b = 0; b < batch_size; ++b)
     {
-        Eigen::Map<const Eigen::MatrixXd> input(input_batch.row(b).data(), input_size, input_size * input_depth);
+        futures.emplace_back(forwardThreadPool.enqueue([this, &output_batch, &input_batch, b, output_size, input_size]
+                                                       { processBatch(output_batch, input_batch, b); }));
+    }
 
-        for (int f = 0; f < filters; ++f)
-        {
-            Eigen::MatrixXd feature_map = Eigen::MatrixXd::Zero(output_size, output_size);
-
-            for (int d = 0; d < input_depth; ++d)
-            {
-                Eigen::MatrixXd input_slice = input.middleCols(d * input_size, input_size);
-                Eigen::MatrixXd padded_input = padInput(input_slice, padding);
-
-                for (int i = 0; i < output_size; ++i)
-                {
-                    for (int j = 0; j < output_size; ++j)
-                    {
-                        int row_start = i * stride;
-                        int col_start = j * stride;
-                        double conv_sum = convolve(padded_input, kernels[f][d], row_start, col_start);
-                        feature_map(i, j) += conv_sum;
-                    }
-                }
-            }
-
-            // Apply biases
-            feature_map.array() += biases(f);
-
-            // Copy feature_map to output_batch
-            output_batch.block(b, f * output_size * output_size, 1, output_size * output_size) = Eigen::Map<Eigen::RowVectorXd>(feature_map.data(), feature_map.size());
-        }
+    for (auto &f : futures)
+    {
+        f.get();
     }
 
     // Update the static variables in MaxPoolingLayer
@@ -85,6 +67,42 @@ Eigen::MatrixXd ConvolutionLayer::forward(const Eigen::MatrixXd &input_batch)
     MaxPoolingLayer::setInputDepth(filters);
 
     return output_batch;
+}
+
+// Method to process each batch
+void ConvolutionLayer::processBatch(Eigen::MatrixXd &output_batch, const Eigen::MatrixXd &input_batch, int batch_index)
+{
+    int input_size = std::sqrt(input_batch.cols() / input_depth);
+    int output_size = (input_size - kernel_size + 2 * padding) / stride + 1;
+    Eigen::Map<const Eigen::MatrixXd> input(input_batch.row(batch_index).data(), input_size, input_size * input_depth);
+
+    for (int f = 0; f < filters; ++f)
+    {
+        Eigen::MatrixXd feature_map = Eigen::MatrixXd::Zero(output_size, output_size);
+
+        for (int d = 0; d < input_depth; ++d)
+        {
+            Eigen::MatrixXd input_slice = input.middleCols(d * input_size, input_size);
+            Eigen::MatrixXd padded_input = padInput(input_slice, padding);
+
+            for (int i = 0; i < output_size; ++i)
+            {
+                for (int j = 0; j < output_size; ++j)
+                {
+                    int row_start = i * stride;
+                    int col_start = j * stride;
+                    double conv_sum = convolve(padded_input, kernels[f][d], row_start, col_start);
+                    feature_map(i, j) += conv_sum;
+                }
+            }
+        }
+
+        // Apply biases
+        feature_map.array() += biases(f);
+
+        // Copy feature_map to output_batch
+        output_batch.block(batch_index, f * output_size * output_size, 1, output_size * output_size) = Eigen::Map<Eigen::RowVectorXd>(feature_map.data(), feature_map.size());
+    }
 }
 
 Eigen::MatrixXd ConvolutionLayer::backward(const Eigen::MatrixXd &d_output_batch, const Eigen::MatrixXd &input_batch, double learning_rate)

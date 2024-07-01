@@ -16,6 +16,7 @@ enable_testing()
 # Include project headers
 include_directories(include/Image)
 include_directories(include/CNN)
+include_directories(include/ThreadPool)
 
 # Build OpenCV as a submodule
 include(ExternalProject)
@@ -36,6 +37,7 @@ link_directories(${INSTALL_DIR}/lib)
 # Source files
 file(GLOB_RECURSE IMAGE_SOURCES "src/Image/*.cpp")
 file(GLOB_RECURSE CNN_SOURCES "src/CNN/*.cpp")
+file(GLOB_RECURSE TP_SOURCES "src/ThreadPool/*.cpp")
 
 # Include main.cpp directly
 set(MAIN_SOURCE src/main.cpp)
@@ -44,7 +46,7 @@ set(MAIN_SOURCE src/main.cpp)
 file(GLOB_RECURSE TEST_SOURCES "tests/*.cpp")
 
 # Create the executable for the main application
-add_executable(CNN_CPP ${IMAGE_SOURCES} ${CNN_SOURCES} ${MAIN_SOURCE} ${TEST_SOURCES})
+add_executable(CNN_CPP ${IMAGE_SOURCES} ${TP_SOURCES} ${CNN_SOURCES} ${MAIN_SOURCE} ${TEST_SOURCES})
 
 # Link Eigen, GoogleTest, and OpenCV libraries
 target_link_libraries(CNN_CPP Eigen3::Eigen gtest gtest_main

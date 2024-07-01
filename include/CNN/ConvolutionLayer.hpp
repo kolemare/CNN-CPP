@@ -6,6 +6,7 @@
 #include <Eigen/Dense>
 #include "Layer.hpp"
 #include "MaxPoolingLayer.hpp"
+#include "ThreadPool.hpp"
 
 class ConvolutionLayer : public Layer
 {
@@ -34,6 +35,11 @@ private:
     int input_depth;
     int stride;
     int padding;
+
+    // Thread pool for parallel processing
+    ThreadPool forwardThreadPool;
+
+    void processBatch(Eigen::MatrixXd &output_batch, const Eigen::MatrixXd &input_batch, int batch_index);
 };
 
 #endif // CONVOLUTIONLAYER_HPP
