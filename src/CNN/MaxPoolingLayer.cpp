@@ -31,6 +31,16 @@ int MaxPoolingLayer::getInputDepth()
     return input_depth;
 }
 
+int MaxPoolingLayer::getPoolSize()
+{
+    return pool_size;
+}
+
+int MaxPoolingLayer::getStride()
+{
+    return stride;
+}
+
 Eigen::MatrixXd MaxPoolingLayer::forward(const Eigen::MatrixXd &input_batch)
 {
     int batch_size = input_batch.rows();

@@ -4,6 +4,16 @@
 AveragePoolingLayer::AveragePoolingLayer(int pool_size, int stride)
     : pool_size(pool_size), stride(stride) {}
 
+int AveragePoolingLayer::getPoolSize()
+{
+    return pool_size;
+}
+
+int AveragePoolingLayer::getStride()
+{
+    return stride;
+}
+
 Eigen::MatrixXd AveragePoolingLayer::forward(const Eigen::MatrixXd &input_batch)
 {
     int batch_size = input_batch.rows();

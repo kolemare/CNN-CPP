@@ -8,10 +8,30 @@
 #include "MaxPoolingLayer.hpp"
 #include "ThreadPool.hpp"
 
+enum class ConvKernelInitialization
+{
+    HE,
+    XAVIER,
+    RANDOM_NORMAL
+};
+
+enum class ConvBiasInitialization
+{
+    ZERO,
+    RANDOM_NORMAL,
+    NONE
+};
+
 class ConvolutionLayer : public Layer
 {
 public:
-    ConvolutionLayer(int filters, int kernel_size, int input_depth, int stride, int padding, const Eigen::VectorXd &biases);
+    ConvolutionLayer(int filters, int kernel_size, int stride, int padding, ConvKernelInitialization kernel_init = ConvKernelInitialization::HE, ConvBiasInitialization bias_init = ConvBiasInitialization::ZERO);
+
+    void setInputDepth(int depth);
+    int getFilters() const;
+    int getKernelSize() const;
+    int getPadding() const;
+    int getStride() const;
 
     Eigen::MatrixXd forward(const Eigen::MatrixXd &input_batch) override;
     Eigen::MatrixXd backward(const Eigen::MatrixXd &d_output_batch, const Eigen::MatrixXd &input_batch, double learning_rate) override;
@@ -40,6 +60,8 @@ private:
     ThreadPool forwardThreadPool;
 
     void processBatch(Eigen::MatrixXd &output_batch, const Eigen::MatrixXd &input_batch, int batch_index);
+    void initializeKernels(ConvKernelInitialization kernel_init);
+    void initializeBiases(ConvBiasInitialization bias_init);
 };
 
 #endif // CONVOLUTIONLAYER_HPP

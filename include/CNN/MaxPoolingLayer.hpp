@@ -18,6 +18,8 @@ public:
     static void setInputDepth(int depth);
     static int getInputSize();
     static int getInputDepth();
+    int getPoolSize();
+    int getStride();
 
 private:
     int pool_size;

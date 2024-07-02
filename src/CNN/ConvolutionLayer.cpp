@@ -4,14 +4,59 @@
 #include <stdexcept>
 #include <cmath>
 
-// Constructor with He initialization and thread pool initialization
-ConvolutionLayer::ConvolutionLayer(int filters, int kernel_size, int input_depth, int stride, int padding, const Eigen::VectorXd &biases)
-    : filters(filters), kernel_size(kernel_size), input_depth(input_depth), stride(stride), padding(padding), biases(biases), forwardThreadPool(std::thread::hardware_concurrency())
+// Constructor with specified kernel and bias initializations
+ConvolutionLayer::ConvolutionLayer(int filters, int kernel_size, int stride, int padding, ConvKernelInitialization kernel_init, ConvBiasInitialization bias_init)
+    : filters(filters), kernel_size(kernel_size), input_depth(0), stride(stride), padding(padding), forwardThreadPool(std::thread::hardware_concurrency())
+{
+    initializeKernels(kernel_init);
+    initializeBiases(bias_init);
+}
+
+void ConvolutionLayer::setInputDepth(int depth)
+{
+    input_depth = depth;
+    initializeKernels(ConvKernelInitialization::HE); // Reinitialize kernels with new input depth
+}
+
+int ConvolutionLayer::getStride() const
+{
+    return stride;
+}
+
+int ConvolutionLayer::getFilters() const
+{
+    return filters;
+}
+
+int ConvolutionLayer::getKernelSize() const
+{
+    return kernel_size;
+}
+
+int ConvolutionLayer::getPadding() const
+{
+    return padding;
+}
+
+void ConvolutionLayer::initializeKernels(ConvKernelInitialization kernel_init)
 {
     kernels.resize(filters);
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::normal_distribution<> dis(0, std::sqrt(2.0 / (input_depth * kernel_size * kernel_size)));
+    std::normal_distribution<> dis;
+
+    switch (kernel_init)
+    {
+    case ConvKernelInitialization::HE:
+        dis = std::normal_distribution<>(0, std::sqrt(2.0 / (input_depth * kernel_size * kernel_size)));
+        break;
+    case ConvKernelInitialization::XAVIER:
+        dis = std::normal_distribution<>(0, std::sqrt(1.0 / (input_depth * kernel_size * kernel_size)));
+        break;
+    case ConvKernelInitialization::RANDOM_NORMAL:
+        dis = std::normal_distribution<>(0, 1.0);
+        break;
+    }
 
     for (int f = 0; f < filters; ++f)
     {
@@ -29,6 +74,31 @@ ConvolutionLayer::ConvolutionLayer(int filters, int kernel_size, int input_depth
             kernels[f][d] = kernel;
         }
     }
+}
+
+void ConvolutionLayer::initializeBiases(ConvBiasInitialization bias_init)
+{
+    biases.resize(filters);
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::normal_distribution<> bias_dis(0, 1.0); // Initialize outside of switch statement
+
+    switch (bias_init)
+    {
+    case ConvBiasInitialization::ZERO:
+        biases = Eigen::VectorXd::Zero(filters);
+        break;
+    case ConvBiasInitialization::RANDOM_NORMAL:
+        for (int i = 0; i < filters; ++i)
+        {
+            biases(i) = bias_dis(gen);
+        }
+        break;
+    case ConvBiasInitialization::NONE:
+        biases = Eigen::VectorXd::Zero(filters);
+        break;
+    }
+
     if (biases.size() != filters)
     {
         std::cerr << "Warning: Mismatch in biases size, initializing to zero.\n";

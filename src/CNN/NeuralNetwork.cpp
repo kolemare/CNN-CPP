@@ -5,12 +5,18 @@
 #include <numeric>
 #include <random>
 
-NeuralNetwork::NeuralNetwork() : flattenAdded(false) {}
+NeuralNetwork::NeuralNetwork() : flattenAdded(false), currentDepth(3) {}
 
-void NeuralNetwork::addConvolutionLayer(int filters, int kernel_size, int input_depth, int stride, int padding, const Eigen::VectorXd &biases)
+void NeuralNetwork::setImageSize(const int targetWidth, const int targetHeight)
 {
-    layers.push_back(std::make_shared<ConvolutionLayer>(filters, kernel_size, input_depth, stride, padding, biases));
-    std::cout << "Added Convolution Layer with " << filters << " filters, kernel size " << kernel_size << ", input depth " << input_depth << ", stride " << stride << ", padding " << padding << std::endl;
+    inputHeight = targetHeight;
+    inputWidth = targetWidth;
+}
+
+void NeuralNetwork::addConvolutionLayer(int filters, int kernel_size, int stride, int padding, ConvKernelInitialization kernel_init, ConvBiasInitialization bias_init)
+{
+    layers.push_back(std::make_shared<ConvolutionLayer>(filters, kernel_size, stride, padding, kernel_init, bias_init));
+    std::cout << "Added Convolution Layer with " << filters << " filters, kernel size " << kernel_size << ", stride " << stride << ", padding " << padding << std::endl;
 }
 
 void NeuralNetwork::addMaxPoolingLayer(int pool_size, int stride)
@@ -39,10 +45,10 @@ void NeuralNetwork::addFlattenLayer()
     }
 }
 
-void NeuralNetwork::addFullyConnectedLayer(int input_size, int output_size, std::unique_ptr<Optimizer> optimizer)
+void NeuralNetwork::addFullyConnectedLayer(int output_size, DenseWeightInitialization weight_init, DenseBiasInitialization bias_init)
 {
-    layers.push_back(std::make_shared<FullyConnectedLayer>(input_size, output_size, std::move(optimizer)));
-    std::cout << "Added Fully Connected Layer with input size " << input_size << ", output size " << output_size << std::endl;
+    layers.push_back(std::make_shared<FullyConnectedLayer>(output_size, weight_init, bias_init));
+    std::cout << "Added Fully Connected Layer with output size " << output_size << std::endl;
 }
 
 void NeuralNetwork::addActivationLayer(ActivationType type)
@@ -55,6 +61,50 @@ void NeuralNetwork::setLossFunction(LossType type)
 {
     lossFunction = LossFunction::create(type);
     std::cout << "Set Loss Function of type " << (int)type << std::endl;
+}
+
+void NeuralNetwork::compile(std::unique_ptr<Optimizer> optimizer)
+{
+    this->optimizer = std::move(optimizer);
+
+    int height = inputHeight;
+    int width = inputWidth;
+    int input_size = -1;
+
+    for (size_t i = 0; i < layers.size(); ++i)
+    {
+        if (auto conv_layer = dynamic_cast<ConvolutionLayer *>(layers[i].get()))
+        {
+            conv_layer->setInputDepth(currentDepth);
+            currentDepth = conv_layer->getFilters();
+
+            height = (height - conv_layer->getKernelSize() + 2 * conv_layer->getPadding()) / conv_layer->getStride() + 1;
+            width = (width - conv_layer->getKernelSize() + 2 * conv_layer->getPadding()) / conv_layer->getStride() + 1;
+        }
+        else if (auto pool_layer = dynamic_cast<MaxPoolingLayer *>(layers[i].get()))
+        {
+            height = (height - pool_layer->getPoolSize()) / pool_layer->getStride() + 1;
+            width = (width - pool_layer->getPoolSize()) / pool_layer->getStride() + 1;
+        }
+        else if (auto pool_layer = dynamic_cast<AveragePoolingLayer *>(layers[i].get()))
+        {
+            height = (height - pool_layer->getPoolSize()) / pool_layer->getStride() + 1;
+            width = (width - pool_layer->getPoolSize()) / pool_layer->getStride() + 1;
+        }
+        else if (auto fc_layer = dynamic_cast<FullyConnectedLayer *>(layers[i].get()))
+        {
+            if (input_size == -1)
+            {
+                throw std::runtime_error("Input size for FullyConnectedLayer cannot be determined.");
+            }
+            fc_layer->setInputSize(input_size);
+            input_size = fc_layer->getOutputSize();
+        }
+        else if (dynamic_cast<FlattenLayer *>(layers[i].get()))
+        {
+            input_size = height * width * currentDepth;
+        }
+    }
 }
 
 Eigen::MatrixXd NeuralNetwork::forward(const Eigen::MatrixXd &input)

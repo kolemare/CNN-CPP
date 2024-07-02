@@ -27,28 +27,33 @@ class NeuralNetwork
 public:
     NeuralNetwork();
 
-    void addConvolutionLayer(int filters, int kernel_size, int input_depth, int stride, int padding, const Eigen::VectorXd &biases);
+    void addConvolutionLayer(int filters, int kernel_size, int stride, int padding, ConvKernelInitialization kernel_init = ConvKernelInitialization::HE, ConvBiasInitialization bias_init = ConvBiasInitialization::ZERO);
     void addMaxPoolingLayer(int pool_size, int stride);
     void addAveragePoolingLayer(int pool_size, int stride);
     void addFlattenLayer();
-    void addFullyConnectedLayer(int input_size, int output_size, std::unique_ptr<Optimizer> optimizer);
+    void addFullyConnectedLayer(int output_size, DenseWeightInitialization weight_init = DenseWeightInitialization::XAVIER, DenseBiasInitialization bias_init = DenseBiasInitialization::ZERO);
     void addActivationLayer(ActivationType type);
     void setLossFunction(LossType type);
 
+    void compile(std::unique_ptr<Optimizer> optimizer);
     Eigen::MatrixXd forward(const Eigen::MatrixXd &input);
     void backward(const Eigen::MatrixXd &d_output, double learning_rate);
     void train(const ImageContainer &imageContainer, int epochs, double learning_rate, int batch_size, const std::vector<std::string> &categories);
     void evaluate(const ImageContainer &imageContainer, const std::vector<std::string> &categories);
+    void setImageSize(const int targetWidth, const int targetHeight);
 
 private:
     std::vector<std::shared_ptr<Layer>> layers;
     std::unique_ptr<LossFunction> lossFunction;
+    std::unique_ptr<Optimizer> optimizer;
     std::vector<Eigen::MatrixXd> layerInputs;
     bool flattenAdded;
-    int current_depth;
-    int input_size; // Assuming square input dimensions, can be modified to handle non-square inputs
+    int currentDepth;
+    int inputSize;
+    int inputHeight;
+    int inputWidth;
 
     void printMatrixSummary(const Eigen::MatrixXd &matrix, const std::string &layerType, PropagationType propagationType);
 };
 
-#endif
+#endif // NEURALNETWORK_HPP

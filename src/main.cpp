@@ -43,35 +43,86 @@ void tensorModel(const std::string &datasetPath)
 
     // Step 3: Create the neural network
     NeuralNetwork cnn;
+    cnn.setImageSize(targetWidth, targetHeight);
 
-    // Adding layers to the neural network
-    cnn.addConvolutionLayer(32, 3, 3, 1, 1, Eigen::VectorXd::Zero(32));
-    cnn.addActivationLayer(RELU);
-    cnn.addMaxPoolingLayer(2, 2);
+    // Step 4: Add layers to the neural network
 
-    cnn.addConvolutionLayer(32, 3, 32, 1, 1, Eigen::VectorXd::Zero(32));
-    cnn.addActivationLayer(RELU);
-    cnn.addMaxPoolingLayer(2, 2);
+    // Convolution Layer 1
+    int filters1 = 32;
+    int kernel_size1 = 3;
+    int stride1 = 1;
+    int padding1 = 1;
+    cnn.addConvolutionLayer(filters1, kernel_size1, stride1, padding1, ConvKernelInitialization::HE, ConvBiasInitialization::ZERO);
 
+    // Activation Layer 1
+    ActivationType activation1 = RELU;
+    cnn.addActivationLayer(activation1);
+
+    // Max Pooling Layer 1
+    int pool_size1 = 2;
+    int stride_pool1 = 2;
+    cnn.addMaxPoolingLayer(pool_size1, stride_pool1);
+
+    // Convolution Layer 2
+    int filters2 = 32;
+    int kernel_size2 = 3;
+    int stride2 = 1;
+    int padding2 = 1;
+    cnn.addConvolutionLayer(filters2, kernel_size2, stride2, padding2, ConvKernelInitialization::HE, ConvBiasInitialization::ZERO);
+
+    // Activation Layer 2
+    ActivationType activation2 = RELU;
+    cnn.addActivationLayer(activation2);
+
+    // Max Pooling Layer 2
+    int pool_size2 = 2;
+    int stride_pool2 = 2;
+    cnn.addMaxPoolingLayer(pool_size2, stride_pool2);
+
+    // Flatten Layer
     cnn.addFlattenLayer();
-    cnn.addFullyConnectedLayer(32 * 16 * 16, 128, std::make_unique<SGD>());
-    cnn.addActivationLayer(RELU);
-    cnn.addFullyConnectedLayer(128, 1, std::make_unique<SGD>());
-    cnn.addActivationLayer(SIGMOID);
+
+    // Fully Connected Layer 1
+    int fc_output_size1 = 128;
+    DenseWeightInitialization fc_weight_init1 = DenseWeightInitialization::HE;
+    DenseBiasInitialization fc_bias_init1 = DenseBiasInitialization::ZERO;
+    cnn.addFullyConnectedLayer(fc_output_size1, fc_weight_init1, fc_bias_init1);
+
+    // Activation Layer 3
+    ActivationType activation3 = RELU;
+    cnn.addActivationLayer(activation3);
+
+    // Fully Connected Layer 2
+    int fc_output_size2 = 1;
+    DenseWeightInitialization fc_weight_init2 = DenseWeightInitialization::HE;
+    DenseBiasInitialization fc_bias_init2 = DenseBiasInitialization::ZERO;
+    cnn.addFullyConnectedLayer(fc_output_size2, fc_weight_init2, fc_bias_init2);
+
+    // Activation Layer 4
+    ActivationType activation4 = SIGMOID;
+    cnn.addActivationLayer(activation4);
 
     // Setting loss function
-    cnn.setLossFunction(LossType::BINARY_CROSS_ENTROPY);
+    LossType loss_type = LossType::BINARY_CROSS_ENTROPY;
+    cnn.setLossFunction(loss_type);
+
+    // Compile the network with an optimizer
+    std::unique_ptr<Optimizer> optimizer = std::make_unique<SGD>();
+    cnn.compile(std::move(optimizer));
 
     // Categories for training and evaluation
     std::vector<std::string> categories = {"cats", "dogs"};
 
-    // Step 4: Train the neural network
-    cnn.train(container, 25, 0.001, 32, categories);
+    // Step 5: Train the neural network
+    int epochs = 25;
+    double learning_rate = 0.001;
+    int batch_size = 32;
+    cnn.train(container, epochs, learning_rate, batch_size, categories);
 
-    // Step 5: Evaluate the neural network
+    // Step 6: Evaluate the neural network
     cnn.evaluate(container, categories);
 
-    // Step 6: Making a single prediction
+    // Step 7: Making a single prediction
     std::string singleImagePath = "datasets/single_prediction/cat_or_dog_1.jpg";
     cv::Mat image = cv::imread(singleImagePath, cv::IMREAD_COLOR);
     if (image.empty())
@@ -80,10 +131,21 @@ void tensorModel(const std::string &datasetPath)
     }
 
     cv::resize(image, image, cv::Size(64, 64));
+
+    // Convert image to Eigen matrix
     Eigen::MatrixXd singleImageBatch(1, image.rows * image.cols * image.channels());
-    cv::Mat flatImage = image.reshape(1, 1);
-    Eigen::Map<Eigen::MatrixXd> eigenImage(flatImage.ptr<double>(), 1, image.rows * image.cols * image.channels());
-    singleImageBatch.row(0) = eigenImage;
+    for (int i = 0; i < image.rows; ++i)
+    {
+        for (int j = 0; j < image.cols; ++j)
+        {
+            for (int c = 0; c < image.channels(); ++c)
+            {
+                singleImageBatch(0, i * image.cols * image.channels() + j * image.channels() + c) = image.at<cv::Vec3b>(i, j)[c] / 255.0;
+            }
+        }
+    }
+
+    std::cout << "Input dimensions for prediction: " << singleImageBatch.rows() << "x" << singleImageBatch.cols() << std::endl;
 
     Eigen::MatrixXd prediction = cnn.forward(singleImageBatch);
     std::string result = prediction(0, 0) >= 0.5 ? "dog" : "cat";
