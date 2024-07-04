@@ -55,6 +55,7 @@ private:
     int input_depth;
     int stride;
     int padding;
+    std::mutex mutex;
 
     // Thread pool for parallel processing
     ThreadPool forwardThreadPool;

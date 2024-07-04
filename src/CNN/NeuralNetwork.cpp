@@ -188,11 +188,45 @@ void NeuralNetwork::printMatrixSummary(const Eigen::MatrixXd &matrix, const std:
 
 void NeuralNetwork::backward(const Eigen::MatrixXd &d_output, double learning_rate)
 {
+    std::cout << "-------------------------------------------------------------------" << std::endl;
+    printMatrixSummary(d_output, "OUTPUT", PropagationType::BACK);
+    std::cout << "-------------------------------------------------------------------" << std::endl;
+
     Eigen::MatrixXd d_input = d_output;
 
     for (int i = layers.size() - 1; i >= 0; --i)
     {
+        std::string layerType;
+        if (dynamic_cast<ConvolutionLayer *>(layers[i].get()))
+        {
+            layerType = "Convolution Layer";
+        }
+        else if (dynamic_cast<MaxPoolingLayer *>(layers[i].get()))
+        {
+            layerType = "Max Pooling Layer";
+        }
+        else if (dynamic_cast<AveragePoolingLayer *>(layers[i].get()))
+        {
+            layerType = "Average Pooling Layer";
+        }
+        else if (dynamic_cast<FlattenLayer *>(layers[i].get()))
+        {
+            layerType = "Flatten Layer";
+        }
+        else if (dynamic_cast<FullyConnectedLayer *>(layers[i].get()))
+        {
+            layerType = "Fully Connected Layer";
+        }
+        else if (dynamic_cast<ActivationLayer *>(layers[i].get()))
+        {
+            layerType = "Activation Layer";
+        }
+
         d_input = layers[i]->backward(d_input, layerInputs[i], learning_rate);
+
+        std::cout << "-------------------------------------------------------------------" << std::endl;
+        printMatrixSummary(d_input, layerType, PropagationType::BACK);
+        std::cout << "-------------------------------------------------------------------" << std::endl;
     }
 }
 

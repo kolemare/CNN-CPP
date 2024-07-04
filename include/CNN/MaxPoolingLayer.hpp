@@ -32,6 +32,10 @@ private:
 
     Eigen::MatrixXd maxPool(const Eigen::MatrixXd &input);
     Eigen::MatrixXd maxPoolBackward(const Eigen::MatrixXd &d_output, const Eigen::MatrixXd &input);
+
+    int memorized_input_size;
+    int memorized_input_depth;
+    int memorized_batch_size;
 };
 
 #endif

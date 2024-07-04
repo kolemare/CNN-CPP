@@ -171,7 +171,9 @@ void ConvolutionLayer::processBatch(Eigen::MatrixXd &output_batch, const Eigen::
         feature_map.array() += biases(f);
 
         // Copy feature_map to output_batch
+        mutex.lock();
         output_batch.block(batch_index, f * output_size * output_size, 1, output_size * output_size) = Eigen::Map<Eigen::RowVectorXd>(feature_map.data(), feature_map.size());
+        mutex.unlock();
     }
 }
 
@@ -210,14 +212,26 @@ Eigen::MatrixXd ConvolutionLayer::backward(const Eigen::MatrixXd &d_output_batch
                         {
                             for (int l = 0; l < kernel_size; ++l)
                             {
-                                d_kernels[f][d](k, l) += d_output_reshaped(i, j) * padded_input(row_start + k, col_start + l);
-                                d_input_slice(row_start + k, col_start + l) += d_output_reshaped(i, j) * kernels[f][d](k, l);
+                                int row_index = row_start + k;
+                                int col_index = col_start + l;
+
+                                if (row_index < padded_input.rows() && col_index < padded_input.cols())
+                                {
+                                    d_kernels[f][d](k, l) += d_output_reshaped(i, j) * padded_input(row_index, col_index);
+
+                                    if (row_index < d_input_slice.rows() && col_index < d_input_slice.cols())
+                                    {
+                                        d_input_slice(row_index, col_index) += d_output_reshaped(i, j) * kernels[f][d](k, l);
+                                    }
+                                }
                             }
                         }
                     }
                 }
+
                 Eigen::Map<Eigen::RowVectorXd>(d_input_batch.row(b).data() + d * input_size * input_size, input_size * input_size) = Eigen::Map<Eigen::RowVectorXd>(d_input_slice.data(), d_input_slice.size());
             }
+
             d_biases(f) += d_output_reshaped.sum();
         }
     }

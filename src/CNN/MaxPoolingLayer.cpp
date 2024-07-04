@@ -66,6 +66,11 @@ Eigen::MatrixXd MaxPoolingLayer::forward(const Eigen::MatrixXd &input_batch)
         throw std::invalid_argument("Invalid output size calculated, possibly due to incompatible pool size or stride.");
     }
 
+    // Memorize input dimensions for backward pass
+    memorized_input_size = input_size;
+    memorized_input_depth = input_depth;
+    memorized_batch_size = batch_size;
+
     Eigen::MatrixXd output_batch(batch_size, output_size * output_size * input_depth);
 
     max_indices.clear();
@@ -144,9 +149,9 @@ Eigen::MatrixXd MaxPoolingLayer::maxPool(const Eigen::MatrixXd &input)
 
 Eigen::MatrixXd MaxPoolingLayer::backward(const Eigen::MatrixXd &d_output_batch, const Eigen::MatrixXd &input_batch, double learning_rate)
 {
-    int batch_size = input_batch.rows();
-    int input_size = MaxPoolingLayer::input_size;
-    int input_depth = MaxPoolingLayer::input_depth;
+    int batch_size = memorized_batch_size;
+    int input_size = memorized_input_size;
+    int input_depth = memorized_input_depth;
     int output_size = (input_size - pool_size) / stride + 1;
 
     Eigen::MatrixXd d_input_batch = Eigen::MatrixXd::Zero(batch_size, input_size * input_size * input_depth);
