@@ -3,15 +3,12 @@
 #include <iostream>
 
 FullyConnectedLayer::FullyConnectedLayer(int output_size, DenseWeightInitialization weight_init, DenseBiasInitialization bias_init, unsigned int seed)
-    : output_size(output_size)
+    : output_size(output_size), weight_init(weight_init), bias_init(bias_init), seed(seed)
 {
     if (output_size <= 0)
     {
         throw std::invalid_argument("Output size must be a positive integer.");
     }
-
-    initializeWeights(weight_init, seed);
-    initializeBiases(bias_init);
 
     std::cout << "Initialized FullyConnectedLayer with Neurons: " << output_size << std::endl;
 }
@@ -24,11 +21,11 @@ void FullyConnectedLayer::setInputSize(int input_size)
     }
 
     this->input_size = input_size;
-    initializeWeights(DenseWeightInitialization::XAVIER, 42); // Default weight initialization
-    initializeBiases(DenseBiasInitialization::ZERO);          // Default bias initialization
+    initializeWeights();
+    initializeBiases();
 }
 
-void FullyConnectedLayer::initializeWeights(DenseWeightInitialization weight_init, unsigned int seed)
+void FullyConnectedLayer::initializeWeights()
 {
     std::default_random_engine generator(seed);
     std::normal_distribution<double> distribution;
@@ -46,11 +43,12 @@ void FullyConnectedLayer::initializeWeights(DenseWeightInitialization weight_ini
         break;
     }
 
+    weights.resize(output_size, input_size);
     weights = Eigen::MatrixXd(output_size, input_size).unaryExpr([&](double)
                                                                  { return distribution(generator); });
 }
 
-void FullyConnectedLayer::initializeBiases(DenseBiasInitialization bias_init)
+void FullyConnectedLayer::initializeBiases()
 {
     if (bias_init == DenseBiasInitialization::NONE)
     {
@@ -60,7 +58,7 @@ void FullyConnectedLayer::initializeBiases(DenseBiasInitialization bias_init)
 
     biases.resize(output_size);
 
-    std::default_random_engine generator(42); // Seed for bias initialization
+    std::default_random_engine generator(seed); // Seed for bias initialization
     std::normal_distribution<> bias_dis(0, 1.0);
 
     switch (bias_init)

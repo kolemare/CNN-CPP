@@ -44,8 +44,12 @@ private:
     Eigen::MatrixXd weights;
     Eigen::VectorXd biases;
 
-    void initializeWeights(DenseWeightInitialization weight_init, unsigned int seed);
-    void initializeBiases(DenseBiasInitialization bias_init);
+    DenseWeightInitialization weight_init;
+    DenseBiasInitialization bias_init;
+    unsigned int seed;
+
+    void initializeWeights();
+    void initializeBiases();
 };
 
 #endif // FULLYCONNECTEDLAYER_HPP
