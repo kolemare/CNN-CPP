@@ -311,7 +311,9 @@ void NeuralNetwork::backward(const Eigen::MatrixXd &d_output, double learning_ra
 void NeuralNetwork::printProgress(int epoch, int epochs, int batch, int totalBatches, std::chrono::steady_clock::time_point start)
 {
     if (progressLevel == ProgressLevel::None)
+    {
         return;
+    }
 
     auto now = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - start).count();
@@ -319,30 +321,59 @@ void NeuralNetwork::printProgress(int epoch, int epochs, int batch, int totalBat
     int barWidth = 50;
     int pos = static_cast<int>(barWidth * progress);
 
+    double timePerBatch = elapsed / static_cast<double>(batch + 1);
+    double remainingTime = (totalBatches - batch - 1) * timePerBatch;
+    double totalTime = elapsed + remainingTime;
+
+    double overallProgress = static_cast<double>(epoch * totalBatches + batch + 1) / (totalBatches * epochs);
+    int overallPos = static_cast<int>(barWidth * overallProgress);
+    double overallRemainingTime = (totalBatches * epochs - (epoch * totalBatches + batch + 1)) * timePerBatch;
+
     std::ostringstream oss;
-    oss << "\rEpoch " << epoch + 1 << " | Batch " << batch + 1 << "/" << totalBatches << "\n";
-    oss << "[";
+    oss << "-------------------------------------------------------------------" << std::endl;
+
+    std::ostringstream epochProgress;
+    epochProgress << "Epoch " << epoch + 1 << " | Batch " << batch + 1 << "/" << totalBatches << " [";
     for (int i = 0; i < barWidth; ++i)
     {
         if (i < pos)
-            oss << "=";
+            epochProgress << "=";
         else if (i == pos)
-            oss << ">";
+            epochProgress << ">";
         else
-            oss << " ";
+            epochProgress << " ";
     }
-    oss << "] " << int(progress * 100.0) << "%\n";
+    epochProgress << "] " << int(progress * 100.0) << "%\n";
+
+    oss << epochProgress.str();
+
+    std::ostringstream overallProgressLabel;
+    overallProgressLabel << "Overall Progress";
+    int labelLength = overallProgressLabel.str().length();
+
+    // Dynamically adjust the overall progress label length to match epoch progress length
+    std::string epochPrefix = "Epoch " + std::to_string(epoch + 1) + " | Batch " + std::to_string(batch + 1) + "/" + std::to_string(totalBatches);
+    while (overallProgressLabel.str().length() < epochPrefix.length())
+    {
+        overallProgressLabel << " ";
+    }
+
+    overallProgressLabel << " [";
+    for (int i = 0; i < barWidth; ++i)
+    {
+        if (i < overallPos)
+            overallProgressLabel << "=";
+        else if (i == overallPos)
+            overallProgressLabel << ">";
+        else
+            overallProgressLabel << " ";
+    }
+    overallProgressLabel << "] " << int(overallProgress * 100.0) << "%\n";
+
+    oss << overallProgressLabel.str();
 
     if (progressLevel == ProgressLevel::ProgressTime || progressLevel == ProgressLevel::Time)
     {
-        double timePerBatch = elapsed / static_cast<double>(batch + 1);
-        double remainingTime = (totalBatches - batch - 1) * timePerBatch;
-        double totalTime = elapsed + remainingTime;
-
-        double timePerEpoch = elapsed / static_cast<double>(batch + 1) * totalBatches;
-        double totalRemainingTime = (totalBatches - batch - 1) * timePerBatch + (epochs - epoch - 1) * timePerEpoch;
-        double overallTotalTime = elapsed + totalRemainingTime;
-
         auto formatTime = [](double seconds)
         {
             int h = static_cast<int>(seconds) / 3600;
@@ -355,13 +386,24 @@ void NeuralNetwork::printProgress(int epoch, int epochs, int batch, int totalBat
             return oss.str();
         };
 
+        double batchDuration = elapsed - (batch * timePerBatch);
         oss << "Elapsed: " << formatTime(elapsed) << "\n";
         oss << "ETA for current epoch: " << formatTime(remainingTime) << "\n";
-        oss << "Total time for current epoch: " << formatTime(totalTime) << "\n";
-        oss << "Estimated remaining time for all epochs: " << formatTime(totalRemainingTime) << "\n";
-        oss << "Overall estimated total time: " << formatTime(overallTotalTime) << "\n";
+        oss << "Duration of current batch: " << formatTime(batchDuration) << "\n";
+        oss << "ETA for overall progress: " << formatTime(overallRemainingTime) << "\n";
+
+        if (batch == 0) // Print only at the beginning of the first epoch
+        {
+            oss << "Total time for current epoch: " << formatTime(totalTime) << "\n";
+            if (epoch == 0)
+            {
+                double overallTotalTime = elapsed + overallRemainingTime;
+                oss << "Overall estimated total time: " << formatTime(overallTotalTime) << "\n";
+            }
+        }
     }
 
+    oss << "-------------------------------------------------------------------" << std::endl;
     std::cout << oss.str() << std::flush;
 }
 

@@ -57,10 +57,13 @@ private:
     int padding;
     std::mutex mutex;
 
-    // Thread pool for parallel processing
+    // Thread pools for parallel processing
     ThreadPool forwardThreadPool;
+    ThreadPool backwardThreadPool;
 
-    void processBatch(Eigen::MatrixXd &output_batch, const Eigen::MatrixXd &input_batch, int batch_index);
+    void processForwardBatch(Eigen::MatrixXd &output_batch, const Eigen::MatrixXd &input_batch, int batch_index);
+    void processBackwardBatch(const Eigen::MatrixXd &d_output_batch, const Eigen::MatrixXd &input_batch, Eigen::MatrixXd &d_input_batch,
+                              std::vector<std::vector<Eigen::MatrixXd>> &d_kernels, Eigen::VectorXd &d_biases, int batch_index, double learning_rate);
     void initializeKernels(ConvKernelInitialization kernel_init);
     void initializeBiases(ConvBiasInitialization bias_init);
 };
