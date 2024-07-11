@@ -83,7 +83,7 @@ void ImageLoader::loadImage(const std::string &imagePath, const std::string &cat
 
         processedImages++;
         int progress = (processedImages * 100) / totalImages;
-        // std::cout << "\rLoading images... " << progress << "%";
+        std::cout << "\rLoading images... " << progress << "%";
         std::cout.flush();
     }
     catch (const std::exception &e)

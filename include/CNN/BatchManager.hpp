@@ -9,10 +9,17 @@
 class BatchManager
 {
 public:
-    BatchManager(const ImageContainer &imageContainer, int batchSize, const std::vector<std::string> &categories);
+    enum class BatchType
+    {
+        Training,
+        Testing
+    };
+
+    BatchManager(const ImageContainer &imageContainer, int batchSize, const std::vector<std::string> &categories, BatchType batchType);
 
     void initializeBatches();
     bool getNextBatch(Eigen::MatrixXd &batchImages, Eigen::MatrixXd &batchLabels);
+    size_t getTotalBatches() const;
 
 private:
     const ImageContainer &imageContainer;
@@ -22,6 +29,7 @@ private:
     std::vector<std::string> allLabels;
     size_t currentBatchIndex;
     size_t totalBatches;
+    BatchType batchType;
 };
 
 #endif // BATCHMANAGER_HPP

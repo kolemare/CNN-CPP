@@ -9,8 +9,6 @@ FullyConnectedLayer::FullyConnectedLayer(int output_size, DenseWeightInitializat
     {
         throw std::invalid_argument("Output size must be a positive integer.");
     }
-
-    std::cout << "Initialized FullyConnectedLayer with Neurons: " << output_size << std::endl;
 }
 
 void FullyConnectedLayer::setInputSize(int input_size)

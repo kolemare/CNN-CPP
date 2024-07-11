@@ -2,8 +2,8 @@
 #include <algorithm>
 #include <random>
 
-BatchManager::BatchManager(const ImageContainer &imageContainer, int batchSize, const std::vector<std::string> &categories)
-    : imageContainer(imageContainer), batchSize(batchSize), categories(categories), currentBatchIndex(0)
+BatchManager::BatchManager(const ImageContainer &imageContainer, int batchSize, const std::vector<std::string> &categories, BatchType batchType)
+    : imageContainer(imageContainer), batchSize(batchSize), categories(categories), currentBatchIndex(0), batchType(batchType)
 {
     initializeBatches();
 }
@@ -12,14 +12,22 @@ void BatchManager::initializeBatches()
 {
     for (const auto &category : categories)
     {
-        auto trainingImages = imageContainer.getTrainingImagesByCategory(category);
-        allImages.insert(allImages.end(), trainingImages.begin(), trainingImages.end());
+        std::vector<std::shared_ptr<cv::Mat>> images;
+        std::vector<std::string> labels;
 
-        auto testImages = imageContainer.getTestImagesByCategory(category);
-        allImages.insert(allImages.end(), testImages.begin(), testImages.end());
+        if (batchType == BatchType::Training)
+        {
+            images = imageContainer.getTrainingImagesByCategory(category);
+            labels.insert(labels.end(), images.size(), category);
+        }
+        else if (batchType == BatchType::Testing)
+        {
+            images = imageContainer.getTestImagesByCategory(category);
+            labels.insert(labels.end(), images.size(), category);
+        }
 
-        allLabels.insert(allLabels.end(), trainingImages.size(), category);
-        allLabels.insert(allLabels.end(), testImages.size(), category);
+        allImages.insert(allImages.end(), images.begin(), images.end());
+        allLabels.insert(allLabels.end(), labels.begin(), labels.end());
     }
 
     // Shuffle images and labels
@@ -72,4 +80,9 @@ bool BatchManager::getNextBatch(Eigen::MatrixXd &batchImages, Eigen::MatrixXd &b
 
     currentBatchIndex++;
     return true;
+}
+
+size_t BatchManager::getTotalBatches() const
+{
+    return totalBatches;
 }

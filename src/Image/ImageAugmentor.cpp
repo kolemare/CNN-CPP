@@ -53,11 +53,11 @@ void ImageAugmentor::augmentImages(ImageContainer &container)
 
         processedTrainingImages++;
         int progress = (processedTrainingImages * 100) / trainingImagesCount;
-        // std::cout << "\rAugmenting training images... " << progress << "%" << std::flush;
+        std::cout << "\rAugmenting training images... " << progress << "%" << std::flush;
     }
 
-    std::cout << std::endl
-              << "Augmentation complete for train_set!" << std::endl;
+    std::cout << std::endl;
+    std::cout << "Augmentation complete for train_set!" << std::endl;
 
     for (auto &image : testImages)
     {
@@ -77,11 +77,11 @@ void ImageAugmentor::augmentImages(ImageContainer &container)
 
         processedTestImages++;
         int progress = (processedTestImages * 100) / testImagesCount;
-        // std::cout << "\rAugmenting test images... " << progress << "%" << std::flush;
+        std::cout << "\rAugmenting test images... " << progress << "%" << std::flush;
     }
 
-    std::cout << std::endl
-              << "Augmentation complete for test_set!" << std::endl;
+    std::cout << std::endl;
+    std::cout << "Augmentation complete for test_set!" << std::endl;
 }
 
 void ImageAugmentor::setZoomChance(float chance) { zoomChance = chance; }

@@ -4,8 +4,9 @@
 #include <algorithm>
 #include <numeric>
 #include <random>
+#include <chrono>
 
-NeuralNetwork::NeuralNetwork() : flattenAdded(false), currentDepth(3) {}
+NeuralNetwork::NeuralNetwork() : flattenAdded(false), currentDepth(3), logLevel(LogLevel::None), progressLevel(ProgressLevel::None) {}
 
 void NeuralNetwork::setImageSize(const int targetWidth, const int targetHeight)
 {
@@ -13,22 +14,41 @@ void NeuralNetwork::setImageSize(const int targetWidth, const int targetHeight)
     inputWidth = targetWidth;
 }
 
+void NeuralNetwork::setLogLevel(LogLevel level)
+{
+    logLevel = level;
+}
+
+void NeuralNetwork::setProgressLevel(ProgressLevel level)
+{
+    progressLevel = level;
+}
+
 void NeuralNetwork::addConvolutionLayer(int filters, int kernel_size, int stride, int padding, ConvKernelInitialization kernel_init, ConvBiasInitialization bias_init)
 {
     layers.push_back(std::make_shared<ConvolutionLayer>(filters, kernel_size, stride, padding, kernel_init, bias_init));
-    std::cout << "Added Convolution Layer with " << filters << " filters, kernel size " << kernel_size << ", stride " << stride << ", padding " << padding << std::endl;
+    if (logLevel == LogLevel::All)
+    {
+        std::cout << "Added Convolution Layer with " << filters << " filters, kernel size " << kernel_size << ", stride " << stride << ", padding " << padding << std::endl;
+    }
 }
 
 void NeuralNetwork::addMaxPoolingLayer(int pool_size, int stride)
 {
     layers.push_back(std::make_shared<MaxPoolingLayer>(pool_size, stride));
-    std::cout << "Added Max Pooling Layer with pool size " << pool_size << ", stride " << stride << std::endl;
+    if (logLevel == LogLevel::All)
+    {
+        std::cout << "Added Max Pooling Layer with pool size " << pool_size << ", stride " << stride << std::endl;
+    }
 }
 
 void NeuralNetwork::addAveragePoolingLayer(int pool_size, int stride)
 {
     layers.push_back(std::make_shared<AveragePoolingLayer>(pool_size, stride));
-    std::cout << "Added Average Pooling Layer with pool size " << pool_size << ", stride " << stride << std::endl;
+    if (logLevel == LogLevel::All)
+    {
+        std::cout << "Added Average Pooling Layer with pool size " << pool_size << ", stride " << stride << std::endl;
+    }
 }
 
 void NeuralNetwork::addFlattenLayer()
@@ -37,7 +57,10 @@ void NeuralNetwork::addFlattenLayer()
     {
         layers.push_back(std::make_shared<FlattenLayer>());
         flattenAdded = true;
-        std::cout << "Added Flatten Layer" << std::endl;
+        if (logLevel == LogLevel::All)
+        {
+            std::cout << "Added Flatten Layer" << std::endl;
+        }
     }
     else
     {
@@ -48,19 +71,28 @@ void NeuralNetwork::addFlattenLayer()
 void NeuralNetwork::addFullyConnectedLayer(int output_size, DenseWeightInitialization weight_init, DenseBiasInitialization bias_init)
 {
     layers.push_back(std::make_shared<FullyConnectedLayer>(output_size, weight_init, bias_init));
-    std::cout << "Added Fully Connected Layer with output size " << output_size << std::endl;
+    if (logLevel == LogLevel::All)
+    {
+        std::cout << "Added Fully Connected Layer with output size " << output_size << std::endl;
+    }
 }
 
 void NeuralNetwork::addActivationLayer(ActivationType type)
 {
     layers.push_back(std::make_shared<ActivationLayer>(type));
-    std::cout << "Added Activation Layer of type " << type << std::endl;
+    if (logLevel == LogLevel::All)
+    {
+        std::cout << "Added Activation Layer of type " << type << std::endl;
+    }
 }
 
 void NeuralNetwork::setLossFunction(LossType type)
 {
     lossFunction = LossFunction::create(type);
-    std::cout << "Set Loss Function of type " << (int)type << std::endl;
+    if (logLevel == LogLevel::All)
+    {
+        std::cout << "Set Loss Function of type " << (int)type << std::endl;
+    }
 }
 
 void NeuralNetwork::compile(std::unique_ptr<Optimizer> optimizer)
@@ -109,9 +141,13 @@ void NeuralNetwork::compile(std::unique_ptr<Optimizer> optimizer)
 
 Eigen::MatrixXd NeuralNetwork::forward(const Eigen::MatrixXd &input)
 {
-    std::cout << "-------------------------------------------------------------------" << std::endl;
-    printMatrixSummary(input, "INPUT", PropagationType::FORWARD);
-    std::cout << "-------------------------------------------------------------------" << std::endl;
+    if (logLevel == LogLevel::All || logLevel == LogLevel::LayerOutputs)
+    {
+        std::cout << "-------------------------------------------------------------------" << std::endl;
+        printMatrixSummary(input, "INPUT", PropagationType::FORWARD);
+        std::cout << "-------------------------------------------------------------------" << std::endl;
+    }
+
     Eigen::MatrixXd output = input;
     layerInputs.clear();
 
@@ -120,38 +156,66 @@ Eigen::MatrixXd NeuralNetwork::forward(const Eigen::MatrixXd &input)
         layerInputs.push_back(output);
         output = layers[i]->forward(output);
 
-        std::string layerType;
-        if (dynamic_cast<ConvolutionLayer *>(layers[i].get()))
+        if (logLevel == LogLevel::All || logLevel == LogLevel::LayerOutputs)
         {
-            layerType = "Convolution Layer";
-        }
-        else if (dynamic_cast<MaxPoolingLayer *>(layers[i].get()))
-        {
-            layerType = "Max Pooling Layer";
-        }
-        else if (dynamic_cast<AveragePoolingLayer *>(layers[i].get()))
-        {
-            layerType = "Average Pooling Layer";
-        }
-        else if (dynamic_cast<FlattenLayer *>(layers[i].get()))
-        {
-            layerType = "Flatten Layer";
-        }
-        else if (dynamic_cast<FullyConnectedLayer *>(layers[i].get()))
-        {
-            layerType = "Fully Connected Layer";
-        }
-        else if (dynamic_cast<ActivationLayer *>(layers[i].get()))
-        {
-            layerType = "Activation Layer";
-        }
+            std::string layerType;
+            if (dynamic_cast<ConvolutionLayer *>(layers[i].get()))
+            {
+                layerType = "Convolution Layer";
+            }
+            else if (dynamic_cast<MaxPoolingLayer *>(layers[i].get()))
+            {
+                layerType = "Max Pooling Layer";
+            }
+            else if (dynamic_cast<AveragePoolingLayer *>(layers[i].get()))
+            {
+                layerType = "Average Pooling Layer";
+            }
+            else if (dynamic_cast<FlattenLayer *>(layers[i].get()))
+            {
+                layerType = "Flatten Layer";
+            }
+            else if (dynamic_cast<FullyConnectedLayer *>(layers[i].get()))
+            {
+                layerType = "Fully Connected Layer";
+            }
+            else if (dynamic_cast<ActivationLayer *>(layers[i].get()))
+            {
+                layerType = "Activation Layer";
+            }
 
-        std::cout << "-------------------------------------------------------------------" << std::endl;
-        printMatrixSummary(output, layerType, PropagationType::FORWARD);
-        std::cout << "-------------------------------------------------------------------" << std::endl;
+            std::cout << "-------------------------------------------------------------------" << std::endl;
+            if (logLevel == LogLevel::All)
+            {
+                printFullMatrix(output, layerType, PropagationType::FORWARD);
+            }
+            else
+            {
+                printMatrixSummary(output, layerType, PropagationType::FORWARD);
+            }
+            std::cout << "-------------------------------------------------------------------" << std::endl;
+        }
     }
 
     return output;
+}
+
+void NeuralNetwork::printFullMatrix(const Eigen::MatrixXd &matrix, const std::string &layerType, PropagationType propagationType)
+{
+    switch (propagationType)
+    {
+    case PropagationType::FORWARD:
+        std::cout << layerType << " Forward pass:\n";
+        break;
+
+    case PropagationType::BACK:
+        std::cout << layerType << " Back pass:\n";
+        break;
+
+    default:
+        break;
+    }
+    std::cout << matrix << std::endl;
 }
 
 void NeuralNetwork::printMatrixSummary(const Eigen::MatrixXd &matrix, const std::string &layerType, PropagationType propagationType)
@@ -163,6 +227,7 @@ void NeuralNetwork::printMatrixSummary(const Eigen::MatrixXd &matrix, const std:
     double zeroPercentage = (matrix.array() == 0).count() / static_cast<double>(matrix.size()) * 100.0;
     double negativeCount = (matrix.array() < 0).count();
     double positiveCount = (matrix.array() > 0).count();
+
     switch (propagationType)
     {
     case PropagationType::FORWARD:
@@ -188,9 +253,12 @@ void NeuralNetwork::printMatrixSummary(const Eigen::MatrixXd &matrix, const std:
 
 void NeuralNetwork::backward(const Eigen::MatrixXd &d_output, double learning_rate)
 {
-    std::cout << "-------------------------------------------------------------------" << std::endl;
-    printMatrixSummary(d_output, "OUTPUT", PropagationType::BACK);
-    std::cout << "-------------------------------------------------------------------" << std::endl;
+    if (logLevel == LogLevel::All || logLevel == LogLevel::LayerOutputs)
+    {
+        std::cout << "-------------------------------------------------------------------" << std::endl;
+        printMatrixSummary(d_output, "OUTPUT", PropagationType::BACK);
+        std::cout << "-------------------------------------------------------------------" << std::endl;
+    }
 
     Eigen::MatrixXd d_input = d_output;
 
@@ -224,10 +292,77 @@ void NeuralNetwork::backward(const Eigen::MatrixXd &d_output, double learning_ra
 
         d_input = layers[i]->backward(d_input, layerInputs[i], learning_rate);
 
-        std::cout << "-------------------------------------------------------------------" << std::endl;
-        printMatrixSummary(d_input, layerType, PropagationType::BACK);
-        std::cout << "-------------------------------------------------------------------" << std::endl;
+        if (logLevel == LogLevel::All || logLevel == LogLevel::LayerOutputs)
+        {
+            std::cout << "-------------------------------------------------------------------" << std::endl;
+            if (logLevel == LogLevel::All)
+            {
+                printFullMatrix(d_input, layerType, PropagationType::BACK);
+            }
+            else
+            {
+                printMatrixSummary(d_input, layerType, PropagationType::BACK);
+            }
+            std::cout << "-------------------------------------------------------------------" << std::endl;
+        }
     }
+}
+
+void NeuralNetwork::printProgress(int epoch, int epochs, int batch, int totalBatches, std::chrono::steady_clock::time_point start)
+{
+    if (progressLevel == ProgressLevel::None)
+        return;
+
+    auto now = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - start).count();
+    double progress = static_cast<double>(batch + 1) / totalBatches;
+    int barWidth = 50;
+    int pos = static_cast<int>(barWidth * progress);
+
+    std::ostringstream oss;
+    oss << "\rEpoch " << epoch + 1 << " | Batch " << batch + 1 << "/" << totalBatches << "\n";
+    oss << "[";
+    for (int i = 0; i < barWidth; ++i)
+    {
+        if (i < pos)
+            oss << "=";
+        else if (i == pos)
+            oss << ">";
+        else
+            oss << " ";
+    }
+    oss << "] " << int(progress * 100.0) << "%\n";
+
+    if (progressLevel == ProgressLevel::ProgressTime || progressLevel == ProgressLevel::Time)
+    {
+        double timePerBatch = elapsed / static_cast<double>(batch + 1);
+        double remainingTime = (totalBatches - batch - 1) * timePerBatch;
+        double totalTime = elapsed + remainingTime;
+
+        double timePerEpoch = elapsed / static_cast<double>(batch + 1) * totalBatches;
+        double totalRemainingTime = (totalBatches - batch - 1) * timePerBatch + (epochs - epoch - 1) * timePerEpoch;
+        double overallTotalTime = elapsed + totalRemainingTime;
+
+        auto formatTime = [](double seconds)
+        {
+            int h = static_cast<int>(seconds) / 3600;
+            int m = (static_cast<int>(seconds) % 3600) / 60;
+            int s = static_cast<int>(seconds) % 60;
+            std::ostringstream oss;
+            oss << std::setw(2) << std::setfill('0') << h << "H:"
+                << std::setw(2) << std::setfill('0') << m << "M:"
+                << std::setw(2) << std::setfill('0') << s << "S";
+            return oss.str();
+        };
+
+        oss << "Elapsed: " << formatTime(elapsed) << "\n";
+        oss << "ETA for current epoch: " << formatTime(remainingTime) << "\n";
+        oss << "Total time for current epoch: " << formatTime(totalTime) << "\n";
+        oss << "Estimated remaining time for all epochs: " << formatTime(totalRemainingTime) << "\n";
+        oss << "Overall estimated total time: " << formatTime(overallTotalTime) << "\n";
+    }
+
+    std::cout << oss.str() << std::flush;
 }
 
 void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, double learning_rate, int batch_size, const std::vector<std::string> &categories)
@@ -237,11 +372,16 @@ void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, doub
         throw std::runtime_error("Loss function must be set before training.");
     }
 
-    BatchManager batchManager(imageContainer, batch_size, categories);
+    BatchManager batchManager(imageContainer, batch_size, categories, BatchManager::BatchType::Training);
+    std::cout << "Training started..." << std::endl;
 
     for (int epoch = 0; epoch < epochs; ++epoch)
     {
         Eigen::MatrixXd batch_input, batch_label;
+        int totalBatches = batchManager.getTotalBatches();
+        auto start = std::chrono::steady_clock::now();
+        int batchCounter = 0;
+
         while (batchManager.getNextBatch(batch_input, batch_label))
         {
             // Forward pass
@@ -250,9 +390,17 @@ void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, doub
             // Compute loss and backward pass
             Eigen::MatrixXd d_output = lossFunction->derivative(predictions, batch_label);
             backward(d_output, learning_rate);
+
+            // Print progress
+            printProgress(epoch, epochs, batchCounter, totalBatches, start);
+            batchCounter++;
         }
 
-        std::cout << "Epoch " << epoch + 1 << " complete." << std::endl;
+        std::cout << std::endl
+                  << "Epoch " << epoch + 1 << " complete." << std::endl;
+
+        // Perform evaluation after each epoch
+        evaluate(imageContainer, categories);
     }
 }
 
@@ -263,7 +411,7 @@ void NeuralNetwork::evaluate(const ImageContainer &imageContainer, const std::ve
         throw std::runtime_error("Loss function must be set before evaluation.");
     }
 
-    BatchManager batchManager(imageContainer, imageContainer.getTestImages().size(), categories);
+    BatchManager batchManager(imageContainer, imageContainer.getTestImages().size(), categories, BatchManager::BatchType::Testing);
     Eigen::MatrixXd batch_input, batch_label;
 
     double total_loss = 0.0;

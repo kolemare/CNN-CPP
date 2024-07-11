@@ -86,10 +86,8 @@ Eigen::MatrixXd ActivationLayer::leakyRelu(const Eigen::MatrixXd &input_batch)
 
 Eigen::MatrixXd ActivationLayer::sigmoid(const Eigen::MatrixXd &input_batch)
 {
-    // std::cout << "Sigmoid input: " << input_batch << std::endl;
     Eigen::MatrixXd sig = input_batch.unaryExpr([](double x)
                                                 { return 1.0 / (1.0 + std::exp(-x)); });
-    // std::cout << "Sigmoid output: " << sig << std::endl;
     return sig;
 }
 
@@ -128,9 +126,7 @@ Eigen::MatrixXd ActivationLayer::leakyRelu_derivative(const Eigen::MatrixXd &inp
 Eigen::MatrixXd ActivationLayer::sigmoid_derivative(const Eigen::MatrixXd &input_batch)
 {
     Eigen::MatrixXd sig = sigmoid(input_batch);
-    // std::cout << "Sigmoid (for derivative): " << sig << std::endl;
     Eigen::MatrixXd derivative = sig.cwiseProduct(Eigen::MatrixXd::Ones(sig.rows(), sig.cols()) - sig);
-    // std::cout << "Sigmoid derivative: " << derivative << std::endl;
     return derivative;
 }
 

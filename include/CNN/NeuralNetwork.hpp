@@ -16,6 +16,21 @@
 #include "FullyConnectedLayer.hpp"
 #include "ActivationLayer.hpp"
 
+enum class LogLevel
+{
+    None,
+    LayerOutputs,
+    All
+};
+
+enum class ProgressLevel
+{
+    None,
+    Time,
+    Progress,
+    ProgressTime
+};
+
 enum PropagationType
 {
     FORWARD,
@@ -34,6 +49,8 @@ public:
     void addFullyConnectedLayer(int output_size, DenseWeightInitialization weight_init = DenseWeightInitialization::XAVIER, DenseBiasInitialization bias_init = DenseBiasInitialization::ZERO);
     void addActivationLayer(ActivationType type);
     void setLossFunction(LossType type);
+    void setLogLevel(LogLevel level);
+    void setProgressLevel(ProgressLevel level);
 
     void compile(std::unique_ptr<Optimizer> optimizer);
     Eigen::MatrixXd forward(const Eigen::MatrixXd &input);
@@ -52,8 +69,12 @@ private:
     int inputSize;
     int inputHeight;
     int inputWidth;
+    LogLevel logLevel;
+    ProgressLevel progressLevel;
 
     void printMatrixSummary(const Eigen::MatrixXd &matrix, const std::string &layerType, PropagationType propagationType);
+    void printFullMatrix(const Eigen::MatrixXd &matrix, const std::string &layerType, PropagationType propagationType);
+    void printProgress(int epoch, int epochs, int batch, int totalBatches, std::chrono::steady_clock::time_point start);
 };
 
 #endif // NEURALNETWORK_HPP

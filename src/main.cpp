@@ -45,6 +45,10 @@ void tensorModel(const std::string &datasetPath)
     NeuralNetwork cnn;
     cnn.setImageSize(targetWidth, targetHeight);
 
+    // Set log level and progress level
+    cnn.setLogLevel(LogLevel::None);
+    cnn.setProgressLevel(ProgressLevel::ProgressTime);
+
     // Step 4: Add layers to the neural network
 
     // Convolution Layer 1
@@ -106,8 +110,14 @@ void tensorModel(const std::string &datasetPath)
     LossType loss_type = LossType::BINARY_CROSS_ENTROPY;
     cnn.setLossFunction(loss_type);
 
+    // Adam parameters
+    std::unordered_map<std::string, double> adam_params = {
+        {"beta1", 0.9},
+        {"beta2", 0.999},
+        {"epsilon", 1e-8}};
+
     // Compile the network with an optimizer
-    std::unique_ptr<Optimizer> optimizer = std::make_unique<SGD>();
+    std::unique_ptr<Optimizer> optimizer = Optimizer::create(Optimizer::Type::Adam, adam_params);
     cnn.compile(std::move(optimizer));
 
     // Categories for training and evaluation
