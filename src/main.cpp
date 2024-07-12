@@ -33,11 +33,11 @@ void tensorModel(const std::string &datasetPath)
     ImageAugmentor augmentor(rescaleFactor, zoomFactor, horizontalFlipFlag, verticalFlipFlag, gaussianNoiseStdDev, gaussianBlurKernelSize, targetWidth, targetHeight);
 
     // Set augmentation chances
-    augmentor.setZoomChance(0.3f);
-    augmentor.setHorizontalFlipChance(0.3f);
-    augmentor.setVerticalFlipChance(0.3f);
-    augmentor.setGaussianNoiseChance(0.3f);
-    augmentor.setGaussianBlurChance(0.3f);
+    augmentor.setZoomChance(0.0f);
+    augmentor.setHorizontalFlipChance(0.0f);
+    augmentor.setVerticalFlipChance(0.0f);
+    augmentor.setGaussianNoiseChance(0.0f);
+    augmentor.setGaussianBlurChance(0.0f);
 
     augmentor.augmentImages(container);
 
@@ -56,7 +56,7 @@ void tensorModel(const std::string &datasetPath)
     int kernel_size1 = 3;
     int stride1 = 1;
     int padding1 = 1;
-    cnn.addConvolutionLayer(filters1, kernel_size1, stride1, padding1, ConvKernelInitialization::HE, ConvBiasInitialization::ZERO);
+    cnn.addConvolutionLayer(filters1, kernel_size1, stride1, padding1, ConvKernelInitialization::HE, ConvBiasInitialization::RANDOM_NORMAL);
 
     // Activation Layer 1
     ActivationType activation1 = RELU;
@@ -72,7 +72,7 @@ void tensorModel(const std::string &datasetPath)
     int kernel_size2 = 3;
     int stride2 = 1;
     int padding2 = 1;
-    cnn.addConvolutionLayer(filters2, kernel_size2, stride2, padding2, ConvKernelInitialization::HE, ConvBiasInitialization::ZERO);
+    cnn.addConvolutionLayer(filters2, kernel_size2, stride2, padding2, ConvKernelInitialization::HE, ConvBiasInitialization::RANDOM_NORMAL);
 
     // Activation Layer 2
     ActivationType activation2 = RELU;
@@ -89,7 +89,7 @@ void tensorModel(const std::string &datasetPath)
     // Fully Connected Layer 1
     int fc_output_size1 = 128;
     DenseWeightInitialization fc_weight_init1 = DenseWeightInitialization::HE;
-    DenseBiasInitialization fc_bias_init1 = DenseBiasInitialization::ZERO;
+    DenseBiasInitialization fc_bias_init1 = DenseBiasInitialization::RANDOM_NORMAL;
     cnn.addFullyConnectedLayer(fc_output_size1, fc_weight_init1, fc_bias_init1);
 
     // Activation Layer 3
@@ -99,7 +99,7 @@ void tensorModel(const std::string &datasetPath)
     // Fully Connected Layer 2
     int fc_output_size2 = 1;
     DenseWeightInitialization fc_weight_init2 = DenseWeightInitialization::HE;
-    DenseBiasInitialization fc_bias_init2 = DenseBiasInitialization::ZERO;
+    DenseBiasInitialization fc_bias_init2 = DenseBiasInitialization::RANDOM_NORMAL;
     cnn.addFullyConnectedLayer(fc_output_size2, fc_weight_init2, fc_bias_init2);
 
     // Activation Layer 4
