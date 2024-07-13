@@ -74,6 +74,8 @@ void ConvolutionLayer::initializeKernels(ConvKernelInitialization kernel_init)
                 }
             }
             kernels[f][d] = kernel;
+            std::cout << "Filter " << f << ", Depth " << d << " kernel (first 3x3 block):\n"
+                      << kernel.block(0, 0, std::min(3, static_cast<int>(kernel.rows())), std::min(3, static_cast<int>(kernel.cols()))) << " ..." << std::endl;
         }
     }
 }
@@ -106,6 +108,9 @@ void ConvolutionLayer::initializeBiases(ConvBiasInitialization bias_init)
         std::cerr << "Warning: Mismatch in biases size, initializing to zero.\n";
         this->biases = Eigen::VectorXd::Zero(filters);
     }
+
+    std::cout << "Initialized biases (first 5 elements):\n"
+              << biases.head(std::min(5, static_cast<int>(biases.size()))) << " ..." << std::endl;
 }
 
 // Forward pass with parallel processing
@@ -133,6 +138,10 @@ Eigen::MatrixXd ConvolutionLayer::forward(const Eigen::MatrixXd &input_batch)
     {
         f.get();
     }
+
+    // Debugging output: print a subset of the forward pass output
+    std::cout << "Forward output (first 10 elements of the first image):\n"
+              << output_batch.block(0, 0, 1, std::min(10, static_cast<int>(output_batch.cols()))) << " ..." << std::endl;
 
     // Update the static variables in MaxPoolingLayer
     MaxPoolingLayer::setInputSize(output_size);
@@ -201,6 +210,14 @@ Eigen::MatrixXd ConvolutionLayer::backward(const Eigen::MatrixXd &d_output_batch
     {
         f.get();
     }
+
+    // Print a subset of gradients for debugging
+    std::cout << "Gradient weights (first 3x3 block of first filter and depth 0):\n"
+              << d_kernels[0][0].block(0, 0, std::min(3, static_cast<int>(d_kernels[0][0].rows())), std::min(3, static_cast<int>(d_kernels[0][0].cols()))) << " ..." << std::endl;
+
+    std::cout << "Gradient biases (first 5 elements):\n"
+              << d_biases.head(std::min(20, static_cast<int>(d_biases.size())))
+              << " ..." << std::endl;
 
     for (int f = 0; f < filters; ++f)
     {

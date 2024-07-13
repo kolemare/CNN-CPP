@@ -30,10 +30,13 @@ void ImageAugmentor::augmentImages(ImageContainer &container)
     auto &testImages = container.getTestImages();
 
     std::cout << "Augmenting images..." << std::endl;
+
+#ifdef AUGMENT_PROGRESS
     int trainingImagesCount = trainingImages.size();
     int testImagesCount = testImages.size();
     int processedTrainingImages = 0;
     int processedTestImages = 0;
+#endif
 
     for (auto &image : trainingImages)
     {
@@ -51,9 +54,11 @@ void ImageAugmentor::augmentImages(ImageContainer &container)
 
         normalizeImage(*image);
 
+#ifdef AUGMENT_PROGRESS
         processedTrainingImages++;
         int progress = (processedTrainingImages * 100) / trainingImagesCount;
         std::cout << "\rAugmenting training images... " << progress << "%" << std::flush;
+#endif
     }
 
     std::cout << std::endl;
@@ -75,9 +80,11 @@ void ImageAugmentor::augmentImages(ImageContainer &container)
 
         normalizeImage(*image);
 
+#ifdef AUGMENT_PROGRESS
         processedTestImages++;
         int progress = (processedTestImages * 100) / testImagesCount;
         std::cout << "\rAugmenting test images... " << progress << "%" << std::flush;
+#endif
     }
 
     std::cout << std::endl;

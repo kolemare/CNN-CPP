@@ -1,6 +1,8 @@
 #ifndef IMAGELOADER_HPP
 #define IMAGELOADER_HPP
 
+// #define LOADING_PROGRESS
+
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <string>

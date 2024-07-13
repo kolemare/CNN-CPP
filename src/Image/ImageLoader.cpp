@@ -81,10 +81,12 @@ void ImageLoader::loadImage(const std::string &imagePath, const std::string &cat
         auto sharedImage = std::make_shared<cv::Mat>(image);
         container.addImage(sharedImage, category, label);
 
+#ifdef LOADING_PROGRESS
         processedImages++;
         int progress = (processedImages * 100) / totalImages;
         std::cout << "\rLoading images... " << progress << "%";
         std::cout.flush();
+#endif
     }
     catch (const std::exception &e)
     {

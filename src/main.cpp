@@ -163,7 +163,7 @@ void tensorModel(const std::string &datasetPath)
     std::cout << "Prediction for " << singleImagePath << ": " << result << " (Score: " << prediction(0, 0) << ")\n";
 }
 
-int main(int argc, char **argv)
+int mains(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
     if (argc > 1 && std::string(argv[1]) == "--tests")
@@ -182,6 +182,26 @@ int main(int argc, char **argv)
             return 1;
         }
     }
+
+    return 0;
+}
+
+int main()
+{
+    ConvolutionLayer convLayer(10, 3, 1, 1, ConvKernelInitialization::HE, ConvBiasInitialization::RANDOM_NORMAL);
+
+    convLayer.setInputDepth(3);
+
+    convLayer.initializeKernels(ConvKernelInitialization::HE);
+    convLayer.initializeBiases(ConvBiasInitialization::RANDOM_NORMAL);
+
+    Eigen::MatrixXd input_batch = Eigen::MatrixXd::Random(1, 3 * 32 * 32);
+
+    Eigen::MatrixXd forward_output = convLayer.forward(input_batch);
+
+    Eigen::MatrixXd d_output_batch = Eigen::MatrixXd::Random(1, 10 * 32 * 32);
+
+    convLayer.backward(d_output_batch, input_batch, 100);
 
     return 0;
 }
