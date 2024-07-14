@@ -74,8 +74,6 @@ void ConvolutionLayer::initializeKernels(ConvKernelInitialization kernel_init)
                 }
             }
             kernels[f][d] = kernel;
-            std::cout << "Filter " << f << ", Depth " << d << " kernel (first 3x3 block):\n"
-                      << kernel.block(0, 0, std::min(3, static_cast<int>(kernel.rows())), std::min(3, static_cast<int>(kernel.cols()))) << " ..." << std::endl;
         }
     }
 }
@@ -108,9 +106,6 @@ void ConvolutionLayer::initializeBiases(ConvBiasInitialization bias_init)
         std::cerr << "Warning: Mismatch in biases size, initializing to zero.\n";
         this->biases = Eigen::VectorXd::Zero(filters);
     }
-
-    std::cout << "Initialized biases (first 5 elements):\n"
-              << biases.head(std::min(5, static_cast<int>(biases.size()))) << " ..." << std::endl;
 }
 
 // Forward pass with parallel processing
@@ -138,10 +133,6 @@ Eigen::MatrixXd ConvolutionLayer::forward(const Eigen::MatrixXd &input_batch)
     {
         f.get();
     }
-
-    // Debugging output: print a subset of the forward pass output
-    std::cout << "Forward output (first 10 elements of the first image):\n"
-              << output_batch.block(0, 0, 1, std::min(10, static_cast<int>(output_batch.cols()))) << " ..." << std::endl;
 
     // Update the static variables in MaxPoolingLayer
     MaxPoolingLayer::setInputSize(output_size);
@@ -198,6 +189,10 @@ Eigen::MatrixXd ConvolutionLayer::backward(const Eigen::MatrixXd &d_output_batch
     Eigen::VectorXd d_biases = Eigen::VectorXd::Zero(filters);
     Eigen::MatrixXd d_input_batch = Eigen::MatrixXd::Zero(batch_size, input_size * input_size * input_depth);
 
+    // Store old weights and biases for comparison
+    auto old_kernels = kernels;
+    auto old_biases = biases;
+
     std::vector<std::future<void>> futures;
 
     for (int b = 0; b < batch_size; ++b)
@@ -211,14 +206,6 @@ Eigen::MatrixXd ConvolutionLayer::backward(const Eigen::MatrixXd &d_output_batch
         f.get();
     }
 
-    // Print a subset of gradients for debugging
-    std::cout << "Gradient weights (first 3x3 block of first filter and depth 0):\n"
-              << d_kernels[0][0].block(0, 0, std::min(3, static_cast<int>(d_kernels[0][0].rows())), std::min(3, static_cast<int>(d_kernels[0][0].cols()))) << " ..." << std::endl;
-
-    std::cout << "Gradient biases (first 5 elements):\n"
-              << d_biases.head(std::min(20, static_cast<int>(d_biases.size())))
-              << " ..." << std::endl;
-
     for (int f = 0; f < filters; ++f)
     {
         for (int d = 0; d < input_depth; ++d)
@@ -227,6 +214,55 @@ Eigen::MatrixXd ConvolutionLayer::backward(const Eigen::MatrixXd &d_output_batch
         }
         biases(f) -= learning_rate * d_biases(f) / batch_size;
     }
+
+    // Compare and print updates
+    bool weights_updated = false;
+    bool biases_updated = false;
+
+    for (int f = 0; f < filters; ++f)
+    {
+        for (int d = 0; d < input_depth; ++d)
+        {
+            if (!weights_updated)
+            {
+                for (int i = 0; i < kernel_size; ++i)
+                {
+                    for (int j = 0; j < kernel_size; ++j)
+                    {
+                        if (kernels[f][d](i, j) != old_kernels[f][d](i, j))
+                        {
+                            weights_updated = true;
+                            break;
+                        }
+                    }
+                    if (weights_updated)
+                        break;
+                }
+            }
+        }
+
+        if (!biases_updated && biases(f) != old_biases(f))
+        {
+            biases_updated = true;
+        }
+    }
+
+    // std::cout << "Weights before update (first 3x3 block of first filter and depth 0):\n"
+    //           << old_kernels[0][0].block(0, 0, std::min(3, static_cast<int>(old_kernels[0][0].rows())), std::min(3, static_cast<int>(old_kernels[0][0].cols()))) << " ..." << std::endl;
+
+    // std::cout << "Biases before update (first 5 elements):\n"
+    //           << old_biases.head(std::min(5, static_cast<int>(old_biases.size())))
+    //           << " ..." << std::endl;
+
+    // std::cout << "Weights after update (first 3x3 block of first filter and depth 0):\n"
+    //           << kernels[0][0].block(0, 0, std::min(3, static_cast<int>(kernels[0][0].rows())), std::min(3, static_cast<int>(kernels[0][0].cols()))) << " ..." << std::endl;
+
+    // std::cout << "Biases after update (first 5 elements):\n"
+    //           << biases.head(std::min(5, static_cast<int>(biases.size())))
+    //           << " ..." << std::endl;
+
+    // std::cout << (weights_updated ? "Weights have been updated.\n" : "No updates to weights.\n");
+    // std::cout << (biases_updated ? "Biases have been updated.\n" : "No updates to biases.\n");
 
     return d_input_batch;
 }

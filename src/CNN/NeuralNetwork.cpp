@@ -5,6 +5,7 @@
 #include <numeric>
 #include <random>
 #include <chrono>
+#include <filesystem>
 
 NeuralNetwork::NeuralNetwork() : flattenAdded(false), currentDepth(3), logLevel(LogLevel::None), progressLevel(ProgressLevel::None) {}
 
@@ -407,6 +408,30 @@ void NeuralNetwork::printProgress(int epoch, int epochs, int batch, int totalBat
     std::cout << oss.str() << std::flush;
 }
 
+void saveBatchImages(const Eigen::MatrixXd &batch_input, const Eigen::MatrixXd &batch_label, const std::string &folderPath)
+{
+    std::filesystem::create_directory(folderPath);
+
+    for (int i = 0; i < batch_input.rows(); ++i)
+    {
+        // Convert Eigen::MatrixXd row to cv::Mat
+        Eigen::VectorXd eigen_image = batch_input.row(i);
+        Eigen::MatrixXf float_image = eigen_image.cast<float>(); // Convert to float
+
+        // Assuming the images are 32x32 with 3 channels (adjust as needed)
+        cv::Mat image(32, 32, CV_32FC3, float_image.data());
+
+        // Convert the image to 8-bit for saving without normalization
+        image.convertTo(image, CV_8UC3, 255.0);
+
+        // Construct the filename
+        std::string filename = folderPath + "/image_" + std::to_string(i) + "_label_" + std::to_string(static_cast<int>(batch_label(i, 0))) + ".png";
+
+        // Save the image
+        cv::imwrite(filename, image);
+    }
+}
+
 void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, double learning_rate, int batch_size, const std::vector<std::string> &categories)
 {
     if (!lossFunction)
@@ -423,23 +448,55 @@ void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, doub
         int totalBatches = batchManager.getTotalBatches();
         auto start = std::chrono::steady_clock::now();
         int batchCounter = 0;
+        double total_loss = 0.0;
+        int correct_predictions = 0;
+        int num_samples = 0;
 
         while (batchManager.getNextBatch(batch_input, batch_label))
         {
             // Forward pass
             Eigen::MatrixXd predictions = forward(batch_input);
 
-            // Compute loss and backward pass
+            // Compute loss
+            double batch_loss = lossFunction->compute(predictions, batch_label);
+            total_loss += batch_loss;
+
+            // Count correct predictions
+            for (int i = 0; i < predictions.rows(); ++i)
+            {
+                int predicted_label = (predictions(i, 0) >= 0.5) ? 1 : 0;
+                int true_label = batch_label(i, 0);
+                if (predicted_label == true_label)
+                {
+                    correct_predictions++;
+                }
+                num_samples++;
+            }
+
+            std::cout << "Batch " << batchCounter + 1 << "/" << totalBatches << " - Loss: " << batch_loss << std::endl;
+
+            // Save one batch of images and labels
+            if (epoch == 0 && batchCounter == 0)
+            {
+                saveBatchImages(batch_input, batch_label, "saved_batch");
+                throw std::runtime_error("Batch saved for inspection.");
+            }
+
+            // Backward pass
             Eigen::MatrixXd d_output = lossFunction->derivative(predictions, batch_label);
             backward(d_output, learning_rate);
 
             // Print progress
-            printProgress(epoch, epochs, batchCounter, totalBatches, start);
+            // printProgress(epoch, epochs, batchCounter, totalBatches, start);
             batchCounter++;
         }
 
+        double average_loss = total_loss / num_samples;
+        double accuracy = static_cast<double>(correct_predictions) / num_samples;
+
         std::cout << std::endl
                   << "Epoch " << epoch + 1 << " complete." << std::endl;
+        std::cout << "Training Loss: " << average_loss << ", Accuracy: " << accuracy << std::endl;
 
         // Perform evaluation after each epoch
         evaluate(imageContainer, categories);

@@ -1,6 +1,10 @@
 #include "BatchManager.hpp"
 #include <algorithm>
 #include <random>
+#include <iostream>
+#include <opencv2/core/eigen.hpp>
+#include <filesystem> // For creating directories
+#include <fstream>    // For saving Eigen matrices to files
 
 BatchManager::BatchManager(const ImageContainer &imageContainer, int batchSize, const std::vector<std::string> &categories, BatchType batchType)
     : imageContainer(imageContainer), batchSize(batchSize), categories(categories), currentBatchIndex(0), batchType(batchType)
@@ -67,18 +71,47 @@ bool BatchManager::getNextBatch(Eigen::MatrixXd &batchImages, Eigen::MatrixXd &b
     batchImages.resize(currentBatchSize, imageSize);
     batchLabels.resize(currentBatchSize, 1);
 
+    // Create directories for saving images
+    std::filesystem::create_directories("testing/original");
+    std::filesystem::create_directories("testing/matrix");
+
     for (int i = 0; i < currentBatchSize; ++i)
     {
         cv::Mat &image = *allImages[startIndex + i];
-        cv::Mat flatImage = image.reshape(1, 1);
 
-        Eigen::Map<Eigen::MatrixXf> eigenImage(flatImage.ptr<float>(), 1, imageSize); // Use float type for Eigen::Matrix mapping
+        // Ensure the image is continuous
+        if (!image.isContinuous())
+        {
+            image = image.clone();
+        }
+
+        // Save original image (scaled back)
+        cv::Mat originalImageScaled;
+        image.convertTo(originalImageScaled, CV_8UC3, 255.0);
+        std::string originalImagePath = "testing/original/original_image_" + std::to_string(currentBatchIndex) + "_" + std::to_string(i) + ".png";
+        cv::imwrite(originalImagePath, originalImageScaled);
+
+        // Convert cv::Mat to Eigen::MatrixXd using OpenCV function
+        Eigen::MatrixXf eigenImage;
+        cv::cv2eigen(image.reshape(1, 1), eigenImage);
+
         batchImages.row(i) = eigenImage.cast<double>();
+
+        // Convert Eigen::MatrixXd back to cv::Mat for visual inspection using OpenCV function
+        cv::Mat restoredImage;
+        cv::eigen2cv(eigenImage, restoredImage);
+        restoredImage = restoredImage.reshape(3, 32);           // Reshape back to original size
+        restoredImage.convertTo(restoredImage, CV_8UC3, 255.0); // Scale back to 0-255
+
+        // Save the restored image
+        std::string matrixImagePath = "testing/matrix/matrix_image_" + std::to_string(currentBatchIndex) + "_" + std::to_string(i) + ".png";
+        cv::imwrite(matrixImagePath, restoredImage);
 
         batchLabels(i, 0) = std::find(categories.begin(), categories.end(), allLabels[startIndex + i]) - categories.begin();
     }
 
     currentBatchIndex++;
+    throw std::runtime_error("Batch saved for inspection.");
     return true;
 }
 

@@ -38,6 +38,8 @@ void ImageAugmentor::augmentImages(ImageContainer &container)
     int processedTestImages = 0;
 #endif
 
+    int imagecounter = 0;
+
     for (auto &image : trainingImages)
     {
         *image = rescale(*image);
@@ -53,6 +55,12 @@ void ImageAugmentor::augmentImages(ImageContainer &container)
             *image = applyGaussianBlur(*image);
 
         normalizeImage(*image);
+
+        cv::Mat saveImage;
+        image->convertTo(saveImage, CV_8UC3, 255.0);
+        std::string filename = "ati/image_" + std::to_string(imagecounter) + ".png";
+        imagecounter++;
+        cv::imwrite(filename, saveImage);
 
 #ifdef AUGMENT_PROGRESS
         processedTrainingImages++;

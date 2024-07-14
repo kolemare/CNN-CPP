@@ -140,7 +140,7 @@ void tensorModel(const std::string &datasetPath)
         throw std::runtime_error("Could not read the image: " + singleImagePath);
     }
 
-    cv::resize(image, image, cv::Size(64, 64));
+    cv::resize(image, image, cv::Size(32, 32));
 
     // Convert image to Eigen matrix
     Eigen::MatrixXd singleImageBatch(1, image.rows * image.cols * image.channels());
@@ -163,8 +163,23 @@ void tensorModel(const std::string &datasetPath)
     std::cout << "Prediction for " << singleImagePath << ": " << result << " (Score: " << prediction(0, 0) << ")\n";
 }
 
-int mains(int argc, char **argv)
+double testBinaryCrossEntropy()
 {
+    Eigen::MatrixXd predictions(4, 1);
+    predictions << 0.5, 0.5, 0.5, 0.5; // Random guessing probabilities
+
+    Eigen::MatrixXd targets(4, 1);
+    targets << 0, 1, 0, 1; // True labels
+
+    BinaryCrossEntropy lossFunc;
+    double loss = lossFunc.compute(predictions, targets);
+    return loss;
+}
+
+int main(int argc, char **argv)
+{
+    std::cout << testBinaryCrossEntropy() << std::endl;
+    // throw std::runtime_error("AAA");
     ::testing::InitGoogleTest(&argc, argv);
     if (argc > 1 && std::string(argv[1]) == "--tests")
     {
@@ -186,7 +201,7 @@ int mains(int argc, char **argv)
     return 0;
 }
 
-int main()
+int mains()
 {
     ConvolutionLayer convLayer(10, 3, 1, 1, ConvKernelInitialization::HE, ConvBiasInitialization::RANDOM_NORMAL);
 
@@ -195,13 +210,26 @@ int main()
     convLayer.initializeKernels(ConvKernelInitialization::HE);
     convLayer.initializeBiases(ConvBiasInitialization::RANDOM_NORMAL);
 
-    Eigen::MatrixXd input_batch = Eigen::MatrixXd::Random(1, 3 * 32 * 32);
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dis(-1.0, 1.0);
 
-    Eigen::MatrixXd forward_output = convLayer.forward(input_batch);
+    for (int i = 0; i < 1; i++)
+    {
+        Eigen::MatrixXd input_batch = Eigen::MatrixXd::NullaryExpr(1, 3 * 32 * 32, [&]()
+                                                                   { return dis(gen); });
+        Eigen::MatrixXd d_output_batch = Eigen::MatrixXd::NullaryExpr(1, 10 * 32 * 32, [&]()
+                                                                      { return dis(gen); });
 
-    Eigen::MatrixXd d_output_batch = Eigen::MatrixXd::Random(1, 10 * 32 * 32);
+        // Print the first few elements to verify values
+        std::cout << "Input Batch (first 10 elements):" << std::endl;
+        std::cout << input_batch.block(0, 0, 1, 10) << std::endl;
 
-    convLayer.backward(d_output_batch, input_batch, 100);
+        std::cout << "d_output Batch (first 10 elements):" << std::endl;
+        std::cout << d_output_batch.block(0, 0, 1, 10) << std::endl;
+
+        convLayer.backward(d_output_batch, input_batch, 0.0001);
+    }
 
     return 0;
 }
