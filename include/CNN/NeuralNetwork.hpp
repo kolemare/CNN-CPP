@@ -15,6 +15,7 @@
 #include "FlattenLayer.hpp"
 #include "FullyConnectedLayer.hpp"
 #include "ActivationLayer.hpp"
+#include "BatchNormalizationLayer.hpp"
 
 enum class LogLevel
 {
@@ -45,6 +46,7 @@ public:
     void addConvolutionLayer(int filters, int kernel_size, int stride, int padding, ConvKernelInitialization kernel_init = ConvKernelInitialization::HE, ConvBiasInitialization bias_init = ConvBiasInitialization::ZERO);
     void addMaxPoolingLayer(int pool_size, int stride);
     void addAveragePoolingLayer(int pool_size, int stride);
+    void addBatchNormalizationLayer(double epsilon = 1e-5, double momentum = 0.9);
     void addFlattenLayer();
     void addFullyConnectedLayer(int output_size, DenseWeightInitialization weight_init = DenseWeightInitialization::XAVIER, DenseBiasInitialization bias_init = DenseBiasInitialization::ZERO);
     void addActivationLayer(ActivationType type);

@@ -52,6 +52,15 @@ void NeuralNetwork::addAveragePoolingLayer(int pool_size, int stride)
     }
 }
 
+void NeuralNetwork::addBatchNormalizationLayer(double epsilon, double momentum)
+{
+    layers.push_back(std::make_shared<BatchNormalizationLayer>(epsilon, momentum));
+    if (logLevel == LogLevel::All)
+    {
+        std::cout << "Added BatchNormalization Layer with epsilon " << epsilon << ", momentum " << momentum << std::endl;
+    }
+}
+
 void NeuralNetwork::addFlattenLayer()
 {
     if (!flattenAdded)
@@ -124,6 +133,10 @@ void NeuralNetwork::compile(std::unique_ptr<Optimizer> optimizer)
             height = (height - pool_layer->getPoolSize()) / pool_layer->getStride() + 1;
             width = (width - pool_layer->getPoolSize()) / pool_layer->getStride() + 1;
         }
+        else if (auto batch_norm_layer = dynamic_cast<BatchNormalizationLayer *>(layers[i].get()))
+        {
+            // BatchNormalization layer does not change dimensions
+        }
         else if (auto fc_layer = dynamic_cast<FullyConnectedLayer *>(layers[i].get()))
         {
             if (input_size == -1)
@@ -171,6 +184,10 @@ Eigen::MatrixXd NeuralNetwork::forward(const Eigen::MatrixXd &input)
             else if (dynamic_cast<AveragePoolingLayer *>(layers[i].get()))
             {
                 layerType = "Average Pooling Layer";
+            }
+            else if (dynamic_cast<BatchNormalizationLayer *>(layers[i].get()))
+            {
+                layerType = "BatchNormalization Layer";
             }
             else if (dynamic_cast<FlattenLayer *>(layers[i].get()))
             {
@@ -277,6 +294,10 @@ void NeuralNetwork::backward(const Eigen::MatrixXd &d_output, double learning_ra
         else if (dynamic_cast<AveragePoolingLayer *>(layers[i].get()))
         {
             layerType = "Average Pooling Layer";
+        }
+        else if (dynamic_cast<BatchNormalizationLayer *>(layers[i].get()))
+        {
+            layerType = "BatchNormalization Layer";
         }
         else if (dynamic_cast<FlattenLayer *>(layers[i].get()))
         {
@@ -408,30 +429,6 @@ void NeuralNetwork::printProgress(int epoch, int epochs, int batch, int totalBat
     std::cout << oss.str() << std::flush;
 }
 
-void saveBatchImages(const Eigen::MatrixXd &batch_input, const Eigen::MatrixXd &batch_label, const std::string &folderPath)
-{
-    std::filesystem::create_directory(folderPath);
-
-    for (int i = 0; i < batch_input.rows(); ++i)
-    {
-        // Convert Eigen::MatrixXd row to cv::Mat
-        Eigen::VectorXd eigen_image = batch_input.row(i);
-        Eigen::MatrixXf float_image = eigen_image.cast<float>(); // Convert to float
-
-        // Assuming the images are 32x32 with 3 channels (adjust as needed)
-        cv::Mat image(32, 32, CV_32FC3, float_image.data());
-
-        // Convert the image to 8-bit for saving without normalization
-        image.convertTo(image, CV_8UC3, 255.0);
-
-        // Construct the filename
-        std::string filename = folderPath + "/image_" + std::to_string(i) + "_label_" + std::to_string(static_cast<int>(batch_label(i, 0))) + ".png";
-
-        // Save the image
-        cv::imwrite(filename, image);
-    }
-}
-
 void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, double learning_rate, int batch_size, const std::vector<std::string> &categories)
 {
     if (!lossFunction)
@@ -474,13 +471,6 @@ void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, doub
             }
 
             std::cout << "Batch " << batchCounter + 1 << "/" << totalBatches << " - Loss: " << batch_loss << std::endl;
-
-            // Save one batch of images and labels
-            if (epoch == 0 && batchCounter == 0)
-            {
-                saveBatchImages(batch_input, batch_label, "saved_batch");
-                throw std::runtime_error("Batch saved for inspection.");
-            }
 
             // Backward pass
             Eigen::MatrixXd d_output = lossFunction->derivative(predictions, batch_label);

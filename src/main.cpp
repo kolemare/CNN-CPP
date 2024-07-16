@@ -27,8 +27,8 @@ void tensorModel(const std::string &datasetPath)
     bool verticalFlipFlag = true;
     float gaussianNoiseStdDev = 10.0f;
     int gaussianBlurKernelSize = 5;
-    int targetWidth = 64;
-    int targetHeight = 64;
+    int targetWidth = 32;
+    int targetHeight = 32;
 
     ImageAugmentor augmentor(rescaleFactor, zoomFactor, horizontalFlipFlag, verticalFlipFlag, gaussianNoiseStdDev, gaussianBlurKernelSize, targetWidth, targetHeight);
 
@@ -46,7 +46,7 @@ void tensorModel(const std::string &datasetPath)
     cnn.setImageSize(targetWidth, targetHeight);
 
     // Set log level and progress level
-    cnn.setLogLevel(LogLevel::None);
+    cnn.setLogLevel(LogLevel::LayerOutputs);
     cnn.setProgressLevel(ProgressLevel::ProgressTime);
 
     // Step 4: Add layers to the neural network
@@ -57,6 +57,9 @@ void tensorModel(const std::string &datasetPath)
     int stride1 = 1;
     int padding1 = 1;
     cnn.addConvolutionLayer(filters1, kernel_size1, stride1, padding1, ConvKernelInitialization::HE, ConvBiasInitialization::RANDOM_NORMAL);
+
+    // Batch Normalization Layer 1
+    cnn.addBatchNormalizationLayer();
 
     // Activation Layer 1
     ActivationType activation1 = RELU;
@@ -73,6 +76,9 @@ void tensorModel(const std::string &datasetPath)
     int stride2 = 1;
     int padding2 = 1;
     cnn.addConvolutionLayer(filters2, kernel_size2, stride2, padding2, ConvKernelInitialization::HE, ConvBiasInitialization::RANDOM_NORMAL);
+
+    // Batch Normalization Layer 2
+    cnn.addBatchNormalizationLayer();
 
     // Activation Layer 2
     ActivationType activation2 = RELU;
@@ -91,6 +97,9 @@ void tensorModel(const std::string &datasetPath)
     DenseWeightInitialization fc_weight_init1 = DenseWeightInitialization::HE;
     DenseBiasInitialization fc_bias_init1 = DenseBiasInitialization::RANDOM_NORMAL;
     cnn.addFullyConnectedLayer(fc_output_size1, fc_weight_init1, fc_bias_init1);
+
+    // Batch Normalization Layer 3
+    cnn.addBatchNormalizationLayer();
 
     // Activation Layer 3
     ActivationType activation3 = RELU;
@@ -176,9 +185,44 @@ double testBinaryCrossEntropy()
     return loss;
 }
 
+void testBatchNormalization()
+{
+    // Initialize sample data
+    Eigen::MatrixXd input(4, 3);
+    input << 1.0, 2.0, 3.0,
+        4.0, 5.0, 6.0,
+        7.0, 8.5, 9.0,
+        10.0, 11.0, 14.0;
+
+    Eigen::MatrixXd d_output(4, 3);
+    d_output << 0.1, 0.2, 0.3,
+        0.4, 0.5, 0.7,
+        0.7, 0.9, 1.0,
+        1.1, 1.3, 1.5;
+
+    double epsilon = 1e-5;
+    double momentum = 0.9;
+    double learning_rate = 0.01;
+
+    // Create BatchNormalizationLayer instance
+    BatchNormalizationLayer bn_layer(epsilon, momentum);
+
+    // Perform forward pass
+    Eigen::MatrixXd output = bn_layer.forward(input);
+    std::cout << "Forward pass output:\n"
+              << output << std::endl;
+
+    // Perform backward pass
+    Eigen::MatrixXd d_input = bn_layer.backward(d_output, input, learning_rate);
+    std::cout << "Backward pass d_input:\n"
+              << d_input << std::endl;
+
+    return;
+}
+
 int main(int argc, char **argv)
 {
-    std::cout << testBinaryCrossEntropy() << std::endl;
+    testBatchNormalization();
     // throw std::runtime_error("AAA");
     ::testing::InitGoogleTest(&argc, argv);
     if (argc > 1 && std::string(argv[1]) == "--tests")
