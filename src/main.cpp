@@ -25,19 +25,21 @@ void tensorModel(const std::string &datasetPath)
     float zoomFactor = 1.2f;
     bool horizontalFlipFlag = true;
     bool verticalFlipFlag = true;
+    float shearRange = 0.2f;
     float gaussianNoiseStdDev = 10.0f;
     int gaussianBlurKernelSize = 5;
-    int targetWidth = 32;
-    int targetHeight = 32;
+    int targetWidth = 64;
+    int targetHeight = 64;
 
-    ImageAugmentor augmentor(rescaleFactor, zoomFactor, horizontalFlipFlag, verticalFlipFlag, gaussianNoiseStdDev, gaussianBlurKernelSize, targetWidth, targetHeight);
+    ImageAugmentor augmentor(rescaleFactor, zoomFactor, horizontalFlipFlag, verticalFlipFlag, shearRange, gaussianNoiseStdDev, gaussianBlurKernelSize, targetWidth, targetHeight);
 
     // Set augmentation chances
-    augmentor.setZoomChance(0.0f);
-    augmentor.setHorizontalFlipChance(0.0f);
+    augmentor.setZoomChance(0.2f);
+    augmentor.setHorizontalFlipChance(0.5f);
     augmentor.setVerticalFlipChance(0.0f);
     augmentor.setGaussianNoiseChance(0.0f);
     augmentor.setGaussianBlurChance(0.0f);
+    augmentor.setShearChance(0.5f);
 
     augmentor.augmentImages(container);
 
@@ -46,7 +48,7 @@ void tensorModel(const std::string &datasetPath)
     cnn.setImageSize(targetWidth, targetHeight);
 
     // Set log level and progress level
-    cnn.setLogLevel(LogLevel::LayerOutputs);
+    cnn.setLogLevel(LogLevel::None);
     cnn.setProgressLevel(ProgressLevel::ProgressTime);
 
     // Step 4: Add layers to the neural network
@@ -107,7 +109,7 @@ void tensorModel(const std::string &datasetPath)
 
     // Fully Connected Layer 2
     int fc_output_size2 = 1;
-    DenseWeightInitialization fc_weight_init2 = DenseWeightInitialization::HE;
+    DenseWeightInitialization fc_weight_init2 = DenseWeightInitialization::XAVIER;
     DenseBiasInitialization fc_bias_init2 = DenseBiasInitialization::RANDOM_NORMAL;
     cnn.addFullyConnectedLayer(fc_output_size2, fc_weight_init2, fc_bias_init2);
 
@@ -134,7 +136,7 @@ void tensorModel(const std::string &datasetPath)
 
     // Step 5: Train the neural network
     int epochs = 25;
-    double learning_rate = 0.001;
+    double learning_rate = 0.0005;
     int batch_size = 32;
     cnn.train(container, epochs, learning_rate, batch_size, categories);
 
@@ -149,7 +151,7 @@ void tensorModel(const std::string &datasetPath)
         throw std::runtime_error("Could not read the image: " + singleImagePath);
     }
 
-    cv::resize(image, image, cv::Size(32, 32));
+    cv::resize(image, image, cv::Size(64, 64));
 
     // Convert image to Eigen matrix
     Eigen::MatrixXd singleImageBatch(1, image.rows * image.cols * image.channels());

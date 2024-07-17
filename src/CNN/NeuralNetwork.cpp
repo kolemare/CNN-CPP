@@ -330,7 +330,7 @@ void NeuralNetwork::backward(const Eigen::MatrixXd &d_output, double learning_ra
     }
 }
 
-void NeuralNetwork::printProgress(int epoch, int epochs, int batch, int totalBatches, std::chrono::steady_clock::time_point start)
+void NeuralNetwork::printProgress(int epoch, int epochs, int batch, int totalBatches, std::chrono::steady_clock::time_point start, double batch_loss)
 {
     if (progressLevel == ProgressLevel::None)
     {
@@ -413,6 +413,7 @@ void NeuralNetwork::printProgress(int epoch, int epochs, int batch, int totalBat
         oss << "ETA for current epoch: " << formatTime(remainingTime) << "\n";
         oss << "Duration of current batch: " << formatTime(batchDuration) << "\n";
         oss << "ETA for overall progress: " << formatTime(overallRemainingTime) << "\n";
+        oss << "Loss: " << batch_loss << "\n";
 
         if (batch == 0) // Print only at the beginning of the first epoch
         {
@@ -470,14 +471,12 @@ void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, doub
                 num_samples++;
             }
 
-            std::cout << "Batch " << batchCounter + 1 << "/" << totalBatches << " - Loss: " << batch_loss << std::endl;
-
             // Backward pass
             Eigen::MatrixXd d_output = lossFunction->derivative(predictions, batch_label);
             backward(d_output, learning_rate);
 
             // Print progress
-            // printProgress(epoch, epochs, batchCounter, totalBatches, start);
+            printProgress(epoch, epochs, batchCounter, totalBatches, start, batch_loss);
             batchCounter++;
         }
 

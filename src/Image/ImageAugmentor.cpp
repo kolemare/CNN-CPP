@@ -5,6 +5,7 @@ ImageAugmentor::ImageAugmentor(float rescaleFactor,
                                float zoomFactor,
                                bool horizontalFlipFlag,
                                bool verticalFlipFlag,
+                               float shearRange,
                                float gaussianNoiseStdDev,
                                int gaussianBlurKernelSize,
                                int targetWidth,
@@ -13,6 +14,7 @@ ImageAugmentor::ImageAugmentor(float rescaleFactor,
       zoomFactor(zoomFactor),
       horizontalFlipFlag(horizontalFlipFlag),
       verticalFlipFlag(verticalFlipFlag),
+      shearRange(shearRange),
       gaussianNoiseStdDev(gaussianNoiseStdDev),
       gaussianBlurKernelSize(gaussianBlurKernelSize),
       targetWidth(targetWidth),
@@ -22,6 +24,7 @@ ImageAugmentor::ImageAugmentor(float rescaleFactor,
       verticalFlipChance(0.3f),
       gaussianNoiseChance(0.3f),
       gaussianBlurChance(0.3f),
+      shearChance(0.3f),
       distribution(0.0f, 1.0f) {}
 
 void ImageAugmentor::augmentImages(ImageContainer &container)
@@ -53,6 +56,8 @@ void ImageAugmentor::augmentImages(ImageContainer &container)
             *image = addGaussianNoise(*image);
         if (distribution(generator) < gaussianBlurChance)
             *image = applyGaussianBlur(*image);
+        if (distribution(generator) < shearChance)
+            *image = shear(*image);
 
         normalizeImage(*image);
 
@@ -85,6 +90,8 @@ void ImageAugmentor::augmentImages(ImageContainer &container)
             *image = addGaussianNoise(*image);
         if (distribution(generator) < gaussianBlurChance)
             *image = applyGaussianBlur(*image);
+        if (distribution(generator) < shearChance)
+            *image = shear(*image);
 
         normalizeImage(*image);
 
@@ -104,6 +111,7 @@ void ImageAugmentor::setHorizontalFlipChance(float chance) { horizontalFlipChanc
 void ImageAugmentor::setVerticalFlipChance(float chance) { verticalFlipChance = chance; }
 void ImageAugmentor::setGaussianNoiseChance(float chance) { gaussianNoiseChance = chance; }
 void ImageAugmentor::setGaussianBlurChance(float chance) { gaussianBlurChance = chance; }
+void ImageAugmentor::setShearChance(float chance) { shearChance = chance; }
 
 cv::Mat ImageAugmentor::rescale(const cv::Mat &image)
 {
@@ -198,6 +206,22 @@ cv::Mat ImageAugmentor::applyGaussianBlur(const cv::Mat &image)
     cv::Mat blurredImage;
     cv::GaussianBlur(image, blurredImage, cv::Size(gaussianBlurKernelSize, gaussianBlurKernelSize), 0);
     return blurredImage;
+}
+
+cv::Mat ImageAugmentor::shear(const cv::Mat &image)
+{
+    if (image.empty())
+    {
+        std::cerr << "Error: Empty image provided to shear." << std::endl;
+        return image;
+    }
+
+    float shearFactor = distribution(generator) * shearRange * 2 - shearRange;
+    cv::Mat shearedImage;
+    cv::Mat transform = (cv::Mat_<double>(2, 3) << 1, shearFactor, 0, 0, 1, 0);
+
+    cv::warpAffine(image, shearedImage, transform, image.size(), cv::INTER_LINEAR, cv::BORDER_REFLECT_101);
+    return shearedImage;
 }
 
 void ImageAugmentor::normalizeImage(cv::Mat &image)

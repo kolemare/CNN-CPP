@@ -76,7 +76,7 @@ private:
 
     void printMatrixSummary(const Eigen::MatrixXd &matrix, const std::string &layerType, PropagationType propagationType);
     void printFullMatrix(const Eigen::MatrixXd &matrix, const std::string &layerType, PropagationType propagationType);
-    void printProgress(int epoch, int epochs, int batch, int totalBatches, std::chrono::steady_clock::time_point start);
+    void printProgress(int epoch, int epochs, int batch, int totalBatches, std::chrono::steady_clock::time_point start, double batch_loss);
 };
 
 #endif // NEURALNETWORK_HPP

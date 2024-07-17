@@ -10,7 +10,7 @@
 class ImageAugmentor
 {
 public:
-    ImageAugmentor(float rescaleFactor, float zoomFactor, bool horizontalFlipFlag, bool verticalFlipFlag, float gaussianNoiseStdDev, int gaussianBlurKernelSize, int targetWidth, int targetHeight);
+    ImageAugmentor(float rescaleFactor, float zoomFactor, bool horizontalFlipFlag, bool verticalFlipFlag, float shearRange, float gaussianNoiseStdDev, int gaussianBlurKernelSize, int targetWidth, int targetHeight);
 
     void augmentImages(ImageContainer &container);
 
@@ -19,6 +19,7 @@ public:
     void setVerticalFlipChance(float chance);
     void setGaussianNoiseChance(float chance);
     void setGaussianBlurChance(float chance);
+    void setShearChance(float chance);
 
 private:
     cv::Mat rescale(const cv::Mat &image);
@@ -27,6 +28,7 @@ private:
     cv::Mat verticalFlip(const cv::Mat &image);
     cv::Mat addGaussianNoise(const cv::Mat &image);
     cv::Mat applyGaussianBlur(const cv::Mat &image);
+    cv::Mat shear(const cv::Mat &image);
     void normalizeImage(cv::Mat &image);
 
     float rescaleFactor;
@@ -43,6 +45,8 @@ private:
     float verticalFlipChance;
     float gaussianNoiseChance;
     float gaussianBlurChance;
+    float shearChance;
+    float shearRange;
 
     std::default_random_engine generator;
     std::uniform_real_distribution<float> distribution;
