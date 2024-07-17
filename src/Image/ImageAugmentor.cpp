@@ -146,8 +146,9 @@ cv::Mat ImageAugmentor::zoom(const cv::Mat &image)
         return image;
     }
 
+    float randomZoomFactor = 1 + distribution(generator) * (zoomFactor - 1);
     cv::Mat zoomedImage;
-    cv::resize(image, zoomedImage, cv::Size(), zoomFactor, zoomFactor);
+    cv::resize(image, zoomedImage, cv::Size(), randomZoomFactor, randomZoomFactor);
     cv::Rect roi((zoomedImage.cols - targetWidth) / 2, (zoomedImage.rows - targetHeight) / 2, targetWidth, targetHeight);
     return zoomedImage(roi).clone();
 }

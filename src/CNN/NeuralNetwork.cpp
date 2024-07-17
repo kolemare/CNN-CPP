@@ -413,7 +413,6 @@ void NeuralNetwork::printProgress(int epoch, int epochs, int batch, int totalBat
         oss << "ETA for current epoch: " << formatTime(remainingTime) << "\n";
         oss << "Duration of current batch: " << formatTime(batchDuration) << "\n";
         oss << "ETA for overall progress: " << formatTime(overallRemainingTime) << "\n";
-        oss << "Loss: " << batch_loss << "\n";
 
         if (batch == 0) // Print only at the beginning of the first epoch
         {
@@ -425,7 +424,7 @@ void NeuralNetwork::printProgress(int epoch, int epochs, int batch, int totalBat
             }
         }
     }
-
+    oss << "Loss: " << batch_loss << "\n";
     oss << "-------------------------------------------------------------------" << std::endl;
     std::cout << oss.str() << std::flush;
 }
