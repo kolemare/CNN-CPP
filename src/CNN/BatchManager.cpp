@@ -3,8 +3,6 @@
 #include <random>
 #include <iostream>
 #include <opencv2/core/eigen.hpp>
-#include <filesystem>
-#include <fstream>
 
 BatchManager::BatchManager(const ImageContainer &imageContainer, int batchSize, const std::vector<std::string> &categories, BatchType batchType)
     : imageContainer(imageContainer), batchSize(batchSize), categories(categories), currentBatchIndex(0), batchType(batchType)
@@ -22,13 +20,12 @@ void BatchManager::initializeBatches()
         if (batchType == BatchType::Training)
         {
             images = imageContainer.getTrainingImagesByCategory(category);
-            labels.insert(labels.end(), images.size(), category);
         }
         else if (batchType == BatchType::Testing)
         {
             images = imageContainer.getTestImagesByCategory(category);
-            labels.insert(labels.end(), images.size(), category);
         }
+        labels.insert(labels.end(), images.size(), category);
 
         allImages.insert(allImages.end(), images.begin(), images.end());
         allLabels.insert(allLabels.end(), labels.begin(), labels.end());
@@ -54,7 +51,7 @@ void BatchManager::initializeBatches()
     totalBatches = (allImages.size() + batchSize - 1) / batchSize;
 }
 
-bool BatchManager::getNextBatch(Eigen::MatrixXd &batchImages, Eigen::MatrixXd &batchLabels)
+bool BatchManager::getNextBatch(Eigen::Tensor<double, 4> &batchImages, Eigen::Tensor<int, 2> &batchLabels)
 {
     if (currentBatchIndex >= totalBatches)
     {
@@ -66,38 +63,38 @@ bool BatchManager::getNextBatch(Eigen::MatrixXd &batchImages, Eigen::MatrixXd &b
     int endIndex = std::min(startIndex + batchSize, static_cast<int>(allImages.size()));
 
     int currentBatchSize = endIndex - startIndex;
-    int imageSize = allImages[0]->rows * allImages[0]->cols * allImages[0]->channels();
+    int imageHeight = allImages[0]->rows;
+    int imageWidth = allImages[0]->cols;
+    int imageChannels = allImages[0]->channels();
 
-    batchImages.resize(currentBatchSize, imageSize);
-    batchLabels.resize(currentBatchSize, 1);
+    batchImages.resize(currentBatchSize, imageChannels, imageHeight, imageWidth);
+    batchLabels.resize(currentBatchSize, categories.size());
+    batchLabels.setZero();
 
     for (int i = 0; i < currentBatchSize; ++i)
     {
         cv::Mat &image = *allImages[startIndex + i];
-
-        // Convert cv::Mat to Eigen::MatrixXd using OpenCV function
+        cv::Mat reshapedImage = image.reshape(1, imageHeight * imageWidth);
         Eigen::MatrixXd eigenImage;
-        cv::cv2eigen(image.reshape(1, 1), eigenImage);
+        cv::cv2eigen(reshapedImage, eigenImage);
+        eigenImage = eigenImage.cast<double>(); // Use the image directly without further normalization
 
-        batchImages.row(i) = eigenImage.cast<double>();
+        // Copy eigenImage data to batchImages tensor
+        for (int c = 0; c < imageChannels; ++c)
+        {
+            for (int h = 0; h < imageHeight; ++h)
+            {
+                for (int w = 0; w < imageWidth; ++w)
+                {
+                    batchImages(i, c, h, w) = eigenImage(h, w * imageChannels + c);
+                }
+            }
+        }
 
-        batchLabels(i, 0) = std::find(categories.begin(), categories.end(), allLabels[startIndex + i]) - categories.begin();
+        // One-hot encode the label
+        int labelIndex = std::distance(categories.begin(), std::find(categories.begin(), categories.end(), allLabels[startIndex + i]));
+        batchLabels(i, labelIndex) = 1;
     }
-
-    // std::filesystem::create_directories("testing/matrix");
-    // for (int i = 0; i < currentBatchSize; ++i)
-    // {
-    //     // Convert Eigen::MatrixXd row back to cv::Mat for visual inspection
-    //     Eigen::MatrixXd Image = batchImages.row(i);
-    //     cv::Mat restoredImage;
-    //     cv::eigen2cv(Image, restoredImage);
-    //     restoredImage = restoredImage.reshape(3, allImages[0]->rows); // Reshape back to original size
-    //     restoredImage.convertTo(restoredImage, CV_8UC3, 255.0);       // Scale back to 0-255
-
-    //     // Save the restored image
-    //     std::string matrixImagePath = "testing/matrix/matrix_image_" + std::to_string(currentBatchIndex) + "_" + std::to_string(i) + ".png";
-    //     cv::imwrite(matrixImagePath, restoredImage);
-    // }
 
     currentBatchIndex++;
     return true;

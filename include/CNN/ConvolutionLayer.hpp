@@ -3,9 +3,8 @@
 
 #include <vector>
 #include <random>
-#include <Eigen/Dense>
+#include <unsupported/Eigen/CXX11/Tensor>
 #include "Layer.hpp"
-#include "MaxPoolingLayer.hpp"
 #include "ThreadPool.hpp"
 #include "Optimizer.hpp"
 
@@ -34,19 +33,19 @@ public:
     int getPadding() const;
     int getStride() const;
 
-    Eigen::MatrixXd forward(const Eigen::MatrixXd &input_batch) override;
-    Eigen::MatrixXd backward(const Eigen::MatrixXd &d_output_batch, const Eigen::MatrixXd &input_batch, double learning_rate) override;
+    Eigen::Tensor<double, 4> forward(const Eigen::Tensor<double, 4> &input_batch) override;
+    Eigen::Tensor<double, 4> backward(const Eigen::Tensor<double, 4> &d_output_batch, const Eigen::Tensor<double, 4> &input_batch, double learning_rate) override;
 
-    void setBiases(const Eigen::VectorXd &new_biases);
-    Eigen::VectorXd getBiases() const;
+    void setBiases(const Eigen::Tensor<double, 1> &new_biases);
+    Eigen::Tensor<double, 1> getBiases() const;
 
-    void setKernels(const std::vector<std::vector<Eigen::MatrixXd>> &new_kernels);
+    void setKernels(const Eigen::Tensor<double, 4> &new_kernels);
 
-    Eigen::MatrixXd padInput(const Eigen::MatrixXd &input, int pad);
-    double convolve(const Eigen::MatrixXd &input, const Eigen::MatrixXd &kernel, int start_row, int start_col);
+    Eigen::Tensor<double, 3> padInput(const Eigen::Tensor<double, 3> &input, int pad);
+    double convolve(const Eigen::Tensor<double, 3> &input, const Eigen::Tensor<double, 2> &kernel, int start_row, int start_col);
 
-    std::vector<std::vector<Eigen::MatrixXd>> kernels; // Kernels for each filter, each filter has a kernel for each input depth
-    Eigen::VectorXd biases;                            // Biases for each filter
+    Eigen::Tensor<double, 4> kernels; // Kernels for each filter
+    Eigen::Tensor<double, 1> biases;  // Biases for each filter
 
     static inline bool debugging = false;
 
@@ -70,9 +69,9 @@ private:
     ThreadPool forwardThreadPool;
     ThreadPool backwardThreadPool;
 
-    void processForwardBatch(Eigen::MatrixXd &output_batch, const Eigen::MatrixXd &input_batch, int batch_index);
-    void processBackwardBatch(const Eigen::MatrixXd &d_output_batch, const Eigen::MatrixXd &input_batch, Eigen::MatrixXd &d_input_batch,
-                              std::vector<std::vector<Eigen::MatrixXd>> &d_kernels, Eigen::VectorXd &d_biases, int batch_index, double learning_rate);
+    void processForwardBatch(Eigen::Tensor<double, 4> &output_batch, const Eigen::Tensor<double, 4> &input_batch, int batch_index);
+    void processBackwardBatch(const Eigen::Tensor<double, 4> &d_output_batch, const Eigen::Tensor<double, 4> &input_batch, Eigen::Tensor<double, 4> &d_input_batch,
+                              Eigen::Tensor<double, 4> &d_kernels, Eigen::Tensor<double, 1> &d_biases, int batch_index, double learning_rate);
 };
 
 #endif // CONVOLUTIONLAYER_HPP

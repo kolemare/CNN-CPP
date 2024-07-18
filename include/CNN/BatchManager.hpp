@@ -2,7 +2,7 @@
 #define BATCHMANAGER_HPP
 
 #include "ImageContainer.hpp"
-#include <Eigen/Dense>
+#include <unsupported/Eigen/CXX11/Tensor>
 #include <vector>
 #include <string>
 
@@ -18,7 +18,7 @@ public:
     BatchManager(const ImageContainer &imageContainer, int batchSize, const std::vector<std::string> &categories, BatchType batchType);
 
     void initializeBatches();
-    bool getNextBatch(Eigen::MatrixXd &batchImages, Eigen::MatrixXd &batchLabels);
+    bool getNextBatch(Eigen::Tensor<double, 4> &batchImages, Eigen::Tensor<int, 2> &batchLabels);
     size_t getTotalBatches() const;
 
 private:

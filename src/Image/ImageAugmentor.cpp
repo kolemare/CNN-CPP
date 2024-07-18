@@ -61,12 +61,6 @@ void ImageAugmentor::augmentImages(ImageContainer &container)
 
         normalizeImage(*image);
 
-        cv::Mat saveImage;
-        image->convertTo(saveImage, CV_8UC3, 255.0);
-        std::string filename = "ati/image_" + std::to_string(imagecounter) + ".png";
-        imagecounter++;
-        cv::imwrite(filename, saveImage);
-
 #ifdef AUGMENT_PROGRESS
         processedTrainingImages++;
         int progress = (processedTrainingImages * 100) / trainingImagesCount;

@@ -1,5 +1,4 @@
 #include "ConvolutionLayer.hpp"
-#include "MaxPoolingLayer.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <cmath>
@@ -52,7 +51,6 @@ int ConvolutionLayer::getPadding() const
 
 void ConvolutionLayer::initializeKernels(ConvKernelInitialization kernel_init)
 {
-    kernels.resize(filters);
     std::random_device rd;
     std::mt19937 gen(rd());
     std::normal_distribution<> dis;
@@ -70,35 +68,33 @@ void ConvolutionLayer::initializeKernels(ConvKernelInitialization kernel_init)
         break;
     }
 
+    kernels = Eigen::Tensor<double, 4>(filters, input_depth, kernel_size, kernel_size);
     for (int f = 0; f < filters; ++f)
     {
-        kernels[f].resize(input_depth);
         for (int d = 0; d < input_depth; ++d)
         {
-            Eigen::MatrixXd kernel(kernel_size, kernel_size);
             for (int i = 0; i < kernel_size; ++i)
             {
                 for (int j = 0; j < kernel_size; ++j)
                 {
-                    kernel(i, j) = dis(gen);
+                    kernels(f, d, i, j) = dis(gen);
                 }
             }
-            kernels[f][d] = kernel;
         }
     }
 }
 
 void ConvolutionLayer::initializeBiases(ConvBiasInitialization bias_init)
 {
-    biases.resize(filters);
     std::random_device rd;
     std::mt19937 gen(rd());
     std::normal_distribution<> bias_dis(0, 1.0); // Initialize outside of switch statement
 
+    biases = Eigen::Tensor<double, 1>(filters);
     switch (bias_init)
     {
     case ConvBiasInitialization::ZERO:
-        biases = Eigen::VectorXd::Zero(filters);
+        biases.setZero();
         break;
     case ConvBiasInitialization::RANDOM_NORMAL:
         for (int i = 0; i < filters; ++i)
@@ -107,29 +103,29 @@ void ConvolutionLayer::initializeBiases(ConvBiasInitialization bias_init)
         }
         break;
     case ConvBiasInitialization::NONE:
-        biases = Eigen::VectorXd::Zero(filters);
+        biases.setZero();
         break;
     }
 
-    if (biases.size() != filters)
+    if (biases.dimension(0) != filters)
     {
         std::cerr << "Warning: Mismatch in biases size, initializing to zero.\n";
-        this->biases = Eigen::VectorXd::Zero(filters);
+        biases.setZero();
     }
 }
 
 // Forward pass with parallel processing
-Eigen::MatrixXd ConvolutionLayer::forward(const Eigen::MatrixXd &input_batch)
+Eigen::Tensor<double, 4> ConvolutionLayer::forward(const Eigen::Tensor<double, 4> &input_batch)
 {
-    int batch_size = input_batch.rows();
-    int input_size = std::sqrt(input_batch.cols() / input_depth);
-    if (input_size * input_size * input_depth != input_batch.cols())
+    int batch_size = input_batch.dimension(0);
+    int input_size = input_batch.dimension(2);
+    if (input_size * input_size * input_depth != input_batch.dimension(1) * input_batch.dimension(2) * input_batch.dimension(3))
     {
         throw std::invalid_argument("Input dimensions do not match the expected depth and size.");
     }
 
     int output_size = (input_size - kernel_size + 2 * padding) / stride + 1;
-    Eigen::MatrixXd output_batch(batch_size, filters * output_size * output_size);
+    Eigen::Tensor<double, 4> output_batch(batch_size, filters, output_size, output_size);
 
     std::vector<std::future<void>> futures;
 
@@ -144,28 +140,24 @@ Eigen::MatrixXd ConvolutionLayer::forward(const Eigen::MatrixXd &input_batch)
         f.get();
     }
 
-    // Update the static variables in MaxPoolingLayer
-    MaxPoolingLayer::setInputSize(output_size);
-    MaxPoolingLayer::setInputDepth(filters);
-
     return output_batch;
 }
 
 // Method to process each batch for forward pass
-void ConvolutionLayer::processForwardBatch(Eigen::MatrixXd &output_batch, const Eigen::MatrixXd &input_batch, int batch_index)
+void ConvolutionLayer::processForwardBatch(Eigen::Tensor<double, 4> &output_batch, const Eigen::Tensor<double, 4> &input_batch, int batch_index)
 {
-    int input_size = std::sqrt(input_batch.cols() / input_depth);
+    int input_size = input_batch.dimension(2);
     int output_size = (input_size - kernel_size + 2 * padding) / stride + 1;
-    Eigen::Map<const Eigen::MatrixXd> input(input_batch.row(batch_index).data(), input_size, input_size * input_depth);
 
     for (int f = 0; f < filters; ++f)
     {
-        Eigen::MatrixXd feature_map = Eigen::MatrixXd::Zero(output_size, output_size);
+        Eigen::Tensor<double, 2> feature_map(output_size, output_size);
+        feature_map.setZero();
 
         for (int d = 0; d < input_depth; ++d)
         {
-            Eigen::MatrixXd input_slice = input.middleCols(d * input_size, input_size);
-            Eigen::MatrixXd padded_input = padInput(input_slice, padding);
+            Eigen::Tensor<double, 3> input_slice = input_batch.chip(batch_index, 0).chip(d, 0);
+            Eigen::Tensor<double, 3> padded_input = padInput(input_slice, padding);
 
             for (int i = 0; i < output_size; ++i)
             {
@@ -173,31 +165,34 @@ void ConvolutionLayer::processForwardBatch(Eigen::MatrixXd &output_batch, const 
                 {
                     int row_start = i * stride;
                     int col_start = j * stride;
-                    double conv_sum = convolve(padded_input, kernels[f][d], row_start, col_start);
+                    double conv_sum = convolve(padded_input, kernels.chip(f, 0).chip(d, 0), row_start, col_start);
                     feature_map(i, j) += conv_sum;
                 }
             }
         }
 
         // Apply biases
-        feature_map.array() += biases(f);
+        feature_map = feature_map + biases(f);
 
         // Copy feature_map to output_batch
         std::lock_guard<std::mutex> lock(mutex);
-        output_batch.block(batch_index, f * output_size * output_size, 1, output_size * output_size) = Eigen::Map<Eigen::RowVectorXd>(feature_map.data(), feature_map.size());
+        output_batch.chip(batch_index, 0).chip(f, 0) = feature_map;
     }
 }
 
 // Backward pass with parallel processing
-Eigen::MatrixXd ConvolutionLayer::backward(const Eigen::MatrixXd &d_output_batch, const Eigen::MatrixXd &input_batch, double learning_rate)
+Eigen::Tensor<double, 4> ConvolutionLayer::backward(const Eigen::Tensor<double, 4> &d_output_batch, const Eigen::Tensor<double, 4> &input_batch, double learning_rate)
 {
-    int batch_size = input_batch.rows();
-    int input_size = std::sqrt(input_batch.cols() / input_depth);
+    int batch_size = input_batch.dimension(0);
+    int input_size = input_batch.dimension(2);
     int output_size = (input_size - kernel_size + 2 * padding) / stride + 1;
 
-    std::vector<std::vector<Eigen::MatrixXd>> d_kernels(filters, std::vector<Eigen::MatrixXd>(input_depth, Eigen::MatrixXd::Zero(kernel_size, kernel_size)));
-    Eigen::VectorXd d_biases = Eigen::VectorXd::Zero(filters);
-    Eigen::MatrixXd d_input_batch = Eigen::MatrixXd::Zero(batch_size, input_size * input_size * input_depth);
+    Eigen::Tensor<double, 4> d_kernels(filters, input_depth, kernel_size, kernel_size);
+    d_kernels.setZero();
+    Eigen::Tensor<double, 1> d_biases(filters);
+    d_biases.setZero();
+    Eigen::Tensor<double, 4> d_input_batch(batch_size, input_depth, input_size, input_size);
+    d_input_batch.setZero();
 
     std::vector<std::future<void>> futures;
 
@@ -212,68 +207,29 @@ Eigen::MatrixXd ConvolutionLayer::backward(const Eigen::MatrixXd &d_output_batch
         f.get();
     }
 
-    // Accumulate gradients for weights and biases
-    Eigen::MatrixXd accumulated_d_weights = Eigen::MatrixXd::Zero(filters, kernel_size * kernel_size * input_depth);
-    Eigen::VectorXd accumulated_d_biases = Eigen::VectorXd::Zero(filters);
-
-    for (int f = 0; f < filters; ++f)
-    {
-        for (int d = 0; d < input_depth; ++d)
-        {
-            Eigen::VectorXd flat_kernel = Eigen::Map<const Eigen::VectorXd>(d_kernels[f][d].data(), d_kernels[f][d].size());
-            accumulated_d_weights.row(f).segment(d * kernel_size * kernel_size, kernel_size * kernel_size) += flat_kernel.transpose();
-        }
-        accumulated_d_biases(f) += d_biases(f);
-    }
-
     // Update weights and biases using the optimizer
-    for (int f = 0; f < filters; ++f)
-    {
-        Eigen::MatrixXd weight_matrix(kernel_size * input_depth, kernel_size);
-        for (int d = 0; d < input_depth; ++d)
-        {
-            weight_matrix.block(d * kernel_size, 0, kernel_size, kernel_size) = kernels[f][d];
-        }
-
-        Eigen::MatrixXd d_weight_matrix = Eigen::Map<const Eigen::MatrixXd>(accumulated_d_weights.row(f).data(), kernel_size * input_depth, kernel_size);
-
-        // Create a vector for current biases and gradients
-        Eigen::VectorXd current_biases = biases;
-        Eigen::VectorXd d_current_biases = accumulated_d_biases;
-
-        optimizer->update(weight_matrix, current_biases, d_weight_matrix, d_current_biases, learning_rate);
-
-        // Copy updated weights back to kernels
-        for (int d = 0; d < input_depth; ++d)
-        {
-            kernels[f][d] = weight_matrix.block(d * kernel_size, 0, kernel_size, kernel_size);
-        }
-
-        // Copy updated biases back
-        biases(f) = current_biases(f);
-    }
+    optimizer->update(kernels, biases, d_kernels, d_biases, learning_rate);
 
     return d_input_batch;
 }
 
 // Method to process each batch for backward pass
-void ConvolutionLayer::processBackwardBatch(const Eigen::MatrixXd &d_output_batch, const Eigen::MatrixXd &input_batch, Eigen::MatrixXd &d_input_batch,
-                                            std::vector<std::vector<Eigen::MatrixXd>> &d_kernels, Eigen::VectorXd &d_biases, int batch_index, double learning_rate)
+void ConvolutionLayer::processBackwardBatch(const Eigen::Tensor<double, 4> &d_output_batch, const Eigen::Tensor<double, 4> &input_batch, Eigen::Tensor<double, 4> &d_input_batch,
+                                            Eigen::Tensor<double, 4> &d_kernels, Eigen::Tensor<double, 1> &d_biases, int batch_index, double learning_rate)
 {
-    int input_size = std::sqrt(input_batch.cols() / input_depth);
+    int input_size = input_batch.dimension(2);
     int output_size = (input_size - kernel_size + 2 * padding) / stride + 1;
-    Eigen::Map<const Eigen::MatrixXd> input(input_batch.row(batch_index).data(), input_size, input_size * input_depth);
-    Eigen::Map<const Eigen::MatrixXd> d_output(d_output_batch.row(batch_index).data(), filters, output_size * output_size);
 
     for (int f = 0; f < filters; ++f)
     {
-        Eigen::MatrixXd d_output_reshaped = Eigen::Map<const Eigen::MatrixXd>(d_output.row(f).data(), output_size, output_size);
+        Eigen::Tensor<double, 2> d_output_reshaped = d_output_batch.chip(batch_index, 0).chip(f, 0);
 
         for (int d = 0; d < input_depth; ++d)
         {
-            Eigen::MatrixXd input_slice = input.middleCols(d * input_size, input_size);
-            Eigen::MatrixXd padded_input = padInput(input_slice, padding);
-            Eigen::MatrixXd d_input_slice = Eigen::MatrixXd::Zero(input_size, input_size);
+            Eigen::Tensor<double, 3> input_slice = input_batch.chip(batch_index, 0).chip(d, 0);
+            Eigen::Tensor<double, 3> padded_input = padInput(input_slice, padding);
+            Eigen::Tensor<double, 3> d_input_slice(input_size, input_size, 1);
+            d_input_slice.setZero();
 
             for (int i = 0; i < output_size; ++i)
             {
@@ -288,13 +244,13 @@ void ConvolutionLayer::processBackwardBatch(const Eigen::MatrixXd &d_output_batc
                             int row_index = row_start + k;
                             int col_index = col_start + l;
 
-                            if (row_index < padded_input.rows() && col_index < padded_input.cols())
+                            if (row_index < padded_input.dimension(0) && col_index < padded_input.dimension(1))
                             {
-                                d_kernels[f][d](k, l) += d_output_reshaped(i, j) * padded_input(row_index, col_index);
+                                d_kernels(f, d, k, l) += d_output_reshaped(i, j) * padded_input(row_index, col_index);
 
-                                if (row_index < d_input_slice.rows() && col_index < d_input_slice.cols())
+                                if (row_index < d_input_slice.dimension(0) && col_index < d_input_slice.dimension(1))
                                 {
-                                    d_input_slice(row_index, col_index) += d_output_reshaped(i, j) * kernels[f][d](k, l);
+                                    d_input_slice(row_index, col_index) += d_output_reshaped(i, j) * kernels(f, d, k, l);
                                 }
                             }
                         }
@@ -303,16 +259,23 @@ void ConvolutionLayer::processBackwardBatch(const Eigen::MatrixXd &d_output_batc
             }
 
             std::lock_guard<std::mutex> lock(mutex);
-            Eigen::Map<Eigen::RowVectorXd>(d_input_batch.row(batch_index).data() + d * input_size * input_size, input_size * input_size) = Eigen::Map<Eigen::RowVectorXd>(d_input_slice.data(), d_input_slice.size());
+            d_input_batch.chip(batch_index, 0).chip(d, 0) = d_input_slice;
         }
 
-        d_biases(f) += d_output_reshaped.sum();
+        // Apply bias updates per output feature map
+        for (int i = 0; i < output_size; ++i)
+        {
+            for (int j = 0; j < output_size; ++j)
+            {
+                d_biases(f) += d_output_reshaped(i, j);
+            }
+        }
     }
 }
 
-void ConvolutionLayer::setBiases(const Eigen::VectorXd &new_biases)
+void ConvolutionLayer::setBiases(const Eigen::Tensor<double, 1> &new_biases)
 {
-    if (new_biases.size() == filters)
+    if (new_biases.dimension(0) == filters)
     {
         biases = new_biases;
     }
@@ -322,38 +285,39 @@ void ConvolutionLayer::setBiases(const Eigen::VectorXd &new_biases)
     }
 }
 
-Eigen::VectorXd ConvolutionLayer::getBiases() const
+Eigen::Tensor<double, 1> ConvolutionLayer::getBiases() const
 {
     return biases;
 }
 
-Eigen::MatrixXd ConvolutionLayer::padInput(const Eigen::MatrixXd &input, int pad)
+Eigen::Tensor<double, 3> ConvolutionLayer::padInput(const Eigen::Tensor<double, 3> &input, int pad)
 {
     if (pad == 0)
         return input;
 
-    int padded_size = input.rows() + 2 * pad;
-    Eigen::MatrixXd padded_input = Eigen::MatrixXd::Zero(padded_size, padded_size);
-    padded_input.block(pad, pad, input.rows(), input.cols()) = input;
+    int padded_size = input.dimension(0) + 2 * pad;
+    Eigen::Tensor<double, 3> padded_input(padded_size, padded_size, input.dimension(2));
+    padded_input.setZero();
+    padded_input.slice(Eigen::array<int, 3>{pad, pad, 0}, input.dimensions()) = input;
     return padded_input;
 }
 
-double ConvolutionLayer::convolve(const Eigen::MatrixXd &input, const Eigen::MatrixXd &kernel, int start_row, int start_col)
+double ConvolutionLayer::convolve(const Eigen::Tensor<double, 3> &input, const Eigen::Tensor<double, 2> &kernel, int start_row, int start_col)
 {
     double sum = 0.0;
-    for (int i = 0; i < kernel_size; ++i)
+    for (int i = 0; i < kernel.dimension(0); ++i)
     {
-        for (int j = 0; j < kernel_size; ++j)
+        for (int j = 0; j < kernel.dimension(1); ++j)
         {
-            sum += input(start_row + i, start_col + j) * kernel(i, j);
+            sum += input(start_row + i, start_col + j, 0) * kernel(i, j);
         }
     }
     return sum;
 }
 
-void ConvolutionLayer::setKernels(const std::vector<std::vector<Eigen::MatrixXd>> &new_kernels)
+void ConvolutionLayer::setKernels(const Eigen::Tensor<double, 4> &new_kernels)
 {
-    if (new_kernels.size() == filters && new_kernels[0].size() == input_depth)
+    if (new_kernels.dimension(0) == filters && new_kernels.dimension(1) == input_depth)
     {
         kernels = new_kernels;
     }
