@@ -3,6 +3,7 @@
 
 #include <Eigen/Dense>
 #include "Layer.hpp"
+#include "Optimizer.hpp"
 #include <iostream>
 
 enum ActivationType
@@ -22,6 +23,8 @@ public:
 
     Eigen::MatrixXd forward(const Eigen::MatrixXd &input_batch) override;
     Eigen::MatrixXd backward(const Eigen::MatrixXd &d_output_batch, const Eigen::MatrixXd &input_batch, double learning_rate) override;
+    bool needsOptimizer() const override;
+    void setOptimizer(std::unique_ptr<Optimizer> optimizer) override;
 
     void setAlpha(double alphaValue);
     double getAlpha() const;

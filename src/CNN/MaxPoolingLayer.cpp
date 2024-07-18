@@ -11,6 +11,16 @@ int MaxPoolingLayer::input_depth = 0;
 MaxPoolingLayer::MaxPoolingLayer(int pool_size, int stride)
     : pool_size(pool_size), stride(stride) {}
 
+bool MaxPoolingLayer::needsOptimizer() const
+{
+    return false;
+}
+
+void MaxPoolingLayer::setOptimizer(std::unique_ptr<Optimizer> optimizer)
+{
+    return;
+}
+
 void MaxPoolingLayer::setInputSize(int size)
 {
     input_size = size;

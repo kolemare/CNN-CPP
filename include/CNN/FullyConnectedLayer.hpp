@@ -38,6 +38,9 @@ public:
     void setInputSize(int input_size);
     int getOutputSize() const;
 
+    bool needsOptimizer() const override;
+    void setOptimizer(std::unique_ptr<Optimizer> optimizer) override;
+
 private:
     int input_size;
     int output_size;
@@ -47,6 +50,8 @@ private:
     DenseWeightInitialization weight_init;
     DenseBiasInitialization bias_init;
     unsigned int seed;
+
+    std::unique_ptr<Optimizer> optimizer;
 
     void initializeWeights();
     void initializeBiases();

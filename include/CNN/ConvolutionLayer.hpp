@@ -7,6 +7,7 @@
 #include "Layer.hpp"
 #include "MaxPoolingLayer.hpp"
 #include "ThreadPool.hpp"
+#include "Optimizer.hpp"
 
 enum class ConvKernelInitialization
 {
@@ -52,6 +53,9 @@ public:
     void initializeKernels(ConvKernelInitialization kernel_init);
     void initializeBiases(ConvBiasInitialization bias_init);
 
+    bool needsOptimizer() const override;
+    void setOptimizer(std::unique_ptr<Optimizer> optimizer) override;
+
 private:
     int filters;
     int kernel_size;
@@ -59,6 +63,8 @@ private:
     int stride;
     int padding;
     std::mutex mutex;
+
+    std::unique_ptr<Optimizer> optimizer;
 
     // Thread pools for parallel processing
     ThreadPool forwardThreadPool;

@@ -105,9 +105,16 @@ void NeuralNetwork::setLossFunction(LossType type)
     }
 }
 
-void NeuralNetwork::compile(std::unique_ptr<Optimizer> optimizer)
+void NeuralNetwork::compile(Optimizer::Type optimizerType, const std::unordered_map<std::string, double> &optimizer_params)
 {
-    this->optimizer = std::move(optimizer);
+    for (auto &layer : layers)
+    {
+        if (layer->needsOptimizer())
+        {
+            std::unique_ptr<Optimizer> optimizer = Optimizer::create(optimizerType, optimizer_params);
+            layer->setOptimizer(std::move(optimizer));
+        }
+    }
 
     int height = inputHeight;
     int width = inputWidth;
@@ -119,7 +126,6 @@ void NeuralNetwork::compile(std::unique_ptr<Optimizer> optimizer)
         {
             conv_layer->setInputDepth(currentDepth);
             currentDepth = conv_layer->getFilters();
-
             height = (height - conv_layer->getKernelSize() + 2 * conv_layer->getPadding()) / conv_layer->getStride() + 1;
             width = (width - conv_layer->getKernelSize() + 2 * conv_layer->getPadding()) / conv_layer->getStride() + 1;
         }

@@ -4,6 +4,16 @@
 BatchNormalizationLayer::BatchNormalizationLayer(double epsilon, double momentum)
     : epsilon(epsilon), momentum(momentum), initialized(false) {}
 
+bool BatchNormalizationLayer::needsOptimizer() const
+{
+    return false;
+}
+
+void BatchNormalizationLayer::setOptimizer(std::unique_ptr<Optimizer> optimizer)
+{
+    return;
+}
+
 void BatchNormalizationLayer::initialize(int input_dim)
 {
     gamma = Eigen::VectorXd::Ones(input_dim);

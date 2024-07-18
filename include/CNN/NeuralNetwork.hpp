@@ -54,7 +54,7 @@ public:
     void setLogLevel(LogLevel level);
     void setProgressLevel(ProgressLevel level);
 
-    void compile(std::unique_ptr<Optimizer> optimizer);
+    void compile(Optimizer::Type optimizerType, const std::unordered_map<std::string, double> &optimizer_params);
     Eigen::MatrixXd forward(const Eigen::MatrixXd &input);
     void backward(const Eigen::MatrixXd &d_output, double learning_rate);
     void train(const ImageContainer &imageContainer, int epochs, double learning_rate, int batch_size, const std::vector<std::string> &categories);

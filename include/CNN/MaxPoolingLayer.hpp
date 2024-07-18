@@ -12,6 +12,8 @@ public:
 
     Eigen::MatrixXd forward(const Eigen::MatrixXd &input_batch);
     Eigen::MatrixXd backward(const Eigen::MatrixXd &d_output_batch, const Eigen::MatrixXd &input_batch, double learning_rate);
+    bool needsOptimizer() const override;
+    void setOptimizer(std::unique_ptr<Optimizer> optimizer) override;
 
     // Static variable getters and setters
     static void setInputSize(int size);

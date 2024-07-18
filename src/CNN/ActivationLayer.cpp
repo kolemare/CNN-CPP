@@ -20,6 +20,16 @@ ActivationLayer::ActivationLayer(ActivationType type) : type(type)
     }
 }
 
+bool ActivationLayer::needsOptimizer() const
+{
+    return false;
+}
+
+void ActivationLayer::setOptimizer(std::unique_ptr<Optimizer> optimizer)
+{
+    return;
+}
+
 void ActivationLayer::setAlpha(double alphaValue)
 {
     alpha = alphaValue;

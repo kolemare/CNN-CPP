@@ -2,6 +2,16 @@
 #include <iostream>
 #include <stdexcept>
 
+bool FlattenLayer::needsOptimizer() const
+{
+    return false;
+}
+
+void FlattenLayer::setOptimizer(std::unique_ptr<Optimizer> optimizer)
+{
+    return;
+}
+
 Eigen::MatrixXd FlattenLayer::forward(const Eigen::MatrixXd &input)
 {
     batch_size = input.rows();

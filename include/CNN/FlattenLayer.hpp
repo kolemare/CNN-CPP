@@ -8,6 +8,8 @@ class FlattenLayer : public Layer
 public:
     Eigen::MatrixXd forward(const Eigen::MatrixXd &input) override;
     Eigen::MatrixXd backward(const Eigen::MatrixXd &d_output, const Eigen::MatrixXd &input, double learning_rate) override;
+    bool needsOptimizer() const override;
+    void setOptimizer(std::unique_ptr<Optimizer> optimizer) override;
 
 private:
     int batch_size;

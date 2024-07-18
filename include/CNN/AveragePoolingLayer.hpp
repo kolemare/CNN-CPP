@@ -11,6 +11,8 @@ public:
 
     Eigen::MatrixXd forward(const Eigen::MatrixXd &input_batch) override;
     Eigen::MatrixXd backward(const Eigen::MatrixXd &d_output_batch, const Eigen::MatrixXd &input_batch, double learning_rate) override;
+    bool needsOptimizer() const override;
+    void setOptimizer(std::unique_ptr<Optimizer> optimizer) override;
     int getPoolSize();
     int getStride();
 

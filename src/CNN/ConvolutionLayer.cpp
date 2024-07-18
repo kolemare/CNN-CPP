@@ -14,6 +14,16 @@ ConvolutionLayer::ConvolutionLayer(int filters, int kernel_size, int stride, int
     initializeBiases(bias_init);
 }
 
+bool ConvolutionLayer::needsOptimizer() const
+{
+    return true;
+}
+
+void ConvolutionLayer::setOptimizer(std::unique_ptr<Optimizer> optimizer)
+{
+    this->optimizer = std::move(optimizer);
+}
+
 void ConvolutionLayer::setInputDepth(int depth)
 {
     input_depth = depth;
@@ -189,10 +199,6 @@ Eigen::MatrixXd ConvolutionLayer::backward(const Eigen::MatrixXd &d_output_batch
     Eigen::VectorXd d_biases = Eigen::VectorXd::Zero(filters);
     Eigen::MatrixXd d_input_batch = Eigen::MatrixXd::Zero(batch_size, input_size * input_size * input_depth);
 
-    // Store old weights and biases for comparison
-    auto old_kernels = kernels;
-    auto old_biases = biases;
-
     std::vector<std::future<void>> futures;
 
     for (int b = 0; b < batch_size; ++b)
@@ -206,63 +212,46 @@ Eigen::MatrixXd ConvolutionLayer::backward(const Eigen::MatrixXd &d_output_batch
         f.get();
     }
 
-    for (int f = 0; f < filters; ++f)
-    {
-        for (int d = 0; d < input_depth; ++d)
-        {
-            kernels[f][d] -= learning_rate * d_kernels[f][d] / batch_size;
-        }
-        biases(f) -= learning_rate * d_biases(f) / batch_size;
-    }
-
-    // Compare and print updates
-    bool weights_updated = false;
-    bool biases_updated = false;
+    // Accumulate gradients for weights and biases
+    Eigen::MatrixXd accumulated_d_weights = Eigen::MatrixXd::Zero(filters, kernel_size * kernel_size * input_depth);
+    Eigen::VectorXd accumulated_d_biases = Eigen::VectorXd::Zero(filters);
 
     for (int f = 0; f < filters; ++f)
     {
         for (int d = 0; d < input_depth; ++d)
         {
-            if (!weights_updated)
-            {
-                for (int i = 0; i < kernel_size; ++i)
-                {
-                    for (int j = 0; j < kernel_size; ++j)
-                    {
-                        if (kernels[f][d](i, j) != old_kernels[f][d](i, j))
-                        {
-                            weights_updated = true;
-                            break;
-                        }
-                    }
-                    if (weights_updated)
-                        break;
-                }
-            }
+            Eigen::VectorXd flat_kernel = Eigen::Map<const Eigen::VectorXd>(d_kernels[f][d].data(), d_kernels[f][d].size());
+            accumulated_d_weights.row(f).segment(d * kernel_size * kernel_size, kernel_size * kernel_size) += flat_kernel.transpose();
         }
-
-        if (!biases_updated && biases(f) != old_biases(f))
-        {
-            biases_updated = true;
-        }
+        accumulated_d_biases(f) += d_biases(f);
     }
 
-    // std::cout << "Weights before update (first 3x3 block of first filter and depth 0):\n"
-    //           << old_kernels[0][0].block(0, 0, std::min(3, static_cast<int>(old_kernels[0][0].rows())), std::min(3, static_cast<int>(old_kernels[0][0].cols()))) << " ..." << std::endl;
+    // Update weights and biases using the optimizer
+    for (int f = 0; f < filters; ++f)
+    {
+        Eigen::MatrixXd weight_matrix(kernel_size * input_depth, kernel_size);
+        for (int d = 0; d < input_depth; ++d)
+        {
+            weight_matrix.block(d * kernel_size, 0, kernel_size, kernel_size) = kernels[f][d];
+        }
 
-    // std::cout << "Biases before update (first 5 elements):\n"
-    //           << old_biases.head(std::min(5, static_cast<int>(old_biases.size())))
-    //           << " ..." << std::endl;
+        Eigen::MatrixXd d_weight_matrix = Eigen::Map<const Eigen::MatrixXd>(accumulated_d_weights.row(f).data(), kernel_size * input_depth, kernel_size);
 
-    // std::cout << "Weights after update (first 3x3 block of first filter and depth 0):\n"
-    //           << kernels[0][0].block(0, 0, std::min(3, static_cast<int>(kernels[0][0].rows())), std::min(3, static_cast<int>(kernels[0][0].cols()))) << " ..." << std::endl;
+        // Create a vector for current biases and gradients
+        Eigen::VectorXd current_biases = biases;
+        Eigen::VectorXd d_current_biases = accumulated_d_biases;
 
-    // std::cout << "Biases after update (first 5 elements):\n"
-    //           << biases.head(std::min(5, static_cast<int>(biases.size())))
-    //           << " ..." << std::endl;
+        optimizer->update(weight_matrix, current_biases, d_weight_matrix, d_current_biases, learning_rate);
 
-    // std::cout << (weights_updated ? "Weights have been updated.\n" : "No updates to weights.\n");
-    // std::cout << (biases_updated ? "Biases have been updated.\n" : "No updates to biases.\n");
+        // Copy updated weights back to kernels
+        for (int d = 0; d < input_depth; ++d)
+        {
+            kernels[f][d] = weight_matrix.block(d * kernel_size, 0, kernel_size, kernel_size);
+        }
+
+        // Copy updated biases back
+        biases(f) = current_biases(f);
+    }
 
     return d_input_batch;
 }

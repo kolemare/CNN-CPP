@@ -11,6 +11,16 @@ FullyConnectedLayer::FullyConnectedLayer(int output_size, DenseWeightInitializat
     }
 }
 
+bool FullyConnectedLayer::needsOptimizer() const
+{
+    return true;
+}
+
+void FullyConnectedLayer::setOptimizer(std::unique_ptr<Optimizer> optimizer)
+{
+    this->optimizer = std::move(optimizer);
+}
+
 void FullyConnectedLayer::setInputSize(int input_size)
 {
     if (input_size <= 0)
@@ -97,9 +107,8 @@ Eigen::MatrixXd FullyConnectedLayer::backward(const Eigen::MatrixXd &d_output_ba
     Eigen::VectorXd d_biases = d_output_batch.colwise().sum();
     Eigen::MatrixXd d_input = d_output_batch * weights;
 
-    // Update weights and biases
-    weights -= learning_rate * d_weights / input_batch.rows();
-    biases -= learning_rate * d_biases / input_batch.rows();
+    // Update weights and biases using the optimizer
+    optimizer->update(weights, biases, d_weights, d_biases, learning_rate);
 
     return d_input;
 }

@@ -4,6 +4,16 @@
 AveragePoolingLayer::AveragePoolingLayer(int pool_size, int stride)
     : pool_size(pool_size), stride(stride) {}
 
+bool AveragePoolingLayer::needsOptimizer() const
+{
+    return false;
+}
+
+void AveragePoolingLayer::setOptimizer(std::unique_ptr<Optimizer> optimizer)
+{
+    return;
+}
+
 int AveragePoolingLayer::getPoolSize()
 {
     return pool_size;
