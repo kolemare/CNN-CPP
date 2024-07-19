@@ -2,6 +2,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <algorithm>
+#include <unsupported/Eigen/CXX11/Tensor>
 
 std::unique_ptr<LossFunction> LossFunction::create(LossType type)
 {
@@ -19,38 +20,41 @@ std::unique_ptr<LossFunction> LossFunction::create(LossType type)
 }
 
 // Binary Cross Entropy
-double BinaryCrossEntropy::compute(const Eigen::MatrixXd &predictions, const Eigen::MatrixXd &targets) const
+double BinaryCrossEntropy::compute(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const
 {
-    Eigen::MatrixXd log_preds = (predictions.array().log());
-    Eigen::MatrixXd log_one_minus_preds = (1 - predictions.array()).log();
-    return -(targets.array() * log_preds.array() + (1 - targets.array()) * log_one_minus_preds.array()).mean();
+    Eigen::Tensor<double, 4> log_preds = predictions.log();
+    Eigen::Tensor<double, 4> log_one_minus_preds = (1.0 - predictions).log();
+    Eigen::Tensor<double, 0> loss = -(targets.cast<double>() * log_preds + (1.0 - targets.cast<double>()) * log_one_minus_preds).mean();
+    return loss();
 }
 
-Eigen::MatrixXd BinaryCrossEntropy::derivative(const Eigen::MatrixXd &predictions, const Eigen::MatrixXd &targets) const
+Eigen::Tensor<double, 4> BinaryCrossEntropy::derivative(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const
 {
-    return (predictions - targets).array() / (predictions.array() * (1 - predictions.array()));
+    return (predictions - targets.cast<double>()) / (predictions * (1.0 - predictions));
 }
 
 // Mean Squared Error
-double MeanSquaredError::compute(const Eigen::MatrixXd &predictions, const Eigen::MatrixXd &targets) const
+double MeanSquaredError::compute(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const
 {
-    return (predictions - targets).array().square().mean();
+    Eigen::Tensor<double, 0> loss = (predictions - targets.cast<double>()).square().mean();
+    return loss();
 }
 
-Eigen::MatrixXd MeanSquaredError::derivative(const Eigen::MatrixXd &predictions, const Eigen::MatrixXd &targets) const
+Eigen::Tensor<double, 4> MeanSquaredError::derivative(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const
 {
-    return 2 * (predictions - targets) / predictions.rows();
+    return 2 * (predictions - targets.cast<double>()) / predictions.dimension(0);
 }
 
 // Categorical Cross Entropy
-double CategoricalCrossEntropy::compute(const Eigen::MatrixXd &predictions, const Eigen::MatrixXd &targets) const
+double CategoricalCrossEntropy::compute(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const
 {
-    Eigen::MatrixXd clipped_preds = predictions.array().max(1e-10).min(1.0 - 1e-10);
-    return -(targets.array() * clipped_preds.array().log()).mean();
+    Eigen::Tensor<double, 4> clipped_preds = predictions.cwiseMax(1e-10).cwiseMin(1.0 - 1e-10);
+    Eigen::Tensor<double, 0> loss = -(targets.cast<double>() * clipped_preds.log()).mean();
+    return loss();
 }
 
-Eigen::MatrixXd CategoricalCrossEntropy::derivative(const Eigen::MatrixXd &predictions, const Eigen::MatrixXd &targets) const
+Eigen::Tensor<double, 4> CategoricalCrossEntropy::derivative(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const
 {
-    Eigen::MatrixXd clipped_preds = predictions.array().max(1e-10).min(1.0 - 1e-10);
-    return -(targets.array() / clipped_preds.array());
+    Eigen::Tensor<double, 4> clipped_preds = predictions.cwiseMax(1e-10).cwiseMin(1.0 - 1e-10);
+    return -(targets.cast<double>() / clipped_preds);
 }

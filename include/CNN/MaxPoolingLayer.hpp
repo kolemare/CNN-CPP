@@ -13,7 +13,7 @@ public:
     Eigen::Tensor<double, 4> forward(const Eigen::Tensor<double, 4> &input_batch) override;
     Eigen::Tensor<double, 4> backward(const Eigen::Tensor<double, 4> &d_output_batch, const Eigen::Tensor<double, 4> &input_batch, double learning_rate) override;
     bool needsOptimizer() const override;
-    void setOptimizer(std::unique_ptr<Optimizer> optimizer) override;
+    void setOptimizer(std::shared_ptr<Optimizer> optimizer) override;
 
     int getPoolSize() const;
     int getStride() const;

@@ -1,7 +1,7 @@
 #ifndef LOSSFUNCTION_HPP
 #define LOSSFUNCTION_HPP
 
-#include <Eigen/Dense>
+#include <unsupported/Eigen/CXX11/Tensor>
 #include <memory>
 #include <stdexcept>
 
@@ -17,30 +17,30 @@ class LossFunction
 public:
     static std::unique_ptr<LossFunction> create(LossType type);
 
-    virtual double compute(const Eigen::MatrixXd &predictions, const Eigen::MatrixXd &targets) const = 0;
-    virtual Eigen::MatrixXd derivative(const Eigen::MatrixXd &predictions, const Eigen::MatrixXd &targets) const = 0;
+    virtual double compute(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const = 0;
+    virtual Eigen::Tensor<double, 4> derivative(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const = 0;
     virtual ~LossFunction() = default;
 };
 
 class BinaryCrossEntropy : public LossFunction
 {
 public:
-    double compute(const Eigen::MatrixXd &predictions, const Eigen::MatrixXd &targets) const override;
-    Eigen::MatrixXd derivative(const Eigen::MatrixXd &predictions, const Eigen::MatrixXd &targets) const override;
+    double compute(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const override;
+    Eigen::Tensor<double, 4> derivative(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const override;
 };
 
 class MeanSquaredError : public LossFunction
 {
 public:
-    double compute(const Eigen::MatrixXd &predictions, const Eigen::MatrixXd &targets) const override;
-    Eigen::MatrixXd derivative(const Eigen::MatrixXd &predictions, const Eigen::MatrixXd &targets) const override;
+    double compute(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const override;
+    Eigen::Tensor<double, 4> derivative(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const override;
 };
 
 class CategoricalCrossEntropy : public LossFunction
 {
 public:
-    double compute(const Eigen::MatrixXd &predictions, const Eigen::MatrixXd &targets) const override;
-    Eigen::MatrixXd derivative(const Eigen::MatrixXd &predictions, const Eigen::MatrixXd &targets) const override;
+    double compute(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const override;
+    Eigen::Tensor<double, 4> derivative(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const override;
 };
 
 #endif // LOSSFUNCTION_HPP

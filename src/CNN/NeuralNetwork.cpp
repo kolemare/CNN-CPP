@@ -52,15 +52,6 @@ void NeuralNetwork::addAveragePoolingLayer(int pool_size, int stride)
     }
 }
 
-void NeuralNetwork::addBatchNormalizationLayer(double epsilon, double momentum)
-{
-    layers.push_back(std::make_shared<BatchNormalizationLayer>(epsilon, momentum));
-    if (logLevel == LogLevel::All)
-    {
-        std::cout << "Added BatchNormalization Layer with epsilon " << epsilon << ", momentum " << momentum << std::endl;
-    }
-}
-
 void NeuralNetwork::addFlattenLayer()
 {
     if (!flattenAdded)
@@ -107,14 +98,7 @@ void NeuralNetwork::setLossFunction(LossType type)
 
 void NeuralNetwork::compile(Optimizer::Type optimizerType, const std::unordered_map<std::string, double> &optimizer_params)
 {
-    for (auto &layer : layers)
-    {
-        if (layer->needsOptimizer())
-        {
-            std::unique_ptr<Optimizer> optimizer = Optimizer::create(optimizerType, optimizer_params);
-            layer->setOptimizer(std::move(optimizer));
-        }
-    }
+    optimizer = Optimizer::create(optimizerType, optimizer_params);
 
     int height = inputHeight;
     int width = inputWidth;
@@ -128,6 +112,7 @@ void NeuralNetwork::compile(Optimizer::Type optimizerType, const std::unordered_
             currentDepth = conv_layer->getFilters();
             height = (height - conv_layer->getKernelSize() + 2 * conv_layer->getPadding()) / conv_layer->getStride() + 1;
             width = (width - conv_layer->getKernelSize() + 2 * conv_layer->getPadding()) / conv_layer->getStride() + 1;
+            conv_layer->setOptimizer(optimizer);
         }
         else if (auto pool_layer = dynamic_cast<MaxPoolingLayer *>(layers[i].get()))
         {
@@ -139,10 +124,6 @@ void NeuralNetwork::compile(Optimizer::Type optimizerType, const std::unordered_
             height = (height - pool_layer->getPoolSize()) / pool_layer->getStride() + 1;
             width = (width - pool_layer->getPoolSize()) / pool_layer->getStride() + 1;
         }
-        else if (auto batch_norm_layer = dynamic_cast<BatchNormalizationLayer *>(layers[i].get()))
-        {
-            // BatchNormalization layer does not change dimensions
-        }
         else if (auto fc_layer = dynamic_cast<FullyConnectedLayer *>(layers[i].get()))
         {
             if (input_size == -1)
@@ -151,6 +132,7 @@ void NeuralNetwork::compile(Optimizer::Type optimizerType, const std::unordered_
             }
             fc_layer->setInputSize(input_size);
             input_size = fc_layer->getOutputSize();
+            fc_layer->setOptimizer(optimizer);
         }
         else if (dynamic_cast<FlattenLayer *>(layers[i].get()))
         {
@@ -159,16 +141,16 @@ void NeuralNetwork::compile(Optimizer::Type optimizerType, const std::unordered_
     }
 }
 
-Eigen::MatrixXd NeuralNetwork::forward(const Eigen::MatrixXd &input)
+Eigen::Tensor<double, 4> NeuralNetwork::forward(const Eigen::Tensor<double, 4> &input)
 {
     if (logLevel == LogLevel::All || logLevel == LogLevel::LayerOutputs)
     {
         std::cout << "-------------------------------------------------------------------" << std::endl;
-        printMatrixSummary(input, "INPUT", PropagationType::FORWARD);
+        printTensorSummary(input, "INPUT", PropagationType::FORWARD);
         std::cout << "-------------------------------------------------------------------" << std::endl;
     }
 
-    Eigen::MatrixXd output = input;
+    Eigen::Tensor<double, 4> output = input;
     layerInputs.clear();
 
     for (size_t i = 0; i < layers.size(); ++i)
@@ -191,10 +173,6 @@ Eigen::MatrixXd NeuralNetwork::forward(const Eigen::MatrixXd &input)
             {
                 layerType = "Average Pooling Layer";
             }
-            else if (dynamic_cast<BatchNormalizationLayer *>(layers[i].get()))
-            {
-                layerType = "BatchNormalization Layer";
-            }
             else if (dynamic_cast<FlattenLayer *>(layers[i].get()))
             {
                 layerType = "Flatten Layer";
@@ -211,11 +189,11 @@ Eigen::MatrixXd NeuralNetwork::forward(const Eigen::MatrixXd &input)
             std::cout << "-------------------------------------------------------------------" << std::endl;
             if (logLevel == LogLevel::All)
             {
-                printFullMatrix(output, layerType, PropagationType::FORWARD);
+                printFullTensor(output, layerType, PropagationType::FORWARD);
             }
             else
             {
-                printMatrixSummary(output, layerType, PropagationType::FORWARD);
+                printTensorSummary(output, layerType, PropagationType::FORWARD);
             }
             std::cout << "-------------------------------------------------------------------" << std::endl;
         }
@@ -224,7 +202,7 @@ Eigen::MatrixXd NeuralNetwork::forward(const Eigen::MatrixXd &input)
     return output;
 }
 
-void NeuralNetwork::printFullMatrix(const Eigen::MatrixXd &matrix, const std::string &layerType, PropagationType propagationType)
+void NeuralNetwork::printFullTensor(const Eigen::Tensor<double, 4> &tensor, const std::string &layerType, PropagationType propagationType)
 {
     switch (propagationType)
     {
@@ -239,18 +217,98 @@ void NeuralNetwork::printFullMatrix(const Eigen::MatrixXd &matrix, const std::st
     default:
         break;
     }
-    std::cout << matrix << std::endl;
+    // Add logic to print tensor
+    std::cout << tensor << std::endl;
 }
 
-void NeuralNetwork::printMatrixSummary(const Eigen::MatrixXd &matrix, const std::string &layerType, PropagationType propagationType)
+void NeuralNetwork::printFullTensor(const Eigen::Tensor<double, 2> &tensor, const std::string &layerType, PropagationType propagationType)
 {
-    double mean = matrix.mean();
-    double stddev = std::sqrt((matrix.array() - mean).square().sum() / (matrix.size() - 1));
-    double minCoeff = matrix.minCoeff();
-    double maxCoeff = matrix.maxCoeff();
-    double zeroPercentage = (matrix.array() == 0).count() / static_cast<double>(matrix.size()) * 100.0;
-    double negativeCount = (matrix.array() < 0).count();
-    double positiveCount = (matrix.array() > 0).count();
+    switch (propagationType)
+    {
+    case PropagationType::FORWARD:
+        std::cout << layerType << " Forward pass:\n";
+        break;
+
+    case PropagationType::BACK:
+        std::cout << layerType << " Back pass:\n";
+        break;
+
+    default:
+        break;
+    }
+    // Add logic to print tensor
+    std::cout << tensor << std::endl;
+}
+
+void NeuralNetwork::printTensorSummary(const Eigen::Tensor<double, 4> &tensor, const std::string &layerType, PropagationType propagationType)
+{
+    std::vector<double> tensorVec(tensor.size());
+    std::copy(tensor.data(), tensor.data() + tensor.size(), tensorVec.begin());
+
+    double mean = std::accumulate(tensorVec.begin(), tensorVec.end(), 0.0) / tensorVec.size();
+    
+    std::vector<double> diff(tensorVec.size());
+    std::transform(tensorVec.begin(), tensorVec.end(), diff.begin(), [mean](double x) { return x - mean; });
+
+    std::vector<double> squaredDiff(diff.size());
+    std::transform(diff.begin(), diff.end(), squaredDiff.begin(), [](double x) { return x * x; });
+
+    double variance = std::accumulate(squaredDiff.begin(), squaredDiff.end(), 0.0) / squaredDiff.size();
+    double stddev = std::sqrt(variance);
+
+    double minCoeff = *std::min_element(tensorVec.begin(), tensorVec.end());
+    double maxCoeff = *std::max_element(tensorVec.begin(), tensorVec.end());
+
+    double zeroPercentage = std::count(tensorVec.begin(), tensorVec.end(), 0.0) / static_cast<double>(tensorVec.size()) * 100.0;
+    double negativeCount = std::count_if(tensorVec.begin(), tensorVec.end(), [](double x) { return x < 0.0; });
+    double positiveCount = std::count_if(tensorVec.begin(), tensorVec.end(), [](double x) { return x > 0.0; });
+
+    switch (propagationType)
+    {
+    case PropagationType::FORWARD:
+        std::cout << layerType << " Forward pass summary:\n";
+        break;
+
+    case PropagationType::BACK:
+        std::cout << layerType << " Back pass summary:\n";
+        break;
+        
+    default:
+        break;
+    }
+
+    std::cout << "Dimensions: " << tensor.dimension(0) << "x" << tensor.dimension(1) << "x" << tensor.dimension(2) << "x" << tensor.dimension(3) << "\n";
+    std::cout << "Mean: " << mean << "\n";
+    std::cout << "Standard Deviation: " << stddev << "\n";
+    std::cout << "Min: " << minCoeff << "\n";
+    std::cout << "Max: " << maxCoeff << "\n";
+    std::cout << "Percentage of Zeros: " << zeroPercentage << "%\n";
+    std::cout << "Number of Negative Values: " << negativeCount << "\n";
+    std::cout << "Number of Positive Values: " << positiveCount << "\n\n";
+}
+
+void NeuralNetwork::printTensorSummary(const Eigen::Tensor<double, 2> &tensor, const std::string &layerType, PropagationType propagationType)
+{
+    std::vector<double> tensorVec(tensor.size());
+    std::copy(tensor.data(), tensor.data() + tensor.size(), tensorVec.begin());
+
+    double mean = std::accumulate(tensorVec.begin(), tensorVec.end(), 0.0) / tensorVec.size();
+
+    std::vector<double> diff(tensorVec.size());
+    std::transform(tensorVec.begin(), tensorVec.end(), diff.begin(), [mean](double x) { return x - mean; });
+
+    std::vector<double> squaredDiff(diff.size());
+    std::transform(diff.begin(), diff.end(), squaredDiff.begin(), [](double x) { return x * x; });
+
+    double variance = std::accumulate(squaredDiff.begin(), squaredDiff.end(), 0.0) / squaredDiff.size();
+    double stddev = std::sqrt(variance);
+
+    double minCoeff = *std::min_element(tensorVec.begin(), tensorVec.end());
+    double maxCoeff = *std::max_element(tensorVec.begin(), tensorVec.end());
+
+    double zeroPercentage = std::count(tensorVec.begin(), tensorVec.end(), 0.0) / static_cast<double>(tensorVec.size()) * 100.0;
+    double negativeCount = std::count_if(tensorVec.begin(), tensorVec.end(), [](double x) { return x < 0.0; });
+    double positiveCount = std::count_if(tensorVec.begin(), tensorVec.end(), [](double x) { return x > 0.0; });
 
     switch (propagationType)
     {
@@ -265,7 +323,8 @@ void NeuralNetwork::printMatrixSummary(const Eigen::MatrixXd &matrix, const std:
     default:
         break;
     }
-    std::cout << "Dimensions: " << matrix.rows() << "x" << matrix.cols() << "\n";
+
+    std::cout << "Dimensions: " << tensor.dimension(0) << "x" << tensor.dimension(1) << "\n";
     std::cout << "Mean: " << mean << "\n";
     std::cout << "Standard Deviation: " << stddev << "\n";
     std::cout << "Min: " << minCoeff << "\n";
@@ -275,16 +334,17 @@ void NeuralNetwork::printMatrixSummary(const Eigen::MatrixXd &matrix, const std:
     std::cout << "Number of Positive Values: " << positiveCount << "\n\n";
 }
 
-void NeuralNetwork::backward(const Eigen::MatrixXd &d_output, double learning_rate)
+
+void NeuralNetwork::backward(const Eigen::Tensor<double, 4> &d_output, double learning_rate)
 {
     if (logLevel == LogLevel::All || logLevel == LogLevel::LayerOutputs)
     {
         std::cout << "-------------------------------------------------------------------" << std::endl;
-        printMatrixSummary(d_output, "OUTPUT", PropagationType::BACK);
+        printTensorSummary(d_output, "OUTPUT", PropagationType::BACK);
         std::cout << "-------------------------------------------------------------------" << std::endl;
     }
 
-    Eigen::MatrixXd d_input = d_output;
+    Eigen::Tensor<double, 4> d_input = d_output;
 
     for (int i = layers.size() - 1; i >= 0; --i)
     {
@@ -300,10 +360,6 @@ void NeuralNetwork::backward(const Eigen::MatrixXd &d_output, double learning_ra
         else if (dynamic_cast<AveragePoolingLayer *>(layers[i].get()))
         {
             layerType = "Average Pooling Layer";
-        }
-        else if (dynamic_cast<BatchNormalizationLayer *>(layers[i].get()))
-        {
-            layerType = "BatchNormalization Layer";
         }
         else if (dynamic_cast<FlattenLayer *>(layers[i].get()))
         {
@@ -325,11 +381,11 @@ void NeuralNetwork::backward(const Eigen::MatrixXd &d_output, double learning_ra
             std::cout << "-------------------------------------------------------------------" << std::endl;
             if (logLevel == LogLevel::All)
             {
-                printFullMatrix(d_input, layerType, PropagationType::BACK);
+                printFullTensor(d_input, layerType, PropagationType::BACK);
             }
             else
             {
-                printMatrixSummary(d_input, layerType, PropagationType::BACK);
+                printTensorSummary(d_input, layerType, PropagationType::BACK);
             }
             std::cout << "-------------------------------------------------------------------" << std::endl;
         }
@@ -447,7 +503,8 @@ void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, doub
 
     for (int epoch = 0; epoch < epochs; ++epoch)
     {
-        Eigen::MatrixXd batch_input, batch_label;
+        Eigen::Tensor<double, 4> batch_input;
+        Eigen::Tensor<int, 2> batch_label;
         int totalBatches = batchManager.getTotalBatches();
         auto start = std::chrono::steady_clock::now();
         int batchCounter = 0;
@@ -458,16 +515,16 @@ void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, doub
         while (batchManager.getNextBatch(batch_input, batch_label))
         {
             // Forward pass
-            Eigen::MatrixXd predictions = forward(batch_input);
+            Eigen::Tensor<double, 4> predictions = forward(batch_input);
 
             // Compute loss
             double batch_loss = lossFunction->compute(predictions, batch_label);
             total_loss += batch_loss;
 
             // Count correct predictions
-            for (int i = 0; i < predictions.rows(); ++i)
+            for (int i = 0; i < predictions.dimension(0); ++i)
             {
-                int predicted_label = (predictions(i, 0) >= 0.5) ? 1 : 0;
+                int predicted_label = (predictions(i, 0, 0, 0) >= 0.5) ? 1 : 0;
                 int true_label = batch_label(i, 0);
                 if (predicted_label == true_label)
                 {
@@ -477,7 +534,7 @@ void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, doub
             }
 
             // Backward pass
-            Eigen::MatrixXd d_output = lossFunction->derivative(predictions, batch_label);
+            Eigen::Tensor<double, 4> d_output = lossFunction->derivative(predictions, batch_label);
             backward(d_output, learning_rate);
 
             // Print progress
@@ -505,7 +562,8 @@ void NeuralNetwork::evaluate(const ImageContainer &imageContainer, const std::ve
     }
 
     BatchManager batchManager(imageContainer, imageContainer.getTestImages().size(), categories, BatchManager::BatchType::Testing);
-    Eigen::MatrixXd batch_input, batch_label;
+    Eigen::Tensor<double, 4> batch_input;
+    Eigen::Tensor<int, 2> batch_label;
 
     double total_loss = 0.0;
     int correct_predictions = 0;
@@ -513,29 +571,48 @@ void NeuralNetwork::evaluate(const ImageContainer &imageContainer, const std::ve
 
     while (batchManager.getNextBatch(batch_input, batch_label))
     {
-        Eigen::MatrixXd predictions = forward(batch_input);
+        Eigen::Tensor<double, 4> predictions = forward(batch_input);
         total_loss += lossFunction->compute(predictions, batch_label);
 
-        // Assuming classification (binary or multi-class)
-        for (int i = 0; i < predictions.rows(); ++i)
-        {
-            int predicted_label = -1;
-            int true_label = -1;
+        // Convert Eigen::Tensor to standard arrays for processing
+        std::vector<int> pred_labels(predictions.dimension(0));
+        std::vector<int> true_labels(predictions.dimension(0));
 
-            if (predictions.cols() == 1) // Binary classification
+        for (int i = 0; i < predictions.dimension(0); ++i)
+        {
+            if (predictions.dimension(3) == 1) // Binary classification
             {
-                predicted_label = predictions(i, 0) >= 0.5 ? 1 : 0;
-                true_label = batch_label(i, 0);
+                pred_labels[i] = predictions(i, 0, 0, 0) >= 0.5 ? 1 : 0;
+                true_labels[i] = batch_label(i, 0);
             }
             else // Multi-class classification
             {
-                predicted_label = std::distance(predictions.row(i).data(),
-                                                std::max_element(predictions.row(i).data(), predictions.row(i).data() + predictions.cols()));
-                true_label = std::distance(batch_label.row(i).data(),
-                                           std::max_element(batch_label.row(i).data(), batch_label.row(i).data() + batch_label.cols()));
+                int maxIndex = 0;
+                double maxValue = predictions(i, 0, 0, 0);
+                for (int j = 1; j < predictions.dimension(3); ++j)
+                {
+                    if (predictions(i, 0, 0, j) > maxValue)
+                    {
+                        maxValue = predictions(i, 0, 0, j);
+                        maxIndex = j;
+                    }
+                }
+                pred_labels[i] = maxIndex;
+
+                int trueMaxIndex = 0;
+                int trueMaxValue = batch_label(i, 0);
+                for (int j = 1; j < batch_label.dimension(1); ++j)
+                {
+                    if (batch_label(i, j) > trueMaxValue)
+                    {
+                        trueMaxValue = batch_label(i, j);
+                        trueMaxIndex = j;
+                    }
+                }
+                true_labels[i] = trueMaxIndex;
             }
 
-            if (predicted_label == true_label)
+            if (pred_labels[i] == true_labels[i])
             {
                 correct_predictions++;
             }

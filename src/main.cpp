@@ -60,11 +60,8 @@ void tensorModel(const std::string &datasetPath)
     int padding1 = 1;
     cnn.addConvolutionLayer(filters1, kernel_size1, stride1, padding1, ConvKernelInitialization::HE, ConvBiasInitialization::RANDOM_NORMAL);
 
-    // Batch Normalization Layer 1
-    cnn.addBatchNormalizationLayer();
-
     // Activation Layer 1
-    ActivationType activation1 = RELU;
+    ActivationType activation1 = ActivationType::RELU;
     cnn.addActivationLayer(activation1);
 
     // Max Pooling Layer 1
@@ -79,11 +76,8 @@ void tensorModel(const std::string &datasetPath)
     int padding2 = 1;
     cnn.addConvolutionLayer(filters2, kernel_size2, stride2, padding2, ConvKernelInitialization::HE, ConvBiasInitialization::RANDOM_NORMAL);
 
-    // Batch Normalization Layer 2
-    cnn.addBatchNormalizationLayer();
-
     // Activation Layer 2
-    ActivationType activation2 = RELU;
+    ActivationType activation2 = ActivationType::RELU;
     cnn.addActivationLayer(activation2);
 
     // Max Pooling Layer 2
@@ -100,11 +94,8 @@ void tensorModel(const std::string &datasetPath)
     DenseBiasInitialization fc_bias_init1 = DenseBiasInitialization::RANDOM_NORMAL;
     cnn.addFullyConnectedLayer(fc_output_size1, fc_weight_init1, fc_bias_init1);
 
-    // Batch Normalization Layer 3
-    cnn.addBatchNormalizationLayer();
-
     // Activation Layer 3
-    ActivationType activation3 = RELU;
+    ActivationType activation3 = ActivationType::RELU;
     cnn.addActivationLayer(activation3);
 
     // Fully Connected Layer 2
@@ -114,7 +105,7 @@ void tensorModel(const std::string &datasetPath)
     cnn.addFullyConnectedLayer(fc_output_size2, fc_weight_init2, fc_bias_init2);
 
     // Activation Layer 4
-    ActivationType activation4 = SIGMOID;
+    ActivationType activation4 = ActivationType::SIGMOID;
     cnn.addActivationLayer(activation4);
 
     // Setting loss function
@@ -152,79 +143,29 @@ void tensorModel(const std::string &datasetPath)
 
     cv::resize(image, image, cv::Size(64, 64));
 
-    // Convert image to Eigen matrix
-    Eigen::MatrixXd singleImageBatch(1, image.rows * image.cols * image.channels());
-    for (int i = 0; i < image.rows; ++i)
+    // Convert image to Eigen tensor
+    Eigen::Tensor<double, 4> singleImageBatch(1, image.channels(), image.rows, image.cols);
+    for (int h = 0; h < image.rows; ++h)
     {
-        for (int j = 0; j < image.cols; ++j)
+        for (int w = 0; w < image.cols; ++w)
         {
             for (int c = 0; c < image.channels(); ++c)
             {
-                singleImageBatch(0, i * image.cols * image.channels() + j * image.channels() + c) = image.at<cv::Vec3b>(i, j)[c] / 255.0;
+                singleImageBatch(0, c, h, w) = static_cast<double>(image.at<cv::Vec3b>(h, w)[c]) / 255.0;
             }
         }
     }
 
-    std::cout << "Input dimensions for prediction: " << singleImageBatch.rows() << "x" << singleImageBatch.cols() << std::endl;
+    std::cout << "Input dimensions for prediction: " << singleImageBatch.dimension(0) << "x" << singleImageBatch.dimension(1) << "x" << singleImageBatch.dimension(2) << "x" << singleImageBatch.dimension(3) << std::endl;
 
-    Eigen::MatrixXd prediction = cnn.forward(singleImageBatch);
-    std::string result = prediction(0, 0) >= 0.5 ? "dog" : "cat";
+    Eigen::Tensor<double, 4> prediction = cnn.forward(singleImageBatch);
+    std::string result = prediction(0, 0, 0, 0) >= 0.5 ? "dog" : "cat";
 
-    std::cout << "Prediction for " << singleImagePath << ": " << result << " (Score: " << prediction(0, 0) << ")\n";
-}
-
-double testBinaryCrossEntropy()
-{
-    Eigen::MatrixXd predictions(4, 1);
-    predictions << 0.5, 0.5, 0.5, 0.5; // Random guessing probabilities
-
-    Eigen::MatrixXd targets(4, 1);
-    targets << 0, 1, 0, 1; // True labels
-
-    BinaryCrossEntropy lossFunc;
-    double loss = lossFunc.compute(predictions, targets);
-    return loss;
-}
-
-void testBatchNormalization()
-{
-    // Initialize sample data
-    Eigen::MatrixXd input(4, 3);
-    input << 1.0, 2.0, 3.0,
-        4.0, 5.0, 6.0,
-        7.0, 8.5, 9.0,
-        10.0, 11.0, 14.0;
-
-    Eigen::MatrixXd d_output(4, 3);
-    d_output << 0.1, 0.2, 0.3,
-        0.4, 0.5, 0.7,
-        0.7, 0.9, 1.0,
-        1.1, 1.3, 1.5;
-
-    double epsilon = 1e-5;
-    double momentum = 0.9;
-    double learning_rate = 0.01;
-
-    // Create BatchNormalizationLayer instance
-    BatchNormalizationLayer bn_layer(epsilon, momentum);
-
-    // Perform forward pass
-    Eigen::MatrixXd output = bn_layer.forward(input);
-    std::cout << "Forward pass output:\n"
-              << output << std::endl;
-
-    // Perform backward pass
-    Eigen::MatrixXd d_input = bn_layer.backward(d_output, input, learning_rate);
-    std::cout << "Backward pass d_input:\n"
-              << d_input << std::endl;
-
-    return;
+    std::cout << "Prediction for " << singleImagePath << ": " << result << " (Score: " << prediction(0, 0, 0, 0) << ")\n";
 }
 
 int main(int argc, char **argv)
 {
-    testBatchNormalization();
-    // throw std::runtime_error("AAA");
     ::testing::InitGoogleTest(&argc, argv);
     if (argc > 1 && std::string(argv[1]) == "--tests")
     {
@@ -241,39 +182,6 @@ int main(int argc, char **argv)
             std::cerr << "Error: " << e.what() << std::endl;
             return 1;
         }
-    }
-
-    return 0;
-}
-
-int mains()
-{
-    ConvolutionLayer convLayer(10, 3, 1, 1, ConvKernelInitialization::HE, ConvBiasInitialization::RANDOM_NORMAL);
-
-    convLayer.setInputDepth(3);
-
-    convLayer.initializeKernels(ConvKernelInitialization::HE);
-    convLayer.initializeBiases(ConvBiasInitialization::RANDOM_NORMAL);
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis(-1.0, 1.0);
-
-    for (int i = 0; i < 1; i++)
-    {
-        Eigen::MatrixXd input_batch = Eigen::MatrixXd::NullaryExpr(1, 3 * 32 * 32, [&]()
-                                                                   { return dis(gen); });
-        Eigen::MatrixXd d_output_batch = Eigen::MatrixXd::NullaryExpr(1, 10 * 32 * 32, [&]()
-                                                                      { return dis(gen); });
-
-        // Print the first few elements to verify values
-        std::cout << "Input Batch (first 10 elements):" << std::endl;
-        std::cout << input_batch.block(0, 0, 1, 10) << std::endl;
-
-        std::cout << "d_output Batch (first 10 elements):" << std::endl;
-        std::cout << d_output_batch.block(0, 0, 1, 10) << std::endl;
-
-        convLayer.backward(d_output_batch, input_batch, 0.0001);
     }
 
     return 0;

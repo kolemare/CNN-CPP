@@ -1,32 +1,33 @@
 #include "Optimizer.hpp"
+#include "TensorOperations.hpp"
 #include <stdexcept>
 #include <iostream>
 #include <cmath>
 
 // Factory method to create optimizers
-std::unique_ptr<Optimizer> Optimizer::create(Type type, const std::unordered_map<std::string, double> &params)
+std::shared_ptr<Optimizer> Optimizer::create(Type type, const std::unordered_map<std::string, double> &params)
 {
     switch (type)
     {
     case Type::SGD:
-        return std::make_unique<SGD>();
+        return std::make_shared<SGD>();
     case Type::SGDWithMomentum:
     {
         double momentum = params.at("momentum");
-        return std::make_unique<SGDWithMomentum>(momentum);
+        return std::make_shared<SGDWithMomentum>(momentum);
     }
     case Type::Adam:
     {
         double beta1 = params.at("beta1");
         double beta2 = params.at("beta2");
         double epsilon = params.at("epsilon");
-        return std::make_unique<Adam>(beta1, beta2, epsilon);
+        return std::make_shared<Adam>(beta1, beta2, epsilon);
     }
     case Type::RMSprop:
     {
         double beta = params.at("beta");
         double epsilon = params.at("epsilon");
-        return std::make_unique<RMSprop>(beta, epsilon);
+        return std::make_shared<RMSprop>(beta, epsilon);
     }
     default:
         throw std::invalid_argument("Unknown optimizer type");
@@ -36,14 +37,14 @@ std::unique_ptr<Optimizer> Optimizer::create(Type type, const std::unordered_map
 // SGD implementation
 void SGD::update(Eigen::Tensor<double, 2> &weights, Eigen::Tensor<double, 1> &biases, const Eigen::Tensor<double, 2> &d_weights, const Eigen::Tensor<double, 1> &d_biases, double learning_rate)
 {
-    weights -= learning_rate * d_weights;
-    biases -= learning_rate * d_biases;
+    TensorOperations::applyUpdates(weights, d_weights, learning_rate);
+    TensorOperations::applyUpdates(biases, d_biases, learning_rate);
 }
 
 void SGD::update(Eigen::Tensor<double, 4> &weights, Eigen::Tensor<double, 1> &biases, const Eigen::Tensor<double, 4> &d_weights, const Eigen::Tensor<double, 1> &d_biases, double learning_rate)
 {
-    weights -= learning_rate * d_weights;
-    biases -= learning_rate * d_biases;
+    TensorOperations::applyUpdates(weights, d_weights, learning_rate);
+    TensorOperations::applyUpdates(biases, d_biases, learning_rate);
 }
 
 // SGD with Momentum implementation
@@ -66,8 +67,8 @@ void SGDWithMomentum::update(Eigen::Tensor<double, 2> &weights, Eigen::Tensor<do
     v_weights_2d = momentum * v_weights_2d + learning_rate * d_weights;
     v_biases_2d = momentum * v_biases_2d + learning_rate * d_biases;
 
-    weights -= v_weights_2d;
-    biases -= v_biases_2d;
+    TensorOperations::applyUpdates(weights, v_weights_2d, 1.0);
+    TensorOperations::applyUpdates(biases, v_biases_2d, 1.0);
 }
 
 void SGDWithMomentum::update(Eigen::Tensor<double, 4> &weights, Eigen::Tensor<double, 1> &biases, const Eigen::Tensor<double, 4> &d_weights, const Eigen::Tensor<double, 1> &d_biases, double learning_rate)
@@ -86,8 +87,8 @@ void SGDWithMomentum::update(Eigen::Tensor<double, 4> &weights, Eigen::Tensor<do
     v_weights_4d = momentum * v_weights_4d + learning_rate * d_weights;
     v_biases_4d = momentum * v_biases_4d + learning_rate * d_biases;
 
-    weights -= v_weights_4d;
-    biases -= v_biases_4d;
+    TensorOperations::applyUpdates(weights, v_weights_4d, 1.0);
+    TensorOperations::applyUpdates(biases, v_biases_4d, 1.0);
 }
 
 // Adam implementation
@@ -126,8 +127,8 @@ void Adam::update(Eigen::Tensor<double, 2> &weights, Eigen::Tensor<double, 1> &b
     auto m_hat_biases = m_biases_2d / (1.0 - std::pow(beta1, t));
     auto v_hat_biases = v_biases_2d / (1.0 - std::pow(beta2, t));
 
-    weights -= learning_rate * m_hat_weights / (v_hat_weights.sqrt() + epsilon);
-    biases -= learning_rate * m_hat_biases / (v_hat_biases.sqrt() + epsilon);
+    TensorOperations::applyUpdates(weights, m_hat_weights / (v_hat_weights.sqrt() + epsilon), learning_rate);
+    TensorOperations::applyUpdates(biases, m_hat_biases / (v_hat_biases.sqrt() + epsilon), learning_rate);
 }
 
 void Adam::update(Eigen::Tensor<double, 4> &weights, Eigen::Tensor<double, 1> &biases, const Eigen::Tensor<double, 4> &d_weights, const Eigen::Tensor<double, 1> &d_biases, double learning_rate)
@@ -160,8 +161,8 @@ void Adam::update(Eigen::Tensor<double, 4> &weights, Eigen::Tensor<double, 1> &b
     auto m_hat_biases = m_biases_4d / (1.0 - std::pow(beta1, t));
     auto v_hat_biases = v_biases_4d / (1.0 - std::pow(beta2, t));
 
-    weights -= learning_rate * m_hat_weights / (v_hat_weights.sqrt() + epsilon);
-    biases -= learning_rate * m_hat_biases / (v_hat_biases.sqrt() + epsilon);
+    TensorOperations::applyUpdates(weights, m_hat_weights / (v_hat_weights.sqrt() + epsilon), learning_rate);
+    TensorOperations::applyUpdates(biases, m_hat_biases / (v_hat_biases.sqrt() + epsilon), learning_rate);
 }
 
 // RMSprop implementation
@@ -185,8 +186,8 @@ void RMSprop::update(Eigen::Tensor<double, 2> &weights, Eigen::Tensor<double, 1>
     s_weights_2d = beta * s_weights_2d + (1.0 - beta) * d_weights.square();
     s_biases_2d = beta * s_biases_2d + (1.0 - beta) * d_biases.square();
 
-    weights -= learning_rate * d_weights / (s_weights_2d.sqrt() + epsilon);
-    biases -= learning_rate * d_biases / (s_biases_2d.sqrt() + epsilon);
+    TensorOperations::applyUpdates(weights, d_weights / (s_weights_2d.sqrt() + epsilon), learning_rate);
+    TensorOperations::applyUpdates(biases, d_biases / (s_biases_2d.sqrt() + epsilon), learning_rate);
 }
 
 void RMSprop::update(Eigen::Tensor<double, 4> &weights, Eigen::Tensor<double, 1> &biases, const Eigen::Tensor<double, 4> &d_weights, const Eigen::Tensor<double, 1> &d_biases, double learning_rate)
@@ -205,6 +206,6 @@ void RMSprop::update(Eigen::Tensor<double, 4> &weights, Eigen::Tensor<double, 1>
     s_weights_4d = beta * s_weights_4d + (1.0 - beta) * d_weights.square();
     s_biases_4d = beta * s_biases_4d + (1.0 - beta) * d_biases.square();
 
-    weights -= learning_rate * d_weights / (s_weights_4d.sqrt() + epsilon);
-    biases -= learning_rate * d_biases / (s_biases_4d.sqrt() + epsilon);
+    TensorOperations::applyUpdates(weights, d_weights / (s_weights_4d.sqrt() + epsilon), learning_rate);
+    TensorOperations::applyUpdates(biases, d_biases / (s_biases_4d.sqrt() + epsilon), learning_rate);
 }

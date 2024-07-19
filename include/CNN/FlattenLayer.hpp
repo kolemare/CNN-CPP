@@ -2,18 +2,20 @@
 #define FLATTENLAYER_HPP
 
 #include "Layer.hpp"
+#include <unsupported/Eigen/CXX11/Tensor>
+#include <vector>
 
 class FlattenLayer : public Layer
 {
 public:
-    Eigen::MatrixXd forward(const Eigen::MatrixXd &input) override;
-    Eigen::MatrixXd backward(const Eigen::MatrixXd &d_output, const Eigen::MatrixXd &input, double learning_rate) override;
+    Eigen::Tensor<double, 4> forward(const Eigen::Tensor<double, 4> &input_batch) override;
+    Eigen::Tensor<double, 4> backward(const Eigen::Tensor<double, 4> &d_output_batch, const Eigen::Tensor<double, 4> &input_batch, double learning_rate) override;
     bool needsOptimizer() const override;
-    void setOptimizer(std::unique_ptr<Optimizer> optimizer) override;
+    void setOptimizer(std::shared_ptr<Optimizer> optimizer) override;
 
 private:
     int batch_size;
-    int original_size;
+    std::vector<int> original_dimensions;
 };
 
 #endif // FLATTENLAYER_HPP

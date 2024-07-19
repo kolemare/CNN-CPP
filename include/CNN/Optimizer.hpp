@@ -17,18 +17,12 @@ public:
         RMSprop
     };
 
-    enum class TensorType
-    {
-        TENSOR2D,
-        TENSOR4D
-    };
-
     virtual ~Optimizer() = default;
 
     virtual void update(Eigen::Tensor<double, 2> &weights, Eigen::Tensor<double, 1> &biases, const Eigen::Tensor<double, 2> &d_weights, const Eigen::Tensor<double, 1> &d_biases, double learning_rate) = 0;
     virtual void update(Eigen::Tensor<double, 4> &weights, Eigen::Tensor<double, 1> &biases, const Eigen::Tensor<double, 4> &d_weights, const Eigen::Tensor<double, 1> &d_biases, double learning_rate) = 0;
 
-    static std::unique_ptr<Optimizer> create(Type type, const std::unordered_map<std::string, double> &params = {});
+    static std::shared_ptr<Optimizer> create(Type type, const std::unordered_map<std::string, double> &params = {});
 };
 
 class SGD : public Optimizer

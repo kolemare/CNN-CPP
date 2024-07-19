@@ -1,7 +1,7 @@
 #ifndef ACTIVATIONLAYER_HPP
 #define ACTIVATIONLAYER_HPP
 
-#include <Eigen/Dense>
+#include <unsupported/Eigen/CXX11/Tensor>
 #include "Layer.hpp"
 #include "Optimizer.hpp"
 #include <iostream>
@@ -21,10 +21,10 @@ class ActivationLayer : public Layer
 public:
     ActivationLayer(ActivationType type);
 
-    Eigen::MatrixXd forward(const Eigen::MatrixXd &input_batch) override;
-    Eigen::MatrixXd backward(const Eigen::MatrixXd &d_output_batch, const Eigen::MatrixXd &input_batch, double learning_rate) override;
+    Eigen::Tensor<double, 4> forward(const Eigen::Tensor<double, 4> &input_batch) override;
+    Eigen::Tensor<double, 4> backward(const Eigen::Tensor<double, 4> &d_output_batch, const Eigen::Tensor<double, 4> &input_batch, double learning_rate) override;
     bool needsOptimizer() const override;
-    void setOptimizer(std::unique_ptr<Optimizer> optimizer) override;
+    void setOptimizer(std::shared_ptr<Optimizer> optimizer) override;
 
     void setAlpha(double alphaValue);
     double getAlpha() const;
@@ -33,19 +33,36 @@ private:
     ActivationType type;
     double alpha;
 
-    Eigen::MatrixXd relu(const Eigen::MatrixXd &input_batch);
-    Eigen::MatrixXd leakyRelu(const Eigen::MatrixXd &input_batch);
-    Eigen::MatrixXd sigmoid(const Eigen::MatrixXd &input_batch);
-    Eigen::MatrixXd tanh(const Eigen::MatrixXd &input_batch);
-    Eigen::MatrixXd softmax(const Eigen::MatrixXd &input_batch);
-    Eigen::MatrixXd elu(const Eigen::MatrixXd &input_batch);
+    Eigen::Tensor<double, 4> wrap2DTensor(const Eigen::Tensor<double, 2> &input);
+    Eigen::Tensor<double, 2> unwrap4DTensor(const Eigen::Tensor<double, 4> &input);
 
-    Eigen::MatrixXd relu_derivative(const Eigen::MatrixXd &input_batch);
-    Eigen::MatrixXd leakyRelu_derivative(const Eigen::MatrixXd &input_batch);
-    Eigen::MatrixXd sigmoid_derivative(const Eigen::MatrixXd &input_batch);
-    Eigen::MatrixXd tanh_derivative(const Eigen::MatrixXd &input_batch);
-    Eigen::MatrixXd softmax_derivative(const Eigen::MatrixXd &input_batch);
-    Eigen::MatrixXd elu_derivative(const Eigen::MatrixXd &input_batch);
+    Eigen::Tensor<double, 4> relu(const Eigen::Tensor<double, 4> &input_batch);
+    Eigen::Tensor<double, 4> leakyRelu(const Eigen::Tensor<double, 4> &input_batch);
+    Eigen::Tensor<double, 4> sigmoid(const Eigen::Tensor<double, 4> &input_batch);
+    Eigen::Tensor<double, 4> tanh(const Eigen::Tensor<double, 4> &input_batch);
+    Eigen::Tensor<double, 4> softmax(const Eigen::Tensor<double, 4> &input_batch);
+    Eigen::Tensor<double, 4> elu(const Eigen::Tensor<double, 4> &input_batch);
+
+    Eigen::Tensor<double, 2> relu(const Eigen::Tensor<double, 2> &input_batch);
+    Eigen::Tensor<double, 2> leakyRelu(const Eigen::Tensor<double, 2> &input_batch);
+    Eigen::Tensor<double, 2> sigmoid(const Eigen::Tensor<double, 2> &input_batch);
+    Eigen::Tensor<double, 2> tanh(const Eigen::Tensor<double, 2> &input_batch);
+    Eigen::Tensor<double, 2> softmax(const Eigen::Tensor<double, 2> &input_batch);
+    Eigen::Tensor<double, 2> elu(const Eigen::Tensor<double, 2> &input_batch);
+
+    Eigen::Tensor<double, 4> relu_derivative(const Eigen::Tensor<double, 4> &input_batch);
+    Eigen::Tensor<double, 4> leakyRelu_derivative(const Eigen::Tensor<double, 4> &input_batch);
+    Eigen::Tensor<double, 4> sigmoid_derivative(const Eigen::Tensor<double, 4> &input_batch);
+    Eigen::Tensor<double, 4> tanh_derivative(const Eigen::Tensor<double, 4> &input_batch);
+    Eigen::Tensor<double, 4> softmax_derivative(const Eigen::Tensor<double, 4> &input_batch);
+    Eigen::Tensor<double, 4> elu_derivative(const Eigen::Tensor<double, 4> &input_batch);
+
+    Eigen::Tensor<double, 2> relu_derivative(const Eigen::Tensor<double, 2> &input_batch);
+    Eigen::Tensor<double, 2> leakyRelu_derivative(const Eigen::Tensor<double, 2> &input_batch);
+    Eigen::Tensor<double, 2> sigmoid_derivative(const Eigen::Tensor<double, 2> &input_batch);
+    Eigen::Tensor<double, 2> tanh_derivative(const Eigen::Tensor<double, 2> &input_batch);
+    Eigen::Tensor<double, 2> softmax_derivative(const Eigen::Tensor<double, 2> &input_batch);
+    Eigen::Tensor<double, 2> elu_derivative(const Eigen::Tensor<double, 2> &input_batch);
 };
 
 #endif // ACTIVATIONLAYER_HPP

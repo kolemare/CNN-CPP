@@ -16,9 +16,9 @@ bool FullyConnectedLayer::needsOptimizer() const
     return true;
 }
 
-void FullyConnectedLayer::setOptimizer(std::unique_ptr<Optimizer> optimizer)
+void FullyConnectedLayer::setOptimizer(std::shared_ptr<Optimizer> optimizer)
 {
-    this->optimizer = std::move(optimizer);
+    this->optimizer = optimizer;
 }
 
 void FullyConnectedLayer::setInputSize(int input_size)
@@ -51,20 +51,26 @@ void FullyConnectedLayer::initializeWeights()
         break;
     }
 
-    weights.resize(output_size, input_size);
-    weights = Eigen::MatrixXd(output_size, input_size).unaryExpr([&](double)
-                                                                 { return distribution(generator); });
+    weights = Eigen::Tensor<double, 2>(output_size, input_size);
+    for (int i = 0; i < output_size; ++i)
+    {
+        for (int j = 0; j < input_size; ++j)
+        {
+            weights(i, j) = distribution(generator);
+        }
+    }
 }
 
 void FullyConnectedLayer::initializeBiases()
 {
     if (bias_init == DenseBiasInitialization::NONE)
     {
-        biases = Eigen::VectorXd::Zero(output_size);
+        biases = Eigen::Tensor<double, 1>(output_size);
+        biases.setZero();
         return;
     }
 
-    biases.resize(output_size);
+    biases = Eigen::Tensor<double, 1>(output_size);
 
     std::default_random_engine generator(seed); // Seed for bias initialization
     std::normal_distribution<> bias_dis(0, 1.0);
@@ -72,7 +78,7 @@ void FullyConnectedLayer::initializeBiases()
     switch (bias_init)
     {
     case DenseBiasInitialization::ZERO:
-        biases = Eigen::VectorXd::Zero(output_size);
+        biases.setZero();
         break;
     case DenseBiasInitialization::RANDOM_NORMAL:
         for (int i = 0; i < output_size; ++i)
@@ -85,58 +91,69 @@ void FullyConnectedLayer::initializeBiases()
     }
 }
 
-Eigen::MatrixXd FullyConnectedLayer::forward(const Eigen::MatrixXd &input_batch)
+Eigen::Tensor<double, 4> FullyConnectedLayer::forward(const Eigen::Tensor<double, 4> &input_batch)
 {
-    if (input_batch.cols() != input_size)
+    int batch_size = input_batch.dimension(0);
+    int input_flattened_size = input_batch.dimension(1) * input_batch.dimension(2) * input_batch.dimension(3);
+
+    if (input_flattened_size != input_size)
     {
         throw std::invalid_argument("Input size does not match the expected size.");
     }
 
-    Eigen::MatrixXd output = (input_batch * weights.transpose()).rowwise() + biases.transpose();
-    return output;
+    Eigen::Tensor<double, 2> input_2d = input_batch.reshape(Eigen::array<int, 2>{batch_size, input_flattened_size});
+    Eigen::Tensor<double, 2> output_2d = (input_2d.contract(weights, Eigen::array<Eigen::IndexPair<int>, 1>{{Eigen::IndexPair<int>(1, 1)}})).reshape(Eigen::array<int, 2>{batch_size, output_size});
+    output_2d = output_2d + biases.broadcast(Eigen::array<int, 2>{batch_size, 1});
+
+    return output_2d.reshape(Eigen::array<int, 4>{batch_size, 1, 1, output_size});
 }
 
-Eigen::MatrixXd FullyConnectedLayer::backward(const Eigen::MatrixXd &d_output_batch, const Eigen::MatrixXd &input_batch, double learning_rate)
+Eigen::Tensor<double, 4> FullyConnectedLayer::backward(const Eigen::Tensor<double, 4> &d_output_batch, const Eigen::Tensor<double, 4> &input_batch, double learning_rate)
 {
-    if (d_output_batch.rows() != input_batch.rows())
+    int batch_size = input_batch.dimension(0);
+    int input_flattened_size = input_batch.dimension(1) * input_batch.dimension(2) * input_batch.dimension(3);
+
+    if (d_output_batch.dimension(0) != batch_size || d_output_batch.dimension(3) != output_size)
     {
         throw std::invalid_argument("Output batch size does not match input batch size.");
     }
 
-    Eigen::MatrixXd d_weights = d_output_batch.transpose() * input_batch;
-    Eigen::VectorXd d_biases = d_output_batch.colwise().sum();
-    Eigen::MatrixXd d_input = d_output_batch * weights;
+    Eigen::Tensor<double, 2> input_2d = input_batch.reshape(Eigen::array<int, 2>{batch_size, input_flattened_size});
+    Eigen::Tensor<double, 2> d_output_2d = d_output_batch.reshape(Eigen::array<int, 2>{batch_size, output_size});
 
-    // Update weights and biases using the optimizer
+    Eigen::Tensor<double, 2> d_weights = d_output_2d.contract(input_2d, Eigen::array<Eigen::IndexPair<int>, 1>{{Eigen::IndexPair<int>(0, 0)}});
+    Eigen::Tensor<double, 1> d_biases = d_output_2d.sum(Eigen::array<int, 1>{0});
+    Eigen::Tensor<double, 2> d_input_2d = d_output_2d.contract(weights, Eigen::array<Eigen::IndexPair<int>, 1>{{Eigen::IndexPair<int>(1, 0)}});
+
     optimizer->update(weights, biases, d_weights, d_biases, learning_rate);
 
-    return d_input;
+    return d_input_2d.reshape(Eigen::array<int, 4>{batch_size, static_cast<int>(input_batch.dimension(1)), static_cast<int>(input_batch.dimension(2)), static_cast<int>(input_batch.dimension(3))});
 }
 
-void FullyConnectedLayer::setWeights(const Eigen::MatrixXd &new_weights)
+void FullyConnectedLayer::setWeights(const Eigen::Tensor<double, 2> &new_weights)
 {
-    if (new_weights.rows() != output_size || new_weights.cols() != input_size)
+    if (new_weights.dimension(0) != output_size || new_weights.dimension(1) != input_size)
     {
         throw std::invalid_argument("The size of new_weights must match the layer dimensions.");
     }
     weights = new_weights;
 }
 
-Eigen::MatrixXd FullyConnectedLayer::getWeights() const
+Eigen::Tensor<double, 2> FullyConnectedLayer::getWeights() const
 {
     return weights;
 }
 
-void FullyConnectedLayer::setBiases(const Eigen::VectorXd &new_biases)
+void FullyConnectedLayer::setBiases(const Eigen::Tensor<double, 1> &new_biases)
 {
-    if (new_biases.size() != output_size)
+    if (new_biases.dimension(0) != output_size)
     {
         throw std::invalid_argument("The size of new_biases must match the output size.");
     }
     biases = new_biases;
 }
 
-Eigen::VectorXd FullyConnectedLayer::getBiases() const
+Eigen::Tensor<double, 1> FullyConnectedLayer::getBiases() const
 {
     return biases;
 }

@@ -18,9 +18,9 @@ bool ConvolutionLayer::needsOptimizer() const
     return true;
 }
 
-void ConvolutionLayer::setOptimizer(std::unique_ptr<Optimizer> optimizer)
+void ConvolutionLayer::setOptimizer(std::shared_ptr<Optimizer> optimizer)
 {
-    this->optimizer = std::move(optimizer);
+    this->optimizer = optimizer;
 }
 
 void ConvolutionLayer::setInputDepth(int depth)
@@ -156,7 +156,10 @@ void ConvolutionLayer::processForwardBatch(Eigen::Tensor<double, 4> &output_batc
 
         for (int d = 0; d < input_depth; ++d)
         {
-            Eigen::Tensor<double, 3> input_slice = input_batch.chip(batch_index, 0).chip(d, 0);
+            Eigen::Tensor<double, 3> input_batch_slice = input_batch.chip(batch_index, 0); // Shape: (input_depth, height, width)
+            Eigen::Tensor<double, 3> input_slice_3d = input_batch_slice.chip(d, 0); // Shape: (height, width, 1)
+            Eigen::Tensor<double, 2> input_slice = input_slice_3d.chip(0, 2); // Shape: (height, width)
+
             Eigen::Tensor<double, 3> padded_input = padInput(input_slice, padding);
 
             for (int i = 0; i < output_size; ++i)
@@ -226,7 +229,10 @@ void ConvolutionLayer::processBackwardBatch(const Eigen::Tensor<double, 4> &d_ou
 
         for (int d = 0; d < input_depth; ++d)
         {
-            Eigen::Tensor<double, 3> input_slice = input_batch.chip(batch_index, 0).chip(d, 0);
+            Eigen::Tensor<double, 3> input_batch_slice = input_batch.chip(batch_index, 0); // Shape: (input_depth, height, width)
+            Eigen::Tensor<double, 3> input_slice_3d = input_batch_slice.chip(d, 0); // Shape: (height, width, 1)
+            Eigen::Tensor<double, 2> input_slice = input_slice_3d.chip(0, 2); // Shape: (height, width)
+
             Eigen::Tensor<double, 3> padded_input = padInput(input_slice, padding);
             Eigen::Tensor<double, 3> d_input_slice(input_size, input_size, 1);
             d_input_slice.setZero();
@@ -259,7 +265,7 @@ void ConvolutionLayer::processBackwardBatch(const Eigen::Tensor<double, 4> &d_ou
             }
 
             std::lock_guard<std::mutex> lock(mutex);
-            d_input_batch.chip(batch_index, 0).chip(d, 0) = d_input_slice;
+            d_input_batch.chip(batch_index, 0).chip(d, 0) = d_input_slice.chip(0, 2);
         }
 
         // Apply bias updates per output feature map
@@ -290,15 +296,16 @@ Eigen::Tensor<double, 1> ConvolutionLayer::getBiases() const
     return biases;
 }
 
-Eigen::Tensor<double, 3> ConvolutionLayer::padInput(const Eigen::Tensor<double, 3> &input, int pad)
+Eigen::Tensor<double, 3> ConvolutionLayer::padInput(const Eigen::Tensor<double, 2> &input, int pad)
 {
     if (pad == 0)
-        return input;
+        return input.reshape(Eigen::array<int, 3>{static_cast<int>(input.dimension(0)), static_cast<int>(input.dimension(1)), 1});
 
-    int padded_size = input.dimension(0) + 2 * pad;
-    Eigen::Tensor<double, 3> padded_input(padded_size, padded_size, input.dimension(2));
+    int padded_height = input.dimension(0) + 2 * pad;
+    int padded_width = input.dimension(1) + 2 * pad;
+    Eigen::Tensor<double, 3> padded_input(padded_height, padded_width, 1);
     padded_input.setZero();
-    padded_input.slice(Eigen::array<int, 3>{pad, pad, 0}, input.dimensions()) = input;
+    padded_input.slice(Eigen::array<int, 3>{pad, pad, 0}, Eigen::array<int, 3>{static_cast<int>(input.dimension(0)), static_cast<int>(input.dimension(1)), 1}) = input.reshape(Eigen::array<int, 3>{static_cast<int>(input.dimension(0)), static_cast<int>(input.dimension(1)), 1});
     return padded_input;
 }
 

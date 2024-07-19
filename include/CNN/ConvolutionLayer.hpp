@@ -41,7 +41,7 @@ public:
 
     void setKernels(const Eigen::Tensor<double, 4> &new_kernels);
 
-    Eigen::Tensor<double, 3> padInput(const Eigen::Tensor<double, 3> &input, int pad);
+    Eigen::Tensor<double, 3> padInput(const Eigen::Tensor<double, 2> &input, int pad);
     double convolve(const Eigen::Tensor<double, 3> &input, const Eigen::Tensor<double, 2> &kernel, int start_row, int start_col);
 
     Eigen::Tensor<double, 4> kernels; // Kernels for each filter
@@ -53,7 +53,7 @@ public:
     void initializeBiases(ConvBiasInitialization bias_init);
 
     bool needsOptimizer() const override;
-    void setOptimizer(std::unique_ptr<Optimizer> optimizer) override;
+    void setOptimizer(std::shared_ptr<Optimizer> optimizer) override;
 
 private:
     int filters;
@@ -63,7 +63,7 @@ private:
     int padding;
     std::mutex mutex;
 
-    std::unique_ptr<Optimizer> optimizer;
+    std::shared_ptr<Optimizer> optimizer;
 
     // Thread pools for parallel processing
     ThreadPool forwardThreadPool;

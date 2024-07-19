@@ -2,7 +2,7 @@
 #define FULLYCONNECTEDLAYER_HPP
 
 #include "Layer.hpp"
-#include <Eigen/Dense>
+#include <unsupported/Eigen/CXX11/Tensor>
 #include <memory>
 #include <random>
 
@@ -26,32 +26,32 @@ public:
     FullyConnectedLayer(int output_size, DenseWeightInitialization weight_init = DenseWeightInitialization::XAVIER,
                         DenseBiasInitialization bias_init = DenseBiasInitialization::ZERO, unsigned int seed = 42);
 
-    Eigen::MatrixXd forward(const Eigen::MatrixXd &input_batch) override;
-    Eigen::MatrixXd backward(const Eigen::MatrixXd &d_output_batch, const Eigen::MatrixXd &input_batch, double learning_rate) override;
+    Eigen::Tensor<double, 4> forward(const Eigen::Tensor<double, 4> &input_batch) override;
+    Eigen::Tensor<double, 4> backward(const Eigen::Tensor<double, 4> &d_output_batch, const Eigen::Tensor<double, 4> &input_batch, double learning_rate) override;
 
-    void setWeights(const Eigen::MatrixXd &new_weights);
-    Eigen::MatrixXd getWeights() const;
+    void setWeights(const Eigen::Tensor<double, 2> &new_weights);
+    Eigen::Tensor<double, 2> getWeights() const;
 
-    void setBiases(const Eigen::VectorXd &new_biases);
-    Eigen::VectorXd getBiases() const;
+    void setBiases(const Eigen::Tensor<double, 1> &new_biases);
+    Eigen::Tensor<double, 1> getBiases() const;
 
     void setInputSize(int input_size);
     int getOutputSize() const;
 
     bool needsOptimizer() const override;
-    void setOptimizer(std::unique_ptr<Optimizer> optimizer) override;
+    void setOptimizer(std::shared_ptr<Optimizer> optimizer) override;
 
 private:
     int input_size;
     int output_size;
-    Eigen::MatrixXd weights;
-    Eigen::VectorXd biases;
+    Eigen::Tensor<double, 2> weights;
+    Eigen::Tensor<double, 1> biases;
 
     DenseWeightInitialization weight_init;
     DenseBiasInitialization bias_init;
     unsigned int seed;
 
-    std::unique_ptr<Optimizer> optimizer;
+    std::shared_ptr<Optimizer> optimizer;
 
     void initializeWeights();
     void initializeBiases();

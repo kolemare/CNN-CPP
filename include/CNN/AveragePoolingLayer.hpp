@@ -1,26 +1,25 @@
-#ifndef AVERAGEPOOLINGLAYER_HPP
-#define AVERAGEPOOLINGLAYER_HPP
+#ifndef AVERAGE_POOLING_LAYER_HPP
+#define AVERAGE_POOLING_LAYER_HPP
 
 #include "Layer.hpp"
-#include <Eigen/Dense>
+#include <unsupported/Eigen/CXX11/Tensor>
 
 class AveragePoolingLayer : public Layer
 {
 public:
     AveragePoolingLayer(int pool_size, int stride);
 
-    Eigen::MatrixXd forward(const Eigen::MatrixXd &input_batch) override;
-    Eigen::MatrixXd backward(const Eigen::MatrixXd &d_output_batch, const Eigen::MatrixXd &input_batch, double learning_rate) override;
+    Eigen::Tensor<double, 4> forward(const Eigen::Tensor<double, 4> &input_batch) override;
+    Eigen::Tensor<double, 4> backward(const Eigen::Tensor<double, 4> &d_output_batch, const Eigen::Tensor<double, 4> &input_batch, double learning_rate) override;
     bool needsOptimizer() const override;
-    void setOptimizer(std::unique_ptr<Optimizer> optimizer) override;
+    void setOptimizer(std::shared_ptr<Optimizer> optimizer) override;
+
     int getPoolSize();
     int getStride();
 
 private:
     int pool_size;
     int stride;
-
-    Eigen::MatrixXd pool(const Eigen::MatrixXd &input);
 };
 
 #endif // AVERAGEPOOLINGLAYER_HPP

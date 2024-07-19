@@ -61,38 +61,58 @@ bool BatchManager::getNextBatch(Eigen::Tensor<double, 4> &batchImages, Eigen::Te
 
     int startIndex = currentBatchIndex * batchSize;
     int endIndex = std::min(startIndex + batchSize, static_cast<int>(allImages.size()));
-
     int currentBatchSize = endIndex - startIndex;
+
     int imageHeight = allImages[0]->rows;
     int imageWidth = allImages[0]->cols;
     int imageChannels = allImages[0]->channels();
 
-    batchImages.resize(currentBatchSize, imageChannels, imageHeight, imageWidth);
-    batchLabels.resize(currentBatchSize, categories.size());
+    batchImages.resize(batchSize, imageChannels, imageHeight, imageWidth); // Ensure the batch size is constant
+    batchLabels.resize(batchSize, categories.size());
     batchLabels.setZero();
 
+    // Fill batch with images from dataset
     for (int i = 0; i < currentBatchSize; ++i)
     {
         cv::Mat &image = *allImages[startIndex + i];
-        cv::Mat reshapedImage = image.reshape(1, imageHeight * imageWidth);
-        Eigen::MatrixXd eigenImage;
-        cv::cv2eigen(reshapedImage, eigenImage);
-        eigenImage = eigenImage.cast<double>(); // Use the image directly without further normalization
-
-        // Copy eigenImage data to batchImages tensor
-        for (int c = 0; c < imageChannels; ++c)
+        for (int h = 0; h < imageHeight; ++h)
         {
-            for (int h = 0; h < imageHeight; ++h)
+            for (int w = 0; w < imageWidth; ++w)
             {
-                for (int w = 0; w < imageWidth; ++w)
+                for (int c = 0; c < imageChannels; ++c)
                 {
-                    batchImages(i, c, h, w) = eigenImage(h, w * imageChannels + c);
+                    batchImages(i, c, h, w) = static_cast<double>(image.at<cv::Vec3b>(h, w)[c]);
                 }
             }
         }
 
         // One-hot encode the label
         int labelIndex = std::distance(categories.begin(), std::find(categories.begin(), categories.end(), allLabels[startIndex + i]));
+        batchLabels(i, labelIndex) = 1;
+    }
+
+    // Fill remaining slots with random images from the training dataset
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, allImages.size() - 1);
+
+    for (int i = currentBatchSize; i < batchSize; ++i)
+    {
+        int randomIndex = dis(gen);
+        cv::Mat &image = *allImages[randomIndex];
+        for (int h = 0; h < imageHeight; ++h)
+        {
+            for (int w = 0; w < imageWidth; ++w)
+            {
+                for (int c = 0; c < imageChannels; ++c)
+                {
+                    batchImages(i, c, h, w) = static_cast<double>(image.at<cv::Vec3b>(h, w)[c]);
+                }
+            }
+        }
+
+        // One-hot encode the label
+        int labelIndex = std::distance(categories.begin(), std::find(categories.begin(), categories.end(), allLabels[randomIndex]));
         batchLabels(i, labelIndex) = 1;
     }
 

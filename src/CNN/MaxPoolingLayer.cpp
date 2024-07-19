@@ -12,7 +12,7 @@ bool MaxPoolingLayer::needsOptimizer() const
     return false;
 }
 
-void MaxPoolingLayer::setOptimizer(std::unique_ptr<Optimizer> optimizer)
+void MaxPoolingLayer::setOptimizer(std::unishared_ptrque_ptr<Optimizer> optimizer)
 {
     return;
 }
@@ -31,26 +31,28 @@ Eigen::Tensor<double, 4> MaxPoolingLayer::forward(const Eigen::Tensor<double, 4>
 {
     int batch_size = input_batch.dimension(0);
     int input_depth = input_batch.dimension(1);
-    int input_size = input_batch.dimension(2);
+    int input_height = input_batch.dimension(2);
+    int input_width = input_batch.dimension(3);
 
-    int output_size = (input_size - pool_size) / stride + 1;
-    if (output_size <= 0)
+    int output_height = (input_height - pool_size) / stride + 1;
+    int output_width = (input_width - pool_size) / stride + 1;
+    if (output_height <= 0 || output_width <= 0)
     {
         throw std::invalid_argument("Invalid output size calculated, possibly due to incompatible pool size or stride.");
     }
 
-    Eigen::Tensor<double, 4> output_batch(batch_size, input_depth, output_size, output_size);
+    Eigen::Tensor<double, 4> output_batch(batch_size, input_depth, output_height, output_width);
     output_batch.setZero();
 
     max_indices.clear();
-    max_indices.resize(batch_size, Eigen::Tensor<int, 4>(input_depth, output_size, output_size, 2));
+    max_indices.resize(batch_size, Eigen::Tensor<int, 4>(input_depth, output_height, output_width, 2));
 
     for (int b = 0; b < batch_size; ++b)
     {
         for (int d = 0; d < input_depth; ++d)
         {
             Eigen::Tensor<double, 3> input = input_batch.chip(b, 0).chip(d, 0);
-            Eigen::Tensor<int, 3> index(output_size, output_size, 2);
+            Eigen::Tensor<int, 3> index(output_height, output_width, 2);
             Eigen::Tensor<double, 3> pooled_output = maxPool(input, index);
             output_batch.chip(b, 0).chip(d, 0) = pooled_output;
             max_indices[b].chip(d, 0) = index;
@@ -62,20 +64,22 @@ Eigen::Tensor<double, 4> MaxPoolingLayer::forward(const Eigen::Tensor<double, 4>
 
 Eigen::Tensor<double, 3> MaxPoolingLayer::maxPool(const Eigen::Tensor<double, 3> &input, Eigen::Tensor<int, 3> &indices)
 {
-    int input_size = input.dimension(0);
-    int output_size = (input_size - pool_size) / stride + 1;
+    int input_height = input.dimension(0);
+    int input_width = input.dimension(1);
+    int output_height = (input_height - pool_size) / stride + 1;
+    int output_width = (input_width - pool_size) / stride + 1;
 
-    if (output_size <= 0)
+    if (output_height <= 0 || output_width <= 0)
     {
         throw std::invalid_argument("Invalid output size calculated in maxPool, possibly due to incompatible pool size or stride.");
     }
 
-    Eigen::Tensor<double, 3> output(output_size, output_size, 1);
+    Eigen::Tensor<double, 3> output(output_height, output_width, 1);
     output.setZero();
 
-    for (int i = 0; i < output_size; ++i)
+    for (int i = 0; i < output_height; ++i)
     {
-        for (int j = 0; j < output_size; ++j)
+        for (int j = 0; j < output_width; ++j)
         {
             int row_start = i * stride;
             int col_start = j * stride;
@@ -110,10 +114,12 @@ Eigen::Tensor<double, 4> MaxPoolingLayer::backward(const Eigen::Tensor<double, 4
 {
     int batch_size = d_output_batch.dimension(0);
     int input_depth = d_output_batch.dimension(1);
-    int input_size = input_batch.dimension(2);
-    int output_size = d_output_batch.dimension(2);
+    int input_height = input_batch.dimension(2);
+    int input_width = input_batch.dimension(3);
+    int output_height = d_output_batch.dimension(2);
+    int output_width = d_output_batch.dimension(3);
 
-    Eigen::Tensor<double, 4> d_input_batch(batch_size, input_depth, input_size, input_size);
+    Eigen::Tensor<double, 4> d_input_batch(batch_size, input_depth, input_height, input_width);
     d_input_batch.setZero();
 
     for (int b = 0; b < batch_size; ++b)
@@ -133,14 +139,16 @@ Eigen::Tensor<double, 4> MaxPoolingLayer::backward(const Eigen::Tensor<double, 4
 
 Eigen::Tensor<double, 3> MaxPoolingLayer::maxPoolBackward(const Eigen::Tensor<double, 3> &d_output, const Eigen::Tensor<int, 3> &indices)
 {
-    int input_size = indices.dimension(0) * stride + pool_size - stride;
-    int output_size = d_output.dimension(0);
-    Eigen::Tensor<double, 3> d_input(input_size, input_size, 1);
+    int input_height = indices.dimension(0) * stride + pool_size - stride;
+    int input_width = indices.dimension(1) * stride + pool_size - stride;
+    int output_height = d_output.dimension(0);
+    int output_width = d_output.dimension(1);
+    Eigen::Tensor<double, 3> d_input(input_height, input_width, 1);
     d_input.setZero();
 
-    for (int i = 0; i < output_size; ++i)
+    for (int i = 0; i < output_height; ++i)
     {
-        for (int j = 0; j < output_size; ++j)
+        for (int j = 0; j < output_width; ++j)
         {
             int row = indices(i, j, 0);
             int col = indices(i, j, 1);
