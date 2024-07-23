@@ -151,7 +151,7 @@ void tensorModel(const std::string &datasetPath)
         {
             for (int c = 0; c < image.channels(); ++c)
             {
-                singleImageBatch(0, c, h, w) = static_cast<double>(image.at<cv::Vec3b>(h, w)[c]) / 255.0;
+                singleImageBatch(0, c, h, w) = static_cast<double>(image.at<cv::Vec3b>(h, w)[c]);
             }
         }
     }

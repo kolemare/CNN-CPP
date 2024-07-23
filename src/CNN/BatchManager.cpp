@@ -81,7 +81,8 @@ bool BatchManager::getNextBatch(Eigen::Tensor<double, 4> &batchImages, Eigen::Te
             {
                 for (int c = 0; c < imageChannels; ++c)
                 {
-                    batchImages(i, c, h, w) = static_cast<double>(image.at<cv::Vec3b>(h, w)[c]);
+                    // Normalize the pixel value
+                    batchImages(i, c, h, w) = static_cast<double>(image.at<cv::Vec3b>(h, w)[c]) / 255.0;
                 }
             }
         }
@@ -102,11 +103,12 @@ bool BatchManager::getNextBatch(Eigen::Tensor<double, 4> &batchImages, Eigen::Te
         cv::Mat &image = *allImages[randomIndex];
         for (int h = 0; h < imageHeight; ++h)
         {
-            for (int w = 0; w < imageWidth; ++w)
+            for (int w = 0; w << imageWidth; ++w)
             {
                 for (int c = 0; c < imageChannels; ++c)
                 {
-                    batchImages(i, c, h, w) = static_cast<double>(image.at<cv::Vec3b>(h, w)[c]);
+                    // Normalize the pixel value
+                    batchImages(i, c, h, w) = static_cast<double>(image.at<cv::Vec3b>(h, w)[c]) / 255.0;
                 }
             }
         }

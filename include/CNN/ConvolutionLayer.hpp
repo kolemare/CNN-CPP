@@ -41,8 +41,8 @@ public:
 
     void setKernels(const Eigen::Tensor<double, 4> &new_kernels);
 
-    Eigen::Tensor<double, 3> padInput(const Eigen::Tensor<double, 2> &input, int pad);
-    double convolve(const Eigen::Tensor<double, 3> &input, const Eigen::Tensor<double, 2> &kernel, int start_row, int start_col);
+    Eigen::Tensor<double, 2> padInput(const Eigen::Tensor<double, 2> &input, int pad);
+    double convolve(const Eigen::Tensor<double, 2> &input, const Eigen::Tensor<double, 2> &kernel, int start_row, int start_col);
 
     Eigen::Tensor<double, 4> kernels; // Kernels for each filter
     Eigen::Tensor<double, 1> biases;  // Biases for each filter
@@ -71,7 +71,7 @@ private:
 
     void processForwardBatch(Eigen::Tensor<double, 4> &output_batch, const Eigen::Tensor<double, 4> &input_batch, int batch_index);
     void processBackwardBatch(const Eigen::Tensor<double, 4> &d_output_batch, const Eigen::Tensor<double, 4> &input_batch, Eigen::Tensor<double, 4> &d_input_batch,
-                              Eigen::Tensor<double, 4> &d_kernels, Eigen::Tensor<double, 1> &d_biases, int batch_index, double learning_rate);
+                              Eigen::Tensor<double, 4> &d_kernels, Eigen::Tensor<double, 1> &d_biases, int batch_index);
 };
 
 #endif // CONVOLUTIONLAYER_HPP

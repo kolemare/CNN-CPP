@@ -114,97 +114,158 @@ void ConvolutionLayer::initializeBiases(ConvBiasInitialization bias_init)
     }
 }
 
-// Forward pass with parallel processing
 Eigen::Tensor<double, 4> ConvolutionLayer::forward(const Eigen::Tensor<double, 4> &input_batch)
 {
-    int batch_size = input_batch.dimension(0);
-    int input_size = input_batch.dimension(2);
-    if (input_size * input_size * input_depth != input_batch.dimension(1) * input_batch.dimension(2) * input_batch.dimension(3))
-    {
-        throw std::invalid_argument("Input dimensions do not match the expected depth and size.");
-    }
+    // Batch size (number of images in the batch)
+    int batch_size = input_batch.dimension(0); // Number of images
 
-    int output_size = (input_size - kernel_size + 2 * padding) / stride + 1;
-    Eigen::Tensor<double, 4> output_batch(batch_size, filters, output_size, output_size);
+    // Input channels (depth), height, and width
+    int input_depth = input_batch.dimension(1);  // Depth of the input, e.g., 3 for RGB
+    int input_height = input_batch.dimension(2); // Height of each image
+    int input_width = input_batch.dimension(3);  // Width of each image
 
+    // Calculate the output height and width
+    int output_height = (input_height - kernel_size + 2 * padding) / stride + 1; // Height of the output feature map
+    int output_width = (input_width - kernel_size + 2 * padding) / stride + 1;   // Width of the output feature map
+
+    // Output tensor: (batch_size, filters, output_height, output_width)
+    Eigen::Tensor<double, 4> output_batch(batch_size, filters, output_height, output_width); // Output tensor to store the result of the convolution
+
+    // Create a vector to store futures for parallel processing
     std::vector<std::future<void>> futures;
 
+    // Iterate over each image in the batch
     for (int b = 0; b < batch_size; ++b)
     {
-        futures.emplace_back(forwardThreadPool.enqueue([this, &output_batch, &input_batch, b, output_size, input_size]
-                                                       { processForwardBatch(output_batch, input_batch, b); }));
+        // Enqueue the processing of each image to the thread pool
+        futures.emplace_back(forwardThreadPool.enqueue([this, &output_batch, &input_batch, b]
+                                                       {
+            // Process the current batch
+            processForwardBatch(output_batch, input_batch, b); }));
     }
 
+    // Wait for all threads to complete
     for (auto &f : futures)
     {
         f.get();
     }
 
+    // Return the output batch
     return output_batch;
 }
 
-// Method to process each batch for forward pass
 void ConvolutionLayer::processForwardBatch(Eigen::Tensor<double, 4> &output_batch, const Eigen::Tensor<double, 4> &input_batch, int batch_index)
 {
-    int input_size = input_batch.dimension(2);
-    int output_size = (input_size - kernel_size + 2 * padding) / stride + 1;
+    // Input channels (depth), height, and width
+    int input_depth = input_batch.dimension(1);  // Depth of the input, e.g., 3 for RGB
+    int input_height = input_batch.dimension(2); // Height of each image
+    int input_width = input_batch.dimension(3);  // Width of each image
 
+    // Calculate the output height and width
+    int output_height = (input_height - kernel_size + 2 * padding) / stride + 1; // Height of the output feature map
+    int output_width = (input_width - kernel_size + 2 * padding) / stride + 1;   // Width of the output feature map
+
+    // Iterate over each filter
     for (int f = 0; f < filters; ++f)
     {
-        Eigen::Tensor<double, 2> feature_map(output_size, output_size);
+        // Create a feature map for the current filter
+        Eigen::Tensor<double, 2> feature_map(output_height, output_width); // 2D feature map for the current filter
         feature_map.setZero();
 
+        // Iterate over each depth channel of the input
         for (int d = 0; d < input_depth; ++d)
         {
-            Eigen::Tensor<double, 3> input_batch_slice = input_batch.chip(batch_index, 0); // Shape: (input_depth, height, width)
-            Eigen::Tensor<double, 3> input_slice_3d = input_batch_slice.chip(d, 0); // Shape: (height, width, 1)
-            Eigen::Tensor<double, 2> input_slice = input_slice_3d.chip(0, 2); // Shape: (height, width)
-
-            Eigen::Tensor<double, 3> padded_input = padInput(input_slice, padding);
-
-            for (int i = 0; i < output_size; ++i)
+            // Extract the d-th channel of the current image from the batch
+            Eigen::Tensor<double, 2> input_channel(input_height, input_width); // 2D tensor for a single input channel
+            for (int i = 0; i < input_height; ++i)
             {
-                for (int j = 0; j < output_size; ++j)
+                for (int j = 0; j < input_width; ++j)
                 {
-                    int row_start = i * stride;
-                    int col_start = j * stride;
-                    double conv_sum = convolve(padded_input, kernels.chip(f, 0).chip(d, 0), row_start, col_start);
-                    feature_map(i, j) += conv_sum;
+                    input_channel(i, j) = input_batch(batch_index, d, i, j); // Copy data from the input batch to the input channel tensor
+                }
+            }
+
+            // Pad the input channel
+            Eigen::Tensor<double, 2> padded_input = padInput(input_channel, padding); // 2D padded input tensor
+
+            // Extract the current 2D kernel for this filter and input depth
+            Eigen::Tensor<double, 2> kernel(kernel_size, kernel_size); // 2D kernel tensor for the current filter and input depth
+            for (int i = 0; i < kernel_size; ++i)
+            {
+                for (int j = 0; j < kernel_size; ++j)
+                {
+                    kernel(i, j) = kernels(f, d, i, j); // Copy data from the 4D kernels tensor to the 2D kernel tensor
+                }
+            }
+
+            // Perform the convolution
+            for (int i = 0; i < output_height; ++i)
+            {
+                for (int j = 0; j < output_width; ++j)
+                {
+                    int row_start = i * stride; // Starting row for the current window
+                    int col_start = j * stride; // Starting column for the current window
+                    // Convolve the input with the filter kernel
+                    feature_map(i, j) += convolve(padded_input, kernel, row_start, col_start); // Add the result of the convolution to the feature map
                 }
             }
         }
 
-        // Apply biases
-        feature_map = feature_map + biases(f);
+        // Add the bias for the current filter
+        for (int i = 0; i < output_height; ++i)
+        {
+            for (int j = 0; j < output_width; ++j)
+            {
+                feature_map(i, j) += biases(f); // Add the bias to each element of the feature map
+            }
+        }
 
-        // Copy feature_map to output_batch
-        std::lock_guard<std::mutex> lock(mutex);
-        output_batch.chip(batch_index, 0).chip(f, 0) = feature_map;
+        // Copy the feature map to the output batch
+        for (int i = 0; i < output_height; ++i)
+        {
+            for (int j = 0; j < output_width; ++j)
+            {
+                output_batch(batch_index, f, i, j) = feature_map(i, j); // Copy the feature map to the output batch
+            }
+        }
     }
 }
 
 // Backward pass with parallel processing
 Eigen::Tensor<double, 4> ConvolutionLayer::backward(const Eigen::Tensor<double, 4> &d_output_batch, const Eigen::Tensor<double, 4> &input_batch, double learning_rate)
 {
-    int batch_size = input_batch.dimension(0);
-    int input_size = input_batch.dimension(2);
-    int output_size = (input_size - kernel_size + 2 * padding) / stride + 1;
+    // Batch size (number of images in the batch)
+    int batch_size = input_batch.dimension(0); // Number of images
 
-    Eigen::Tensor<double, 4> d_kernels(filters, input_depth, kernel_size, kernel_size);
+    // Input channels (depth), height, and width
+    int input_depth = input_batch.dimension(1);  // Depth of the input, e.g., 3 for RGB
+    int input_height = input_batch.dimension(2); // Height of each image
+    int input_width = input_batch.dimension(3);  // Width of each image
+
+    // Calculate the output height and width
+    int output_height = (input_height - kernel_size + 2 * padding) / stride + 1; // Height of the output feature map
+    int output_width = (input_width - kernel_size + 2 * padding) / stride + 1;   // Width of the output feature map
+
+    // Initialize tensors for gradients
+    Eigen::Tensor<double, 4> d_kernels(filters, input_depth, kernel_size, kernel_size); // Gradient w.r.t kernels
     d_kernels.setZero();
-    Eigen::Tensor<double, 1> d_biases(filters);
+    Eigen::Tensor<double, 1> d_biases(filters); // Gradient w.r.t biases
     d_biases.setZero();
-    Eigen::Tensor<double, 4> d_input_batch(batch_size, input_depth, input_size, input_size);
+    Eigen::Tensor<double, 4> d_input_batch(batch_size, input_depth, input_height, input_width); // Gradient w.r.t input
     d_input_batch.setZero();
 
+    // Create a vector to store futures for parallel processing
     std::vector<std::future<void>> futures;
 
+    // Iterate over each image in the batch
     for (int b = 0; b < batch_size; ++b)
     {
-        futures.emplace_back(backwardThreadPool.enqueue([this, &d_output_batch, &input_batch, &d_input_batch, &d_kernels, &d_biases, b, learning_rate]
-                                                        { processBackwardBatch(d_output_batch, input_batch, d_input_batch, d_kernels, d_biases, b, learning_rate); }));
+        // Enqueue the processing of each image to the thread pool
+        futures.emplace_back(backwardThreadPool.enqueue([this, &d_output_batch, &input_batch, &d_input_batch, &d_kernels, &d_biases, b]
+                                                        { processBackwardBatch(d_output_batch, input_batch, d_input_batch, d_kernels, d_biases, b); }));
     }
 
+    // Wait for all threads to complete
     for (auto &f : futures)
     {
         f.get();
@@ -213,50 +274,89 @@ Eigen::Tensor<double, 4> ConvolutionLayer::backward(const Eigen::Tensor<double, 
     // Update weights and biases using the optimizer
     optimizer->update(kernels, biases, d_kernels, d_biases, learning_rate);
 
+    // Return the gradient with respect to the input batch
     return d_input_batch;
 }
 
 // Method to process each batch for backward pass
 void ConvolutionLayer::processBackwardBatch(const Eigen::Tensor<double, 4> &d_output_batch, const Eigen::Tensor<double, 4> &input_batch, Eigen::Tensor<double, 4> &d_input_batch,
-                                            Eigen::Tensor<double, 4> &d_kernels, Eigen::Tensor<double, 1> &d_biases, int batch_index, double learning_rate)
+                                            Eigen::Tensor<double, 4> &d_kernels, Eigen::Tensor<double, 1> &d_biases, int batch_index)
 {
-    int input_size = input_batch.dimension(2);
-    int output_size = (input_size - kernel_size + 2 * padding) / stride + 1;
+    // Input channels (depth), height, and width
+    int input_depth = input_batch.dimension(1);  // Depth of the input, e.g., 3 for RGB
+    int input_height = input_batch.dimension(2); // Height of each image
+    int input_width = input_batch.dimension(3);  // Width of each image
 
+    // Calculate the output height and width
+    int output_height = (input_height - kernel_size + 2 * padding) / stride + 1; // Height of the output feature map
+    int output_width = (input_width - kernel_size + 2 * padding) / stride + 1;   // Width of the output feature map
+
+    // Iterate over each filter
     for (int f = 0; f < filters; ++f)
     {
-        Eigen::Tensor<double, 2> d_output_reshaped = d_output_batch.chip(batch_index, 0).chip(f, 0);
+        // Create a tensor for the gradient of the current output
+        Eigen::Tensor<double, 2> d_output(output_height, output_width); // 2D tensor for the gradient of the output
+        for (int i = 0; i < output_height; ++i)
+        {
+            for (int j = 0; j < output_width; ++j)
+            {
+                d_output(i, j) = d_output_batch(batch_index, f, i, j); // Copy data from the 4D d_output_batch tensor to the 2D d_output tensor
+            }
+        }
 
+        // Iterate over each depth channel of the input
         for (int d = 0; d < input_depth; ++d)
         {
-            Eigen::Tensor<double, 3> input_batch_slice = input_batch.chip(batch_index, 0); // Shape: (input_depth, height, width)
-            Eigen::Tensor<double, 3> input_slice_3d = input_batch_slice.chip(d, 0); // Shape: (height, width, 1)
-            Eigen::Tensor<double, 2> input_slice = input_slice_3d.chip(0, 2); // Shape: (height, width)
+            // Extract the d-th channel of the current image from the batch
+            Eigen::Tensor<double, 2> input_channel(input_height, input_width); // 2D tensor for a single input channel
+            for (int i = 0; i < input_height; ++i)
+            {
+                for (int j = 0; j < input_width; ++j)
+                {
+                    input_channel(i, j) = input_batch(batch_index, d, i, j); // Copy data from the input batch to the input channel tensor
+                }
+            }
 
-            Eigen::Tensor<double, 3> padded_input = padInput(input_slice, padding);
-            Eigen::Tensor<double, 3> d_input_slice(input_size, input_size, 1);
+            // Pad the input channel
+            Eigen::Tensor<double, 2> padded_input = padInput(input_channel, padding); // 2D padded input tensor
+
+            // Create a tensor for the gradient of the current input slice
+            Eigen::Tensor<double, 2> d_input_slice(input_height, input_width); // 2D tensor for the gradient of the input slice
             d_input_slice.setZero();
 
-            for (int i = 0; i < output_size; ++i)
+            // Extract the current 2D kernel for this filter and input depth
+            Eigen::Tensor<double, 2> kernel(kernel_size, kernel_size); // 2D kernel tensor for the current filter and input depth
+            for (int i = 0; i < kernel_size; ++i)
             {
-                for (int j = 0; j < output_size; ++j)
+                for (int j = 0; j < kernel_size; ++j)
                 {
-                    int row_start = i * stride;
-                    int col_start = j * stride;
-                    for (int k = 0; k < kernel_size; ++k)
-                    {
-                        for (int l = 0; l < kernel_size; ++l)
-                        {
-                            int row_index = row_start + k;
-                            int col_index = col_start + l;
+                    kernel(i, j) = kernels(f, d, i, j); // Copy data from the 4D kernels tensor to the 2D kernel tensor
+                }
+            }
 
+            // Perform the backward convolution to calculate the gradients
+            for (int i = 0; i < output_height; ++i)
+            {
+                for (int j = 0; j < output_width; ++j)
+                {
+                    int row_start = i * stride; // Starting row for the current window
+                    int col_start = j * stride; // Starting column for the current window
+                    for (int ki = 0; ki < kernel_size; ++ki)
+                    {
+                        for (int kj = 0; kj < kernel_size; ++kj)
+                        {
+                            int row_index = row_start + ki; // Row index in the padded input
+                            int col_index = col_start + kj; // Column index in the padded input
+
+                            // Update gradients for the kernel
                             if (row_index < padded_input.dimension(0) && col_index < padded_input.dimension(1))
                             {
-                                d_kernels(f, d, k, l) += d_output_reshaped(i, j) * padded_input(row_index, col_index);
+                                d_kernels(f, d, ki, kj) += d_output(i, j) * padded_input(row_index, col_index); // Accumulate the gradient for the kernel
 
-                                if (row_index < d_input_slice.dimension(0) && col_index < d_input_slice.dimension(1))
+                                // Update gradients for the input
+                                if (row_index - padding >= 0 && row_index - padding < input_height && col_index - padding >= 0 && col_index - padding < input_width)
                                 {
-                                    d_input_slice(row_index, col_index) += d_output_reshaped(i, j) * kernels(f, d, k, l);
+                                    d_input_slice(row_index - padding, col_index - padding) += d_output(i, j) * kernel(ki, kj); // Accumulate the gradient for the input
                                 }
                             }
                         }
@@ -264,16 +364,22 @@ void ConvolutionLayer::processBackwardBatch(const Eigen::Tensor<double, 4> &d_ou
                 }
             }
 
-            std::lock_guard<std::mutex> lock(mutex);
-            d_input_batch.chip(batch_index, 0).chip(d, 0) = d_input_slice.chip(0, 2);
+            // Add the gradient of the current input slice to the overall gradient of the input batch
+            for (int i = 0; i < input_height; ++i)
+            {
+                for (int j = 0; j < input_width; ++j)
+                {
+                    d_input_batch(batch_index, d, i, j) += d_input_slice(i, j); // Accumulate the gradient for the input batch
+                }
+            }
         }
 
         // Apply bias updates per output feature map
-        for (int i = 0; i < output_size; ++i)
+        for (int i = 0; i < output_height; ++i)
         {
-            for (int j = 0; j < output_size; ++j)
+            for (int j = 0; j < output_width; ++j)
             {
-                d_biases(f) += d_output_reshaped(i, j);
+                d_biases(f) += d_output(i, j); // Accumulate the gradient for the biases
             }
         }
     }
@@ -296,30 +402,44 @@ Eigen::Tensor<double, 1> ConvolutionLayer::getBiases() const
     return biases;
 }
 
-Eigen::Tensor<double, 3> ConvolutionLayer::padInput(const Eigen::Tensor<double, 2> &input, int pad)
+Eigen::Tensor<double, 2> ConvolutionLayer::padInput(const Eigen::Tensor<double, 2> &input, int pad)
 {
-    if (pad == 0)
-        return input.reshape(Eigen::array<int, 3>{static_cast<int>(input.dimension(0)), static_cast<int>(input.dimension(1)), 1});
+    int input_height = input.dimension(0); // Height of the input tensor
+    int input_width = input.dimension(1);  // Width of the input tensor
 
-    int padded_height = input.dimension(0) + 2 * pad;
-    int padded_width = input.dimension(1) + 2 * pad;
-    Eigen::Tensor<double, 3> padded_input(padded_height, padded_width, 1);
-    padded_input.setZero();
-    padded_input.slice(Eigen::array<int, 3>{pad, pad, 0}, Eigen::array<int, 3>{static_cast<int>(input.dimension(0)), static_cast<int>(input.dimension(1)), 1}) = input.reshape(Eigen::array<int, 3>{static_cast<int>(input.dimension(0)), static_cast<int>(input.dimension(1)), 1});
+    int padded_height = input_height + 2 * pad; // Height of the padded tensor
+    int padded_width = input_width + 2 * pad;   // Width of the padded tensor
+
+    Eigen::Tensor<double, 2> padded_input(padded_height, padded_width); // 2D tensor for the padded input
+    padded_input.setZero();                                             // Initialize the padded input with zeros
+
+    for (int i = 0; i < input_height; ++i)
+    {
+        for (int j = 0; j < input_width; ++j)
+        {
+            padded_input(i + pad, j + pad) = input(i, j); // Copy the input tensor into the padded tensor
+        }
+    }
+
     return padded_input;
 }
 
-double ConvolutionLayer::convolve(const Eigen::Tensor<double, 3> &input, const Eigen::Tensor<double, 2> &kernel, int start_row, int start_col)
+// Convolution operation
+double ConvolutionLayer::convolve(const Eigen::Tensor<double, 2> &input, const Eigen::Tensor<double, 2> &kernel, int start_row, int start_col)
 {
-    double sum = 0.0;
-    for (int i = 0; i < kernel.dimension(0); ++i)
+    double sum = 0.0;                        // Sum of the element-wise products
+    int kernel_height = kernel.dimension(0); // Height of the kernel tensor
+    int kernel_width = kernel.dimension(1);  // Width of the kernel tensor
+
+    for (int i = 0; i < kernel_height; ++i)
     {
-        for (int j = 0; j < kernel.dimension(1); ++j)
+        for (int j = 0; j < kernel_width; ++j)
         {
-            sum += input(start_row + i, start_col + j, 0) * kernel(i, j);
+            // Sum up the element-wise product of the input and the kernel
+            sum += input(start_row + i, start_col + j) * kernel(i, j); // Add the product of the corresponding elements to the sum
         }
     }
-    return sum;
+    return sum; // Return the result of the convolution
 }
 
 void ConvolutionLayer::setKernels(const Eigen::Tensor<double, 4> &new_kernels)
