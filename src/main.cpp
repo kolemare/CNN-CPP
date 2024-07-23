@@ -28,8 +28,8 @@ void tensorModel(const std::string &datasetPath)
     float shearRange = 0.2f;
     float gaussianNoiseStdDev = 10.0f;
     int gaussianBlurKernelSize = 5;
-    int targetWidth = 64;
-    int targetHeight = 64;
+    int targetWidth = 32;
+    int targetHeight = 32;
 
     ImageAugmentor augmentor(rescaleFactor, zoomFactor, horizontalFlipFlag, verticalFlipFlag, shearRange, gaussianNoiseStdDev, gaussianBlurKernelSize, targetWidth, targetHeight);
 
@@ -58,7 +58,7 @@ void tensorModel(const std::string &datasetPath)
     int kernel_size1 = 3;
     int stride1 = 1;
     int padding1 = 1;
-    cnn.addConvolutionLayer(filters1, kernel_size1, stride1, padding1, ConvKernelInitialization::HE, ConvBiasInitialization::RANDOM_NORMAL);
+    cnn.addConvolutionLayer(filters1, kernel_size1, stride1, padding1, ConvKernelInitialization::XAVIER, ConvBiasInitialization::ZERO);
 
     // Activation Layer 1
     ActivationType activation1 = ActivationType::RELU;
@@ -74,7 +74,7 @@ void tensorModel(const std::string &datasetPath)
     int kernel_size2 = 3;
     int stride2 = 1;
     int padding2 = 1;
-    cnn.addConvolutionLayer(filters2, kernel_size2, stride2, padding2, ConvKernelInitialization::HE, ConvBiasInitialization::RANDOM_NORMAL);
+    cnn.addConvolutionLayer(filters2, kernel_size2, stride2, padding2, ConvKernelInitialization::XAVIER, ConvBiasInitialization::ZERO);
 
     // Activation Layer 2
     ActivationType activation2 = ActivationType::RELU;
@@ -90,8 +90,8 @@ void tensorModel(const std::string &datasetPath)
 
     // Fully Connected Layer 1
     int fc_output_size1 = 128;
-    DenseWeightInitialization fc_weight_init1 = DenseWeightInitialization::HE;
-    DenseBiasInitialization fc_bias_init1 = DenseBiasInitialization::RANDOM_NORMAL;
+    DenseWeightInitialization fc_weight_init1 = DenseWeightInitialization::XAVIER;
+    DenseBiasInitialization fc_bias_init1 = DenseBiasInitialization::ZERO;
     cnn.addFullyConnectedLayer(fc_output_size1, fc_weight_init1, fc_bias_init1);
 
     // Activation Layer 3
@@ -101,7 +101,7 @@ void tensorModel(const std::string &datasetPath)
     // Fully Connected Layer 2
     int fc_output_size2 = 1;
     DenseWeightInitialization fc_weight_init2 = DenseWeightInitialization::XAVIER;
-    DenseBiasInitialization fc_bias_init2 = DenseBiasInitialization::RANDOM_NORMAL;
+    DenseBiasInitialization fc_bias_init2 = DenseBiasInitialization::ZERO;
     cnn.addFullyConnectedLayer(fc_output_size2, fc_weight_init2, fc_bias_init2);
 
     // Activation Layer 4
@@ -116,13 +116,13 @@ void tensorModel(const std::string &datasetPath)
     std::unordered_map<std::string, double> adam_params = {
         {"beta1", 0.9},
         {"beta2", 0.999},
-        {"epsilon", 1e-8}};
+        {"epsilon", 1e-7}};
 
     // Compile the network with an optimizer
     cnn.compile(Optimizer::Type::Adam, adam_params);
 
     // Categories for training and evaluation
-    std::vector<std::string> categories = {"cats", "dogs"};
+    std::vector<std::string> categories = {"dogs", "cats"};
 
     // Step 5: Train the neural network
     int epochs = 25;
@@ -141,7 +141,7 @@ void tensorModel(const std::string &datasetPath)
         throw std::runtime_error("Could not read the image: " + singleImagePath);
     }
 
-    cv::resize(image, image, cv::Size(64, 64));
+    cv::resize(image, image, cv::Size(32, 32));
 
     // Convert image to Eigen tensor
     Eigen::Tensor<double, 4> singleImageBatch(1, image.channels(), image.rows, image.cols);
