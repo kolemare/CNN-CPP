@@ -16,12 +16,7 @@ void tensorModel(const std::string &datasetPath)
     ImageContainer container;
     loader.loadImagesFromDirectory(datasetPath, container);
 
-    std::cout << "\nProcessed " << container.getImages().size() << " images successfully!" << std::endl;
-    std::cout << "Training set size: " << container.getTrainingImages().size() << std::endl;
-    std::cout << "Test set size: " << container.getTestImages().size() << std::endl;
-
     // Step 2: Augment the images
-    float rescaleFactor = 1.0f / 255.0f;
     float zoomFactor = 1.2f;
     bool horizontalFlipFlag = true;
     bool verticalFlipFlag = true;
@@ -31,7 +26,7 @@ void tensorModel(const std::string &datasetPath)
     int targetWidth = 32;
     int targetHeight = 32;
 
-    ImageAugmentor augmentor(rescaleFactor, zoomFactor, horizontalFlipFlag, verticalFlipFlag, shearRange, gaussianNoiseStdDev, gaussianBlurKernelSize, targetWidth, targetHeight);
+    ImageAugmentor augmentor(zoomFactor, horizontalFlipFlag, verticalFlipFlag, shearRange, gaussianNoiseStdDev, gaussianBlurKernelSize, targetWidth, targetHeight);
 
     // Set augmentation chances
     augmentor.setZoomChance(1.0f);
@@ -41,7 +36,7 @@ void tensorModel(const std::string &datasetPath)
     augmentor.setGaussianBlurChance(0.0f);
     augmentor.setShearChance(1.0f);
 
-    augmentor.augmentImages(container);
+    augmentor.augmentImages(container, AugmentTarget::TRAIN_DATASET);
 
     // Step 3: Create the neural network
     NeuralNetwork cnn;
@@ -112,26 +107,17 @@ void tensorModel(const std::string &datasetPath)
     LossType loss_type = LossType::BINARY_CROSS_ENTROPY;
     cnn.setLossFunction(loss_type);
 
-    // Adam parameters
-    std::unordered_map<std::string, double> adam_params = {
-        {"beta1", 0.9},
-        {"beta2", 0.999},
-        {"epsilon", 1e-7}};
-
     // Compile the network with an optimizer
-    cnn.compile(Optimizer::Type::Adam, adam_params);
-
-    // Categories for training and evaluation
-    std::vector<std::string> categories = {"dogs", "cats"};
+    cnn.compile(Optimizer::Type::Adam);
 
     // Step 5: Train the neural network
-    int epochs = 25;
-    double learning_rate = 0.001;
+    int epochs = 50;
     int batch_size = 32;
-    cnn.train(container, epochs, learning_rate, batch_size, categories);
+    double learning_rate = 0.0001;
+    cnn.train(container, epochs, batch_size, learning_rate);
 
     // Step 6: Evaluate the neural network
-    cnn.evaluate(container, categories);
+    cnn.evaluate(container);
 
     // Step 7: Making a single prediction
     std::string singleImagePath = "datasets/single_prediction/cat_or_dog_1.jpg";

@@ -98,7 +98,33 @@ void NeuralNetwork::setLossFunction(LossType type)
 
 void NeuralNetwork::compile(Optimizer::Type optimizerType, const std::unordered_map<std::string, double> &optimizer_params)
 {
-    optimizer = Optimizer::create(optimizerType, optimizer_params);
+    std::unordered_map<std::string, double> default_params;
+
+    switch (optimizerType)
+    {
+    case Optimizer::Type::SGD:
+        // No parameters needed for SGD, empty map
+        break;
+    case Optimizer::Type::SGDWithMomentum:
+        default_params = {{"momentum", 0.9}};
+        break;
+    case Optimizer::Type::Adam:
+        default_params = {{"beta1", 0.9}, {"beta2", 0.999}, {"epsilon", 1e-7}};
+        break;
+    case Optimizer::Type::RMSprop:
+        default_params = {{"beta", 0.9}, {"epsilon", 1e-7}};
+        break;
+    default:
+        throw std::invalid_argument("Unknown optimizer type");
+    }
+
+    // Combine provided params with defaults, preferring provided params
+    for (const auto &param : optimizer_params)
+    {
+        default_params[param.first] = param.second;
+    }
+
+    optimizer = Optimizer::create(optimizerType, default_params);
 
     int height = inputHeight;
     int width = inputWidth;
@@ -246,12 +272,14 @@ void NeuralNetwork::printTensorSummary(const Eigen::Tensor<double, 4> &tensor, c
     std::copy(tensor.data(), tensor.data() + tensor.size(), tensorVec.begin());
 
     double mean = std::accumulate(tensorVec.begin(), tensorVec.end(), 0.0) / tensorVec.size();
-    
+
     std::vector<double> diff(tensorVec.size());
-    std::transform(tensorVec.begin(), tensorVec.end(), diff.begin(), [mean](double x) { return x - mean; });
+    std::transform(tensorVec.begin(), tensorVec.end(), diff.begin(), [mean](double x)
+                   { return x - mean; });
 
     std::vector<double> squaredDiff(diff.size());
-    std::transform(diff.begin(), diff.end(), squaredDiff.begin(), [](double x) { return x * x; });
+    std::transform(diff.begin(), diff.end(), squaredDiff.begin(), [](double x)
+                   { return x * x; });
 
     double variance = std::accumulate(squaredDiff.begin(), squaredDiff.end(), 0.0) / squaredDiff.size();
     double stddev = std::sqrt(variance);
@@ -260,8 +288,10 @@ void NeuralNetwork::printTensorSummary(const Eigen::Tensor<double, 4> &tensor, c
     double maxCoeff = *std::max_element(tensorVec.begin(), tensorVec.end());
 
     double zeroPercentage = std::count(tensorVec.begin(), tensorVec.end(), 0.0) / static_cast<double>(tensorVec.size()) * 100.0;
-    double negativeCount = std::count_if(tensorVec.begin(), tensorVec.end(), [](double x) { return x < 0.0; });
-    double positiveCount = std::count_if(tensorVec.begin(), tensorVec.end(), [](double x) { return x > 0.0; });
+    double negativeCount = std::count_if(tensorVec.begin(), tensorVec.end(), [](double x)
+                                         { return x < 0.0; });
+    double positiveCount = std::count_if(tensorVec.begin(), tensorVec.end(), [](double x)
+                                         { return x > 0.0; });
 
     switch (propagationType)
     {
@@ -272,7 +302,7 @@ void NeuralNetwork::printTensorSummary(const Eigen::Tensor<double, 4> &tensor, c
     case PropagationType::BACK:
         std::cout << layerType << " Back pass summary:\n";
         break;
-        
+
     default:
         break;
     }
@@ -295,10 +325,12 @@ void NeuralNetwork::printTensorSummary(const Eigen::Tensor<double, 2> &tensor, c
     double mean = std::accumulate(tensorVec.begin(), tensorVec.end(), 0.0) / tensorVec.size();
 
     std::vector<double> diff(tensorVec.size());
-    std::transform(tensorVec.begin(), tensorVec.end(), diff.begin(), [mean](double x) { return x - mean; });
+    std::transform(tensorVec.begin(), tensorVec.end(), diff.begin(), [mean](double x)
+                   { return x - mean; });
 
     std::vector<double> squaredDiff(diff.size());
-    std::transform(diff.begin(), diff.end(), squaredDiff.begin(), [](double x) { return x * x; });
+    std::transform(diff.begin(), diff.end(), squaredDiff.begin(), [](double x)
+                   { return x * x; });
 
     double variance = std::accumulate(squaredDiff.begin(), squaredDiff.end(), 0.0) / squaredDiff.size();
     double stddev = std::sqrt(variance);
@@ -307,8 +339,10 @@ void NeuralNetwork::printTensorSummary(const Eigen::Tensor<double, 2> &tensor, c
     double maxCoeff = *std::max_element(tensorVec.begin(), tensorVec.end());
 
     double zeroPercentage = std::count(tensorVec.begin(), tensorVec.end(), 0.0) / static_cast<double>(tensorVec.size()) * 100.0;
-    double negativeCount = std::count_if(tensorVec.begin(), tensorVec.end(), [](double x) { return x < 0.0; });
-    double positiveCount = std::count_if(tensorVec.begin(), tensorVec.end(), [](double x) { return x > 0.0; });
+    double negativeCount = std::count_if(tensorVec.begin(), tensorVec.end(), [](double x)
+                                         { return x < 0.0; });
+    double positiveCount = std::count_if(tensorVec.begin(), tensorVec.end(), [](double x)
+                                         { return x > 0.0; });
 
     switch (propagationType)
     {
@@ -333,7 +367,6 @@ void NeuralNetwork::printTensorSummary(const Eigen::Tensor<double, 2> &tensor, c
     std::cout << "Number of Negative Values: " << negativeCount << "\n";
     std::cout << "Number of Positive Values: " << positiveCount << "\n\n";
 }
-
 
 void NeuralNetwork::backward(const Eigen::Tensor<double, 4> &d_output, double learning_rate)
 {
@@ -392,32 +425,38 @@ void NeuralNetwork::backward(const Eigen::Tensor<double, 4> &d_output, double le
     }
 }
 
-void NeuralNetwork::printProgress(int epoch, int epochs, int batch, int totalBatches, std::chrono::steady_clock::time_point start, double batch_loss)
+void NeuralNetwork::printProgress(int epoch, int epochs, int batch, int totalBatches, std::chrono::steady_clock::time_point trainingStart, double currentBatchLoss)
 {
     if (progressLevel == ProgressLevel::None)
     {
         return;
     }
 
+    static double cumulative_loss = 0.0;
+    static int total_batches_completed = 0;
+
+    cumulative_loss += currentBatchLoss;
+    total_batches_completed++;
+
+    double average_loss = cumulative_loss / total_batches_completed;
+
     auto now = std::chrono::steady_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - start).count();
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - trainingStart).count();
     double progress = static_cast<double>(batch + 1) / totalBatches;
     int barWidth = 50;
     int pos = static_cast<int>(barWidth * progress);
 
-    double timePerBatch = elapsed / static_cast<double>(batch + 1);
-    double remainingTime = (totalBatches - batch - 1) * timePerBatch;
-    double totalTime = elapsed + remainingTime;
+    double timePerBatch = elapsed / static_cast<double>(total_batches_completed);
+    double remainingTime = (totalBatches * epochs - total_batches_completed) * timePerBatch;
 
     double overallProgress = static_cast<double>(epoch * totalBatches + batch + 1) / (totalBatches * epochs);
     int overallPos = static_cast<int>(barWidth * overallProgress);
-    double overallRemainingTime = (totalBatches * epochs - (epoch * totalBatches + batch + 1)) * timePerBatch;
 
     std::ostringstream oss;
     oss << "-------------------------------------------------------------------" << std::endl;
 
     std::ostringstream epochProgress;
-    epochProgress << "Epoch " << epoch + 1 << " | Batch " << batch + 1 << "/" << totalBatches << " [";
+    epochProgress << "Epoch " << epoch + 1 << "/" << epochs << " | Batch " << batch + 1 << "/" << totalBatches << " [";
     for (int i = 0; i < barWidth; ++i)
     {
         if (i < pos)
@@ -432,11 +471,11 @@ void NeuralNetwork::printProgress(int epoch, int epochs, int batch, int totalBat
     oss << epochProgress.str();
 
     std::ostringstream overallProgressLabel;
-    overallProgressLabel << "Overall Progress";
+    overallProgressLabel << "Overall Progress: ";
     int labelLength = overallProgressLabel.str().length();
 
     // Dynamically adjust the overall progress label length to match epoch progress length
-    std::string epochPrefix = "Epoch " + std::to_string(epoch + 1) + " | Batch " + std::to_string(batch + 1) + "/" + std::to_string(totalBatches);
+    std::string epochPrefix = "Epoch " + std::to_string(epoch + 1) + "/" + std::to_string(epochs) + " | Batch " + std::to_string(batch + 1) + "/" + std::to_string(totalBatches);
     while (overallProgressLabel.str().length() < epochPrefix.length())
     {
         overallProgressLabel << " ";
@@ -470,35 +509,22 @@ void NeuralNetwork::printProgress(int epoch, int epochs, int batch, int totalBat
             return oss.str();
         };
 
-        double batchDuration = elapsed - (batch * timePerBatch);
         oss << "Elapsed: " << formatTime(elapsed) << "\n";
-        oss << "ETA for current epoch: " << formatTime(remainingTime) << "\n";
-        oss << "Duration of current batch: " << formatTime(batchDuration) << "\n";
-        oss << "ETA for overall progress: " << formatTime(overallRemainingTime) << "\n";
-
-        if (batch == 0) // Print only at the beginning of the first epoch
-        {
-            oss << "Total time for current epoch: " << formatTime(totalTime) << "\n";
-            if (epoch == 0)
-            {
-                double overallTotalTime = elapsed + overallRemainingTime;
-                oss << "Overall estimated total time: " << formatTime(overallTotalTime) << "\n";
-            }
-        }
+        oss << "ETA: " << formatTime(remainingTime) << "\n";
     }
-    oss << "Loss: " << batch_loss << "\n";
+    oss << "Loss: " << average_loss << "\n";
     oss << "-------------------------------------------------------------------" << std::endl;
     std::cout << oss.str() << std::flush;
 }
 
-void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, double learning_rate, int batch_size, const std::vector<std::string> &categories)
+void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, int batch_size, double learning_rate)
 {
     if (!lossFunction)
     {
         throw std::runtime_error("Loss function must be set before training.");
     }
 
-    BatchManager batchManager(imageContainer, batch_size, categories, BatchManager::BatchType::Training);
+    BatchManager batchManager(imageContainer, batch_size, BatchManager::BatchType::Training);
     std::cout << "Training started..." << std::endl;
 
     for (int epoch = 0; epoch < epochs; ++epoch)
@@ -547,21 +573,21 @@ void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, doub
 
         std::cout << std::endl
                   << "Epoch " << epoch + 1 << " complete." << std::endl;
-        std::cout << "Training Loss: " << average_loss << ", Accuracy: " << accuracy << std::endl;
+        std::cout << "Accuracy: " << accuracy << std::endl;
 
         // Perform evaluation after each epoch
-        evaluate(imageContainer, categories);
+        evaluate(imageContainer);
     }
 }
 
-void NeuralNetwork::evaluate(const ImageContainer &imageContainer, const std::vector<std::string> &categories)
+void NeuralNetwork::evaluate(const ImageContainer &imageContainer)
 {
     if (!lossFunction)
     {
         throw std::runtime_error("Loss function must be set before evaluation.");
     }
 
-    BatchManager batchManager(imageContainer, imageContainer.getTestImages().size(), categories, BatchManager::BatchType::Testing);
+    BatchManager batchManager(imageContainer, imageContainer.getTestImages().size(), BatchManager::BatchType::Testing);
     Eigen::Tensor<double, 4> batch_input;
     Eigen::Tensor<int, 2> batch_label;
 

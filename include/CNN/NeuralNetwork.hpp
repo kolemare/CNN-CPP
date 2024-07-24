@@ -52,11 +52,11 @@ public:
     void setLogLevel(LogLevel level);
     void setProgressLevel(ProgressLevel level);
 
-    void compile(Optimizer::Type optimizerType, const std::unordered_map<std::string, double> &optimizer_params);
+    void compile(Optimizer::Type optimizerType, const std::unordered_map<std::string, double> &optimizer_params = {});
     Eigen::Tensor<double, 4> forward(const Eigen::Tensor<double, 4> &input);
     void backward(const Eigen::Tensor<double, 4> &d_output, double learning_rate);
-    void train(const ImageContainer &imageContainer, int epochs, double learning_rate, int batch_size, const std::vector<std::string> &categories);
-    void evaluate(const ImageContainer &imageContainer, const std::vector<std::string> &categories);
+    void train(const ImageContainer &imageContainer, int epochs, int batch_size, double learning_rate = 0.001);
+    void evaluate(const ImageContainer &imageContainer);
     void setImageSize(const int targetWidth, const int targetHeight);
 
 private:

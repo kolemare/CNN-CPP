@@ -4,9 +4,10 @@
 #include <iostream>
 #include <opencv2/core/eigen.hpp>
 
-BatchManager::BatchManager(const ImageContainer &imageContainer, int batchSize, const std::vector<std::string> &categories, BatchType batchType)
-    : imageContainer(imageContainer), batchSize(batchSize), categories(categories), currentBatchIndex(0), batchType(batchType)
+BatchManager::BatchManager(const ImageContainer &imageContainer, int batchSize, BatchType batchType)
+    : imageContainer(imageContainer), batchSize(batchSize), currentBatchIndex(0), batchType(batchType)
 {
+    categories = imageContainer.getUniqueLabels();
     initializeBatches();
 }
 

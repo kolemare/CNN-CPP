@@ -91,3 +91,13 @@ std::vector<std::shared_ptr<cv::Mat>> ImageContainer::getTestImagesByCategory(co
     }
     return categoryImages;
 }
+
+const void ImageContainer::setUniqueLabels(std::vector<std::string> uniqueLabels)
+{
+    this->uniqueLabels = uniqueLabels;
+}
+
+const std::vector<std::string> &ImageContainer::getUniqueLabels() const
+{
+    return this->uniqueLabels;
+}

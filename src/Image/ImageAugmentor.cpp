@@ -1,8 +1,7 @@
 #include "ImageAugmentor.hpp"
 #include <iostream>
 
-ImageAugmentor::ImageAugmentor(float rescaleFactor,
-                               float zoomFactor,
+ImageAugmentor::ImageAugmentor(float zoomFactor,
                                bool horizontalFlipFlag,
                                bool verticalFlipFlag,
                                float shearRange,
@@ -10,8 +9,7 @@ ImageAugmentor::ImageAugmentor(float rescaleFactor,
                                int gaussianBlurKernelSize,
                                int targetWidth,
                                int targetHeight)
-    : rescaleFactor(rescaleFactor),
-      zoomFactor(zoomFactor),
+    : zoomFactor(zoomFactor),
       horizontalFlipFlag(horizontalFlipFlag),
       verticalFlipFlag(verticalFlipFlag),
       shearRange(shearRange),
@@ -27,77 +25,104 @@ ImageAugmentor::ImageAugmentor(float rescaleFactor,
       shearChance(0.3f),
       distribution(0.0f, 1.0f) {}
 
-void ImageAugmentor::augmentImages(ImageContainer &container)
+void ImageAugmentor::augmentImages(ImageContainer &container, const AugmentTarget &augmentTarget)
 {
-    auto &trainingImages = container.getTrainingImages();
-    auto &testImages = container.getTestImages();
 
-    std::cout << "Augmenting images..." << std::endl;
+    auto &trainingImages = container.getTrainingImages();
 
 #ifdef AUGMENT_PROGRESS
     int trainingImagesCount = trainingImages.size();
-    int testImagesCount = testImages.size();
     int processedTrainingImages = 0;
-    int processedTestImages = 0;
 #endif
-
-    int imagecounter = 0;
 
     for (auto &image : trainingImages)
     {
         *image = rescale(*image);
-        if (distribution(generator) < zoomChance)
-            *image = zoom(*image);
-        if (distribution(generator) < horizontalFlipChance)
-            *image = horizontalFlip(*image);
-        if (distribution(generator) < verticalFlipChance)
-            *image = verticalFlip(*image);
-        if (distribution(generator) < gaussianNoiseChance)
-            *image = addGaussianNoise(*image);
-        if (distribution(generator) < gaussianBlurChance)
-            *image = applyGaussianBlur(*image);
-        if (distribution(generator) < shearChance)
-            *image = shear(*image);
-
-        normalizeImage(*image);
+        if (AugmentTarget::WHOLE_DATASET == augmentTarget || AugmentTarget::TRAIN_DATASET == augmentTarget)
+        {
+            if (distribution(generator) < zoomChance)
+            {
+                *image = zoom(*image);
+            }
+            if (distribution(generator) < horizontalFlipChance)
+            {
+                *image = horizontalFlip(*image);
+            }
+            if (distribution(generator) < verticalFlipChance)
+            {
+                *image = verticalFlip(*image);
+            }
+            if (distribution(generator) < gaussianNoiseChance)
+            {
+                *image = addGaussianNoise(*image);
+            }
+            if (distribution(generator) < gaussianBlurChance)
+            {
+                *image = applyGaussianBlur(*image);
+            }
+            if (distribution(generator) < shearChance)
+            {
+                *image = shear(*image);
+            }
 
 #ifdef AUGMENT_PROGRESS
-        processedTrainingImages++;
-        int progress = (processedTrainingImages * 100) / trainingImagesCount;
-        std::cout << "\rAugmenting training images... " << progress << "%" << std::flush;
+            processedTrainingImages++;
+            int progress = (processedTrainingImages * 100) / trainingImagesCount;
+            std::cout << "\rAugmenting training images... " << progress << "%" << std::flush;
 #endif
+        }
+        normalizeImage(*image);
     }
 
     std::cout << std::endl;
-    std::cout << "Augmentation complete for train_set!" << std::endl;
+
+    auto &testImages = container.getTestImages();
+
+#ifdef AUGMENT_PROGRESS
+    int testImagesCount = testImages.size();
+    int processedTestImages = 0;
+#endif
 
     for (auto &image : testImages)
     {
         *image = rescale(*image);
-        if (distribution(generator) < zoomChance)
-            *image = zoom(*image);
-        if (distribution(generator) < horizontalFlipChance)
-            *image = horizontalFlip(*image);
-        if (distribution(generator) < verticalFlipChance)
-            *image = verticalFlip(*image);
-        if (distribution(generator) < gaussianNoiseChance)
-            *image = addGaussianNoise(*image);
-        if (distribution(generator) < gaussianBlurChance)
-            *image = applyGaussianBlur(*image);
-        if (distribution(generator) < shearChance)
-            *image = shear(*image);
-
-        normalizeImage(*image);
+        if (AugmentTarget::WHOLE_DATASET == augmentTarget || AugmentTarget::TEST_DATASET == augmentTarget)
+        {
+            if (distribution(generator) < zoomChance)
+            {
+                *image = zoom(*image);
+            }
+            if (distribution(generator) < horizontalFlipChance)
+            {
+                *image = horizontalFlip(*image);
+            }
+            if (distribution(generator) < verticalFlipChance)
+            {
+                *image = verticalFlip(*image);
+            }
+            if (distribution(generator) < gaussianNoiseChance)
+            {
+                *image = addGaussianNoise(*image);
+            }
+            if (distribution(generator) < gaussianBlurChance)
+            {
+                *image = applyGaussianBlur(*image);
+            }
+            if (distribution(generator) < shearChance)
+            {
+                *image = shear(*image);
+            }
 
 #ifdef AUGMENT_PROGRESS
-        processedTestImages++;
-        int progress = (processedTestImages * 100) / testImagesCount;
-        std::cout << "\rAugmenting test images... " << progress << "%" << std::flush;
+            processedTestImages++;
+            int progress = (processedTestImages * 100) / testImagesCount;
+            std::cout << "\rAugmenting test images... " << progress << "%" << std::flush;
 #endif
+        }
+        normalizeImage(*image);
     }
 
     std::cout << std::endl;
-    std::cout << "Augmentation complete for test_set!" << std::endl;
 }
 
 void ImageAugmentor::setZoomChance(float chance) { zoomChance = chance; }
@@ -112,12 +137,6 @@ cv::Mat ImageAugmentor::rescale(const cv::Mat &image)
     if (image.empty())
     {
         std::cerr << "Error: Empty image provided to rescale." << std::endl;
-        return image;
-    }
-
-    if (rescaleFactor <= 0)
-    {
-        std::cerr << "Error: Invalid rescale factor. It must be greater than 0." << std::endl;
         return image;
     }
 

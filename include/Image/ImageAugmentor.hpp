@@ -1,18 +1,25 @@
 #ifndef IMAGE_AUGMENTOR_HPP
 #define IMAGE_AUGMENTOR_HPP
 
-// #define AUGMENT_PROGRESS
+#define AUGMENT_PROGRESS
 
 #include <opencv2/opencv.hpp>
 #include "ImageContainer.hpp"
 #include <random>
 
+enum class AugmentTarget
+{
+    TRAIN_DATASET,
+    TEST_DATASET,
+    WHOLE_DATASET
+};
+
 class ImageAugmentor
 {
 public:
-    ImageAugmentor(float rescaleFactor, float zoomFactor, bool horizontalFlipFlag, bool verticalFlipFlag, float shearRange, float gaussianNoiseStdDev, int gaussianBlurKernelSize, int targetWidth, int targetHeight);
+    ImageAugmentor(float zoomFactor, bool horizontalFlipFlag, bool verticalFlipFlag, float shearRange, float gaussianNoiseStdDev, int gaussianBlurKernelSize, int targetWidth, int targetHeight);
 
-    void augmentImages(ImageContainer &container);
+    void augmentImages(ImageContainer &container, const AugmentTarget &augmentTarget);
 
     void setZoomChance(float chance);
     void setHorizontalFlipChance(float chance);
@@ -31,7 +38,6 @@ private:
     cv::Mat shear(const cv::Mat &image);
     void normalizeImage(cv::Mat &image);
 
-    float rescaleFactor;
     float zoomFactor;
     bool horizontalFlipFlag;
     bool verticalFlipFlag;

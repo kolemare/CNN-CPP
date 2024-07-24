@@ -15,7 +15,7 @@ public:
         Testing
     };
 
-    BatchManager(const ImageContainer &imageContainer, int batchSize, const std::vector<std::string> &categories, BatchType batchType);
+    BatchManager(const ImageContainer &imageContainer, int batchSize, BatchType batchType);
 
     void initializeBatches();
     bool getNextBatch(Eigen::Tensor<double, 4> &batchImages, Eigen::Tensor<int, 2> &batchLabels);

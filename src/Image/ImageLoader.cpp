@@ -9,6 +9,7 @@ ImageLoader::ImageLoader() {}
 void ImageLoader::loadImagesFromDirectory(const std::string &datasetPath, ImageContainer &container)
 {
     int totalImages = 0;
+    std::vector<std::string> uniqueLabels;
     for (const auto &category : fs::directory_iterator(datasetPath))
     {
         if (category.is_directory())
@@ -19,6 +20,13 @@ void ImageLoader::loadImagesFromDirectory(const std::string &datasetPath, ImageC
                 {
                     std::string subCategoryName = subCategory.path().filename().string();
                     container.addLabelMapping(subCategoryName, subCategoryName);
+
+                    // Add subCategoryName to uniqueLabels if it's not already present
+                    if (std::find(uniqueLabels.begin(), uniqueLabels.end(), subCategoryName) == uniqueLabels.end())
+                    {
+                        uniqueLabels.push_back(subCategoryName);
+                    }
+
                     totalImages += std::distance(fs::recursive_directory_iterator(subCategory.path()), fs::recursive_directory_iterator());
                 }
             }
@@ -52,6 +60,10 @@ void ImageLoader::loadImagesFromDirectory(const std::string &datasetPath, ImageC
             }
         }
     }
+    container.setUniqueLabels(uniqueLabels);
+    std::cout << "\nLoaded " << container.getImages().size() << " images successfully!" << std::endl;
+    std::cout << "Training set size: " << container.getTrainingImages().size() << std::endl;
+    std::cout << "Test set size: " << container.getTestImages().size() << std::endl;
 }
 
 std::vector<std::string> ImageLoader::getImagesInDirectory(const std::string &directoryPath)
