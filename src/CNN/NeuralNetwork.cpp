@@ -526,17 +526,17 @@ void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, int 
 
     BatchManager batchManager(imageContainer, batch_size, BatchManager::BatchType::Training);
     std::cout << "Training started..." << std::endl;
+    auto start = std::chrono::steady_clock::now();
 
     for (int epoch = 0; epoch < epochs; ++epoch)
     {
         Eigen::Tensor<double, 4> batch_input;
         Eigen::Tensor<int, 2> batch_label;
         int totalBatches = batchManager.getTotalBatches();
-        auto start = std::chrono::steady_clock::now();
         int batchCounter = 0;
-        double total_loss = 0.0;
+        double total_epoch_loss = 0.0;
         int correct_predictions = 0;
-        int num_samples = 0;
+        int num_epoch_samples = 0;
 
         while (batchManager.getNextBatch(batch_input, batch_label))
         {
@@ -545,18 +545,49 @@ void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, int 
 
             // Compute loss
             double batch_loss = lossFunction->compute(predictions, batch_label);
-            total_loss += batch_loss;
+            total_epoch_loss += batch_loss * batch_input.dimension(0);
 
             // Count correct predictions
             for (int i = 0; i < predictions.dimension(0); ++i)
             {
-                int predicted_label = (predictions(i, 0, 0, 0) >= 0.5) ? 1 : 0;
-                int true_label = batch_label(i, 0);
+                int predicted_label;
+                int true_label;
+
+                if (predictions.dimension(3) == 1) // Binary classification
+                {
+                    predicted_label = (predictions(i, 0, 0, 0) >= 0.5) ? 1 : 0;
+                    true_label = batch_label(i, 0);
+                }
+                else // Multi-class classification
+                {
+                    predicted_label = 0;
+                    double max_value = predictions(i, 0, 0, 0);
+
+                    for (int j = 1; j < predictions.dimension(3); ++j)
+                    {
+                        if (predictions(i, 0, 0, j) > max_value)
+                        {
+                            max_value = predictions(i, 0, 0, j);
+                            predicted_label = j;
+                        }
+                    }
+
+                    true_label = 0;
+                    for (int j = 0; j < batch_label.dimension(1); ++j)
+                    {
+                        if (batch_label(i, j) == 1)
+                        {
+                            true_label = j;
+                            break;
+                        }
+                    }
+                }
+
                 if (predicted_label == true_label)
                 {
                     correct_predictions++;
                 }
-                num_samples++;
+                num_epoch_samples++;
             }
 
             // Backward pass
@@ -568,12 +599,15 @@ void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, int 
             batchCounter++;
         }
 
-        double average_loss = total_loss / num_samples;
-        double accuracy = static_cast<double>(correct_predictions) / num_samples;
+        double average_loss = total_epoch_loss / num_epoch_samples;
+        double accuracy = static_cast<double>(correct_predictions) / num_epoch_samples;
 
         std::cout << std::endl
                   << "Epoch " << epoch + 1 << " complete." << std::endl;
         std::cout << "Training Accuracy: " << accuracy << std::endl;
+        std::cout << "Average Loss: " << average_loss << std::endl;
+
+        std::cout << "Evaluating..." << std::endl;
 
         // Perform evaluation after each epoch
         evaluate(imageContainer);
@@ -598,47 +632,47 @@ void NeuralNetwork::evaluate(const ImageContainer &imageContainer)
     while (batchManager.getNextBatch(batch_input, batch_label))
     {
         Eigen::Tensor<double, 4> predictions = forward(batch_input);
-        total_loss += lossFunction->compute(predictions, batch_label);
 
-        // Convert Eigen::Tensor to standard arrays for processing
-        std::vector<int> pred_labels(predictions.dimension(0));
-        std::vector<int> true_labels(predictions.dimension(0));
+        double batch_loss = lossFunction->compute(predictions, batch_label);
+        total_loss += batch_loss * batch_input.dimension(0);
 
+        // Count correct predictions
         for (int i = 0; i < predictions.dimension(0); ++i)
         {
+            int predicted_label;
+            int true_label;
+
             if (predictions.dimension(3) == 1) // Binary classification
             {
-                pred_labels[i] = predictions(i, 0, 0, 0) >= 0.5 ? 1 : 0;
-                true_labels[i] = batch_label(i, 0);
+                predicted_label = (predictions(i, 0, 0, 0) >= 0.5) ? 1 : 0;
+                true_label = batch_label(i, 0);
             }
             else // Multi-class classification
             {
-                int maxIndex = 0;
-                double maxValue = predictions(i, 0, 0, 0);
+                predicted_label = 0;
+                double max_value = predictions(i, 0, 0, 0);
+
                 for (int j = 1; j < predictions.dimension(3); ++j)
                 {
-                    if (predictions(i, 0, 0, j) > maxValue)
+                    if (predictions(i, 0, 0, j) > max_value)
                     {
-                        maxValue = predictions(i, 0, 0, j);
-                        maxIndex = j;
+                        max_value = predictions(i, 0, 0, j);
+                        predicted_label = j;
                     }
                 }
-                pred_labels[i] = maxIndex;
 
-                int trueMaxIndex = 0;
-                int trueMaxValue = batch_label(i, 0);
-                for (int j = 1; j < batch_label.dimension(1); ++j)
+                true_label = 0;
+                for (int j = 0; j < batch_label.dimension(1); ++j)
                 {
-                    if (batch_label(i, j) > trueMaxValue)
+                    if (batch_label(i, j) == 1)
                     {
-                        trueMaxValue = batch_label(i, j);
-                        trueMaxIndex = j;
+                        true_label = j;
+                        break;
                     }
                 }
-                true_labels[i] = trueMaxIndex;
             }
 
-            if (pred_labels[i] == true_labels[i])
+            if (predicted_label == true_label)
             {
                 correct_predictions++;
             }
@@ -650,5 +684,5 @@ void NeuralNetwork::evaluate(const ImageContainer &imageContainer)
     double accuracy = static_cast<double>(correct_predictions) / num_samples;
 
     std::cout << "Testing Accuracy: " << accuracy << std::endl;
-    std::cout << "Testing Loss(avg): " << average_loss <<std::endl;
+    std::cout << "Testing Loss(avg): " << average_loss << std::endl;
 }

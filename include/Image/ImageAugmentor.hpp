@@ -11,7 +11,8 @@ enum class AugmentTarget
 {
     TRAIN_DATASET,
     TEST_DATASET,
-    WHOLE_DATASET
+    WHOLE_DATASET,
+    NONE
 };
 
 class ImageAugmentor

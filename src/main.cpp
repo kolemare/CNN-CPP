@@ -127,7 +127,7 @@ void tensorModel(const std::string &datasetPath)
         throw std::runtime_error("Could not read the image: " + singleImagePath);
     }
 
-    cv::resize(image, image, cv::Size(32, 32));
+    cv::resize(image, image, cv::Size(targetWidth, targetHeight));
 
     // Convert image to Eigen tensor
     Eigen::Tensor<double, 4> singleImageBatch(1, image.channels(), image.rows, image.cols);
@@ -137,7 +137,7 @@ void tensorModel(const std::string &datasetPath)
         {
             for (int c = 0; c < image.channels(); ++c)
             {
-                singleImageBatch(0, c, h, w) = static_cast<double>(image.at<cv::Vec3b>(h, w)[c]);
+                singleImageBatch(0, c, h, w) = static_cast<double>(image.at<cv::Vec3b>(h, w)[c]) / 255.0;
             }
         }
     }
