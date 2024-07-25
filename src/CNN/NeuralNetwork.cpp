@@ -573,7 +573,7 @@ void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, int 
 
         std::cout << std::endl
                   << "Epoch " << epoch + 1 << " complete." << std::endl;
-        std::cout << "Accuracy: " << accuracy << std::endl;
+        std::cout << "Training Accuracy: " << accuracy << std::endl;
 
         // Perform evaluation after each epoch
         evaluate(imageContainer);
@@ -649,5 +649,6 @@ void NeuralNetwork::evaluate(const ImageContainer &imageContainer)
     double average_loss = total_loss / num_samples;
     double accuracy = static_cast<double>(correct_predictions) / num_samples;
 
-    std::cout << "Evaluation results - Loss: " << average_loss << ", Accuracy: " << accuracy << std::endl;
+    std::cout << "Testing Accuracy: " << accuracy << std::endl;
+    std::cout << "Testing Loss(avg): " << average_loss <<std::endl;
 }
