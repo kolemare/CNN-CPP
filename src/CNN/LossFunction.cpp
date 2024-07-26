@@ -30,7 +30,7 @@ double BinaryCrossEntropy::compute(const Eigen::Tensor<double, 4> &predictions, 
     // Iterate over each prediction in the batch
     for (int i = 0; i < batch_size; ++i)
     {
-        double pred = predictions(i, 0, 0, 0);
+        double pred = std::max(std::min(predictions(i, 0, 0, 0), 1.0 - 1e-15), 1e-15); // Clipping
         int target = targets(i, 0);
 
         // Calculate the loss using the binary cross-entropy formula
@@ -48,7 +48,7 @@ Eigen::Tensor<double, 4> BinaryCrossEntropy::derivative(const Eigen::Tensor<doub
     // Iterate over each prediction in the batch
     for (int i = 0; i < batch_size; ++i)
     {
-        double pred = predictions(i, 0, 0, 0);
+        double pred = std::max(std::min(predictions(i, 0, 0, 0), 1.0 - 1e-15), 1e-15); // Clipping
         int target = targets(i, 0);
 
         // Calculate the gradient of the loss function
@@ -109,7 +109,7 @@ double CategoricalCrossEntropy::compute(const Eigen::Tensor<double, 4> &predicti
     {
         for (int j = 0; j < num_classes; ++j)
         {
-            double pred = std::max(std::min(predictions(i, 0, 0, j), 1.0 - 1e-10), 1e-10);
+            double pred = std::max(std::min(predictions(i, 0, 0, j), 1.0 - 1e-10), 1e-10); // Clipping
             int target = targets(i, j);
 
             // Calculate the loss using the categorical cross-entropy formula
@@ -131,7 +131,7 @@ Eigen::Tensor<double, 4> CategoricalCrossEntropy::derivative(const Eigen::Tensor
     {
         for (int j = 0; j < num_classes; ++j)
         {
-            double pred = std::max(std::min(predictions(i, 0, 0, j), 1.0 - 1e-10), 1e-10);
+            double pred = std::max(std::min(predictions(i, 0, 0, j), 1.0 - 1e-10), 1e-10); // Clipping
             int target = targets(i, j);
 
             // Calculate the gradient of the loss function
