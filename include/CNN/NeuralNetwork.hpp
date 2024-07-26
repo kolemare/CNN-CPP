@@ -15,6 +15,7 @@
 #include "FlattenLayer.hpp"
 #include "FullyConnectedLayer.hpp"
 #include "ActivationLayer.hpp"
+#include "GradientClipping.hpp"
 
 enum class LogLevel
 {
@@ -37,6 +38,12 @@ enum PropagationType
     BACK
 };
 
+enum class GradientClippingMode
+{
+    ENABLED,
+    DISABLED
+};
+
 class NeuralNetwork
 {
 public:
@@ -51,6 +58,7 @@ public:
     void setLossFunction(LossType type);
     void setLogLevel(LogLevel level);
     void setProgressLevel(ProgressLevel level);
+    void setGradientClipping(GradientClippingMode clipping = GradientClippingMode::ENABLED, double clipValue = 1.0);
 
     void compile(Optimizer::Type optimizerType, const std::unordered_map<std::string, double> &optimizer_params = {});
     Eigen::Tensor<double, 4> forward(const Eigen::Tensor<double, 4> &input);
@@ -65,12 +73,15 @@ private:
     std::shared_ptr<Optimizer> optimizer;
     std::vector<Eigen::Tensor<double, 4>> layerInputs;
     bool flattenAdded;
+    bool clippingSet;
     int currentDepth;
     int inputSize;
     int inputHeight;
     int inputWidth;
     LogLevel logLevel;
     ProgressLevel progressLevel;
+    GradientClippingMode clippingMode;
+    double clipValue;
 
     void printTensorSummary(const Eigen::Tensor<double, 4> &tensor, const std::string &layerType, PropagationType propagationType);
     void printTensorSummary(const Eigen::Tensor<double, 2> &tensor, const std::string &layerType, PropagationType propagationType);

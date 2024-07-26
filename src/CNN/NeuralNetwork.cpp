@@ -7,7 +7,7 @@
 #include <chrono>
 #include <filesystem>
 
-NeuralNetwork::NeuralNetwork() : flattenAdded(false), currentDepth(3), logLevel(LogLevel::None), progressLevel(ProgressLevel::None) {}
+NeuralNetwork::NeuralNetwork() : flattenAdded(false), clippingSet(false), currentDepth(3), logLevel(LogLevel::None), progressLevel(ProgressLevel::None) {}
 
 void NeuralNetwork::setImageSize(const int targetWidth, const int targetHeight)
 {
@@ -23,6 +23,13 @@ void NeuralNetwork::setLogLevel(LogLevel level)
 void NeuralNetwork::setProgressLevel(ProgressLevel level)
 {
     progressLevel = level;
+}
+
+void NeuralNetwork::setGradientClipping(GradientClippingMode mode, double value)
+{
+    clippingMode = mode;
+    clipValue = value;
+    clippingSet = true;
 }
 
 void NeuralNetwork::addConvolutionLayer(int filters, int kernel_size, int stride, int padding, ConvKernelInitialization kernel_init, ConvBiasInitialization bias_init)
@@ -129,6 +136,12 @@ void NeuralNetwork::compile(Optimizer::Type optimizerType, const std::unordered_
     int height = inputHeight;
     int width = inputWidth;
     int input_size = -1;
+
+    if (!clippingSet)
+    {
+        // Default => GradientClipping ENABLED & clipValue = 1
+        this->setGradientClipping();
+    }
 
     for (size_t i = 0; i < layers.size(); ++i)
     {
@@ -409,6 +422,11 @@ void NeuralNetwork::backward(const Eigen::Tensor<double, 4> &d_output, double le
 
         d_input = layers[i]->backward(d_input, layerInputs[i], learning_rate);
 
+        if (GradientClippingMode::ENABLED == clippingMode)
+        {
+            GradientClipping::clipGradients(d_input, clipValue);
+        }
+
         if (logLevel == LogLevel::All || logLevel == LogLevel::LayerOutputs)
         {
             std::cout << "-------------------------------------------------------------------" << std::endl;
@@ -612,6 +630,7 @@ void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, int 
         // Perform evaluation after each epoch
         evaluate(imageContainer);
     }
+    std::cout << "Training ended!" << std::endl;
 }
 
 void NeuralNetwork::evaluate(const ImageContainer &imageContainer)
