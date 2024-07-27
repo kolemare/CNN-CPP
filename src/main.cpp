@@ -111,43 +111,49 @@ void tensorModel(const std::string &datasetPath)
     cnn.compile(Optimizer::Type::Adam);
 
     // Step 5: Train the neural network
-    int epochs = 50;
+    int epochs = 25;
     int batch_size = 32;
-    double learning_rate = 0.0001;
-    cnn.train(container, epochs, batch_size, learning_rate);
+    cnn.train(container, epochs, batch_size);
 
     // Step 6: Evaluate the neural network
     cnn.evaluate(container);
 
     // Step 7: Making a single prediction
-    std::string singleImagePath = "datasets/single_prediction/cat_or_dog_1.jpg";
-    cv::Mat image = cv::imread(singleImagePath, cv::IMREAD_COLOR);
-    if (image.empty())
-    {
-        throw std::runtime_error("Could not read the image: " + singleImagePath);
-    }
+    std::vector<std::string> imagePaths = {"datasets/catsdogs/single_prediction/cat_or_dog_1.jpg", "datasets/catsdogs/single_prediction/cat_or_dog_2.jpg"};
+    Eigen::Tensor<double, 4> singleImageBatch(batch_size, 3, targetHeight, targetWidth);
+    singleImageBatch.setZero(); // Initialize with zeros
 
-    cv::resize(image, image, cv::Size(targetWidth, targetHeight));
-
-    // Convert image to Eigen tensor
-    Eigen::Tensor<double, 4> singleImageBatch(1, image.channels(), image.rows, image.cols);
-    for (int h = 0; h < image.rows; ++h)
+    for (size_t i = 0; i < imagePaths.size(); ++i)
     {
-        for (int w = 0; w < image.cols; ++w)
+        cv::Mat image = cv::imread(imagePaths[i], cv::IMREAD_COLOR);
+        if (image.empty())
         {
-            for (int c = 0; c < image.channels(); ++c)
+            throw std::runtime_error("Could not read the image: " + imagePaths[i]);
+        }
+
+        cv::resize(image, image, cv::Size(targetWidth, targetHeight));
+
+        for (int h = 0; h < image.rows; ++h)
+        {
+            for (int w = 0; w < image.cols; ++w)
             {
-                singleImageBatch(0, c, h, w) = static_cast<double>(image.at<cv::Vec3b>(h, w)[c]) / 255.0;
+                for (int c = 0; c < image.channels(); ++c)
+                {
+                    singleImageBatch(i, c, h, w) = static_cast<double>(image.at<cv::Vec3b>(h, w)[c]) / 255.0;
+                }
             }
         }
     }
 
-    std::cout << "Input dimensions for prediction: " << singleImageBatch.dimension(0) << "x" << singleImageBatch.dimension(1) << "x" << singleImageBatch.dimension(2) << "x" << singleImageBatch.dimension(3) << std::endl;
+    Eigen::Tensor<double, 4> predictions = cnn.forward(singleImageBatch);
 
-    Eigen::Tensor<double, 4> prediction = cnn.forward(singleImageBatch);
-    std::string result = prediction(0, 0, 0, 0) >= 0.5 ? "dog" : "cat";
-
-    std::cout << "Prediction for " << singleImagePath << ": " << result << " (Score: " << prediction(0, 0, 0, 0) << ")\n";
+    for (size_t i = 0; i < imagePaths.size(); ++i)
+    {
+        double score = predictions(i, 0, 0, 0);
+        std::string result = score >= 0.5 ? "dog" : "cat";
+        double confidence = score >= 0.5 ? score * 100.0 : (1 - score) * 100.0;
+        std::cout << "Prediction for " << imagePaths[i] << ": " << result << " (Score: " << score << ", Confidence: " << confidence << "%)\n";
+    }
 }
 
 int main(int argc, char **argv)
