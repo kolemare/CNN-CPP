@@ -26,3 +26,11 @@ Thumbs.db
 # Ignore the dataset directory
 /datasets/*
 !/datasets/.gitkeep
+
+# Ignore the logs directory
+/logs/*
+!/logs/.gitkeep
+
+# Ignore the plots directory
+/plots/*
+!/plots/.gitkeep
