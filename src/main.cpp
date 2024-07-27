@@ -94,14 +94,34 @@ void tensorModel(const std::string &datasetPath)
     cnn.addActivationLayer(activation3);
 
     // Fully Connected Layer 2
-    int fc_output_size2 = 1;
+    int fc_output_size2 = 64;
     DenseWeightInitialization fc_weight_init2 = DenseWeightInitialization::XAVIER;
     DenseBiasInitialization fc_bias_init2 = DenseBiasInitialization::ZERO;
     cnn.addFullyConnectedLayer(fc_output_size2, fc_weight_init2, fc_bias_init2);
 
     // Activation Layer 4
-    ActivationType activation4 = ActivationType::SIGMOID;
+    ActivationType activation4 = ActivationType::RELU;
     cnn.addActivationLayer(activation4);
+
+    // Fully Connected Layer 3
+    int fc_output_size3 = 32;
+    DenseWeightInitialization fc_weight_init3 = DenseWeightInitialization::XAVIER;
+    DenseBiasInitialization fc_bias_init3 = DenseBiasInitialization::ZERO;
+    cnn.addFullyConnectedLayer(fc_output_size3, fc_weight_init3, fc_bias_init3);
+
+    // Activation Layer 5
+    ActivationType activation5 = ActivationType::RELU;
+    cnn.addActivationLayer(activation5);
+
+    // Fully Connected Layer 4
+    int fc_output_size4 = 1;
+    DenseWeightInitialization fc_weight_init4 = DenseWeightInitialization::XAVIER;
+    DenseBiasInitialization fc_bias_init4 = DenseBiasInitialization::ZERO;
+    cnn.addFullyConnectedLayer(fc_output_size4, fc_weight_init4, fc_bias_init4);
+
+    // Activation Layer 6
+    ActivationType activation6 = ActivationType::SIGMOID;
+    cnn.addActivationLayer(activation6);
 
     // Setting loss function
     LossType loss_type = LossType::BINARY_CROSS_ENTROPY;
@@ -113,7 +133,8 @@ void tensorModel(const std::string &datasetPath)
     // Step 5: Train the neural network
     int epochs = 25;
     int batch_size = 32;
-    cnn.train(container, epochs, batch_size);
+    double learning_rate = 0.0001;
+    cnn.train(container, epochs, batch_size, learning_rate);
 
     // Step 6: Evaluate the neural network
     cnn.evaluate(container);
