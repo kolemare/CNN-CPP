@@ -14,8 +14,9 @@ add_subdirectory(external/googletest)
 enable_testing()
 
 # Include project headers
-include_directories(include/Image)
 include_directories(include/CNN)
+include_directories(include/Common)
+include_directories(include/Image)
 include_directories(include/ThreadPool)
 
 # Build OpenCV as a submodule

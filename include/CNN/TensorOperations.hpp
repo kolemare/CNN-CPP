@@ -2,6 +2,7 @@
 #define TENSOR_OPERATIONS_HPP
 
 #include <unsupported/Eigen/CXX11/Tensor>
+#include "Common.hpp"
 
 class TensorOperations
 {

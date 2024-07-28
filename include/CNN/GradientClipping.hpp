@@ -2,6 +2,7 @@
 #define GRADIENTCLIPPING_HPP
 
 #include <unsupported/Eigen/CXX11/Tensor>
+#include "Common.hpp"
 
 class GradientClipping
 {

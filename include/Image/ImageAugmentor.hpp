@@ -1,19 +1,9 @@
 #ifndef IMAGE_AUGMENTOR_HPP
 #define IMAGE_AUGMENTOR_HPP
 
-#define AUGMENT_PROGRESS
-
 #include <opencv2/opencv.hpp>
 #include "ImageContainer.hpp"
 #include <random>
-
-enum class AugmentTarget
-{
-    TRAIN_DATASET,
-    TEST_DATASET,
-    WHOLE_DATASET,
-    NONE
-};
 
 class ImageAugmentor
 {

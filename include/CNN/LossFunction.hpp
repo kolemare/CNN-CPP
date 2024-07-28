@@ -4,13 +4,7 @@
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <memory>
 #include <stdexcept>
-
-enum class LossType
-{
-    BINARY_CROSS_ENTROPY,
-    MEAN_SQUARED_ERROR,
-    CATEGORICAL_CROSS_ENTROPY
-};
+#include "Common.hpp"
 
 class LossFunction
 {

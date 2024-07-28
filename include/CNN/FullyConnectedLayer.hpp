@@ -6,22 +6,6 @@
 #include <memory>
 #include <random>
 
-// Enum for weight initialization methods
-enum class DenseWeightInitialization
-{
-    XAVIER,
-    HE,
-    RANDOM_NORMAL
-};
-
-// Enum for bias initialization methods
-enum class DenseBiasInitialization
-{
-    ZERO,
-    RANDOM_NORMAL,
-    NONE
-};
-
 class FullyConnectedLayer : public Layer
 {
 public:

@@ -3,6 +3,7 @@
 
 // #define SAVE_BATCHES
 
+#include "Common.hpp"
 #include "ImageContainer.hpp"
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <vector>
@@ -12,12 +13,6 @@
 class BatchManager
 {
 public:
-    enum class BatchType
-    {
-        Training,
-        Testing
-    };
-
     BatchManager(const ImageContainer &imageContainer, int batchSize, BatchType batchType);
 
     void initializeBatches();

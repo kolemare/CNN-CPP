@@ -239,7 +239,7 @@ void FullyConnectedLayer::setWeights(const Eigen::Tensor<double, 2> &new_weights
 // Function to get the weights of the layer
 Eigen::Tensor<double, 2> FullyConnectedLayer::getWeights() const
 {
-    return weights;
+    return Eigen::Tensor<double, 2>(weights); // Return a copy
 }
 
 // Function to set the biases of the layer
@@ -255,7 +255,7 @@ void FullyConnectedLayer::setBiases(const Eigen::Tensor<double, 1> &new_biases)
 // Function to get the biases of the layer
 Eigen::Tensor<double, 1> FullyConnectedLayer::getBiases() const
 {
-    return biases;
+    return Eigen::Tensor<double, 1>(biases); // Return a copy
 }
 
 // Function to get the output size of the layer

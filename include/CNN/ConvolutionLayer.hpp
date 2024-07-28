@@ -8,20 +8,6 @@
 #include "ThreadPool.hpp"
 #include "Optimizer.hpp"
 
-enum class ConvKernelInitialization
-{
-    HE,
-    XAVIER,
-    RANDOM_NORMAL
-};
-
-enum class ConvBiasInitialization
-{
-    ZERO,
-    RANDOM_NORMAL,
-    NONE
-};
-
 class ConvolutionLayer : public Layer
 {
 public:
@@ -38,16 +24,11 @@ public:
 
     void setBiases(const Eigen::Tensor<double, 1> &new_biases);
     Eigen::Tensor<double, 1> getBiases() const;
-
+    Eigen::Tensor<double, 4> getKernels() const;
     void setKernels(const Eigen::Tensor<double, 4> &new_kernels);
 
     Eigen::Tensor<double, 2> padInput(const Eigen::Tensor<double, 2> &input, int pad);
     double convolve(const Eigen::Tensor<double, 2> &input, const Eigen::Tensor<double, 2> &kernel, int start_row, int start_col);
-
-    Eigen::Tensor<double, 4> kernels; // Kernels for each filter
-    Eigen::Tensor<double, 1> biases;  // Biases for each filter
-
-    static inline bool debugging = false;
 
     void initializeKernels(ConvKernelInitialization kernel_init);
     void initializeBiases(ConvBiasInitialization bias_init);
@@ -64,6 +45,9 @@ private:
     std::mutex mutex;
 
     std::shared_ptr<Optimizer> optimizer;
+
+    Eigen::Tensor<double, 4> kernels; // Kernels for each filter
+    Eigen::Tensor<double, 1> biases;  // Biases for each filter
 
     // Thread pools for parallel processing
     ThreadPool forwardThreadPool;

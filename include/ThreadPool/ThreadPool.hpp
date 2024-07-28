@@ -9,6 +9,7 @@
 #include <thread>
 #include <vector>
 #include <future>
+#include "Common.hpp"
 
 class ThreadPool
 {

@@ -6,6 +6,7 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
+#include "Common.hpp"
 
 class ImageContainer
 {

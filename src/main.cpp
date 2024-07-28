@@ -128,7 +128,7 @@ void tensorModel(const std::string &datasetPath)
     cnn.setLossFunction(loss_type);
 
     // Compile the network with an optimizer
-    cnn.compile(Optimizer::Type::Adam);
+    cnn.compile(OptimizerType::Adam);
 
     // Step 5: Train the neural network
     int epochs = 25;

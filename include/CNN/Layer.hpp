@@ -3,6 +3,7 @@
 
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <memory>
+#include "Common.hpp"
 #include "Optimizer.hpp"
 
 class Layer

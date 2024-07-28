@@ -6,11 +6,11 @@
 ActivationLayer::ActivationLayer(ActivationType type) : type(type)
 {
     // Set sensible defaults for alpha
-    if (type == LEAKY_RELU)
+    if (type == ActivationType::LEAKY_RELU)
     {
         alpha = 0.01;
     }
-    else if (type == ELU)
+    else if (type == ActivationType::ELU)
     {
         alpha = 1.0;
     }
@@ -49,22 +49,22 @@ Eigen::Tensor<double, 4> ActivationLayer::forward(const Eigen::Tensor<double, 4>
 
         switch (type)
         {
-        case RELU:
+        case ActivationType::RELU:
             output_2d = relu(input_2d);
             break;
-        case LEAKY_RELU:
+        case ActivationType::LEAKY_RELU:
             output_2d = leakyRelu(input_2d);
             break;
-        case SIGMOID:
+        case ActivationType::SIGMOID:
             output_2d = sigmoid(input_2d);
             break;
-        case TANH:
+        case ActivationType::TANH:
             output_2d = tanh(input_2d);
             break;
-        case SOFTMAX:
+        case ActivationType::SOFTMAX:
             output_2d = softmax(input_2d);
             break;
-        case ELU:
+        case ActivationType::ELU:
             output_2d = elu(input_2d);
             break;
         default:
@@ -77,17 +77,17 @@ Eigen::Tensor<double, 4> ActivationLayer::forward(const Eigen::Tensor<double, 4>
     {
         switch (type)
         {
-        case RELU:
+        case ActivationType::RELU:
             return relu(input_batch);
-        case LEAKY_RELU:
+        case ActivationType::LEAKY_RELU:
             return leakyRelu(input_batch);
-        case SIGMOID:
+        case ActivationType::SIGMOID:
             return sigmoid(input_batch);
-        case TANH:
+        case ActivationType::TANH:
             return tanh(input_batch);
-        case SOFTMAX:
+        case ActivationType::SOFTMAX:
             return softmax(input_batch);
-        case ELU:
+        case ActivationType::ELU:
             return elu(input_batch);
         default:
             throw std::invalid_argument("Unsupported activation type");
@@ -105,22 +105,22 @@ Eigen::Tensor<double, 4> ActivationLayer::backward(const Eigen::Tensor<double, 4
 
         switch (type)
         {
-        case RELU:
+        case ActivationType::RELU:
             d_input_2d = d_output_2d * relu_derivative(input_2d);
             break;
-        case LEAKY_RELU:
+        case ActivationType::LEAKY_RELU:
             d_input_2d = d_output_2d * leakyRelu_derivative(input_2d);
             break;
-        case SIGMOID:
+        case ActivationType::SIGMOID:
             d_input_2d = d_output_2d * sigmoid_derivative(input_2d);
             break;
-        case TANH:
+        case ActivationType::TANH:
             d_input_2d = d_output_2d * tanh_derivative(input_2d);
             break;
-        case SOFTMAX:
+        case ActivationType::SOFTMAX:
             d_input_2d = d_output_2d * softmax_derivative(input_2d);
             break;
-        case ELU:
+        case ActivationType::ELU:
             d_input_2d = d_output_2d * elu_derivative(input_2d);
             break;
         default:
@@ -133,17 +133,17 @@ Eigen::Tensor<double, 4> ActivationLayer::backward(const Eigen::Tensor<double, 4
     {
         switch (type)
         {
-        case RELU:
+        case ActivationType::RELU:
             return d_output_batch * relu_derivative(input_batch);
-        case LEAKY_RELU:
+        case ActivationType::LEAKY_RELU:
             return d_output_batch * leakyRelu_derivative(input_batch);
-        case SIGMOID:
+        case ActivationType::SIGMOID:
             return d_output_batch * sigmoid_derivative(input_batch);
-        case TANH:
+        case ActivationType::TANH:
             return d_output_batch * tanh_derivative(input_batch);
-        case SOFTMAX:
+        case ActivationType::SOFTMAX:
             return d_output_batch * softmax_derivative(input_batch);
-        case ELU:
+        case ActivationType::ELU:
             return d_output_batch * elu_derivative(input_batch);
         default:
             throw std::invalid_argument("Unsupported activation type");

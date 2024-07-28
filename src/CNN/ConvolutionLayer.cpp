@@ -399,7 +399,7 @@ void ConvolutionLayer::setBiases(const Eigen::Tensor<double, 1> &new_biases)
 
 Eigen::Tensor<double, 1> ConvolutionLayer::getBiases() const
 {
-    return biases;
+    return Eigen::Tensor<double, 1>(biases); // Return a copy
 }
 
 Eigen::Tensor<double, 2> ConvolutionLayer::padInput(const Eigen::Tensor<double, 2> &input, int pad)
@@ -452,4 +452,9 @@ void ConvolutionLayer::setKernels(const Eigen::Tensor<double, 4> &new_kernels)
     {
         std::cerr << "Error: The size of new_kernels must match the number of filters and input depth." << std::endl;
     }
+}
+
+Eigen::Tensor<double, 4> ConvolutionLayer::getKernels() const
+{
+    return Eigen::Tensor<double, 4>(kernels); // Return a copy
 }

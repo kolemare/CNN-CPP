@@ -5,25 +5,25 @@
 #include <cmath>
 
 // Factory method to create optimizers
-std::shared_ptr<Optimizer> Optimizer::create(Type type, const std::unordered_map<std::string, double> &params)
+std::shared_ptr<Optimizer> Optimizer::create(OptimizerType type, const std::unordered_map<std::string, double> &params)
 {
     switch (type)
     {
-    case Type::SGD:
+    case OptimizerType::SGD:
         return std::make_shared<SGD>();
-    case Type::SGDWithMomentum:
+    case OptimizerType::SGDWithMomentum:
     {
         double momentum = params.at("momentum");
         return std::make_shared<SGDWithMomentum>(momentum);
     }
-    case Type::Adam:
+    case OptimizerType::Adam:
     {
         double beta1 = params.at("beta1");
         double beta2 = params.at("beta2");
         double epsilon = params.at("epsilon");
         return std::make_shared<Adam>(beta1, beta2, epsilon);
     }
-    case Type::RMSprop:
+    case OptimizerType::RMSprop:
     {
         double beta = params.at("beta");
         double epsilon = params.at("epsilon");
@@ -89,6 +89,46 @@ void SGDWithMomentum::update(Eigen::Tensor<double, 4> &weights, Eigen::Tensor<do
 
     TensorOperations::applyUpdates(weights, v_weights_4d, 1.0);
     TensorOperations::applyUpdates(biases, v_biases_4d, 1.0);
+}
+
+Eigen::Tensor<double, 2> SGDWithMomentum::getVWeights2D() const
+{
+    return Eigen::Tensor<double, 2>(v_weights_2d); // Return a copy
+}
+
+Eigen::Tensor<double, 1> SGDWithMomentum::getVBiases2D() const
+{
+    return Eigen::Tensor<double, 1>(v_biases_2d); // Return a copy
+}
+
+Eigen::Tensor<double, 4> SGDWithMomentum::getVWeights4D() const
+{
+    return Eigen::Tensor<double, 4>(v_weights_4d); // Return a copy
+}
+
+Eigen::Tensor<double, 1> SGDWithMomentum::getVBiases4D() const
+{
+    return Eigen::Tensor<double, 1>(v_biases_4d); // Return a copy
+}
+
+void SGDWithMomentum::setVWeights2D(const Eigen::Tensor<double, 2> &v_weights)
+{
+    v_weights_2d = Eigen::Tensor<double, 2>(v_weights); // Copy the input tensor
+}
+
+void SGDWithMomentum::setVBiases2D(const Eigen::Tensor<double, 1> &v_biases)
+{
+    v_biases_2d = Eigen::Tensor<double, 1>(v_biases); // Copy the input tensor
+}
+
+void SGDWithMomentum::setVWeights4D(const Eigen::Tensor<double, 4> &v_weights)
+{
+    v_weights_4d = Eigen::Tensor<double, 4>(v_weights); // Copy the input tensor
+}
+
+void SGDWithMomentum::setVBiases4D(const Eigen::Tensor<double, 1> &v_biases)
+{
+    v_biases_4d = Eigen::Tensor<double, 1>(v_biases); // Copy the input tensor
 }
 
 // Adam implementation
@@ -165,6 +205,86 @@ void Adam::update(Eigen::Tensor<double, 4> &weights, Eigen::Tensor<double, 1> &b
     TensorOperations::applyUpdates(biases, m_hat_biases / (v_hat_biases.sqrt() + epsilon), learning_rate);
 }
 
+Eigen::Tensor<double, 2> Adam::getMWeights2D() const
+{
+    return Eigen::Tensor<double, 2>(m_weights_2d); // Return a copy
+}
+
+Eigen::Tensor<double, 2> Adam::getVWeights2D() const
+{
+    return Eigen::Tensor<double, 2>(v_weights_2d); // Return a copy
+}
+
+Eigen::Tensor<double, 1> Adam::getMBiases2D() const
+{
+    return Eigen::Tensor<double, 1>(m_biases_2d); // Return a copy
+}
+
+Eigen::Tensor<double, 1> Adam::getVBiases2D() const
+{
+    return Eigen::Tensor<double, 1>(v_biases_2d); // Return a copy
+}
+
+Eigen::Tensor<double, 4> Adam::getMWeights4D() const
+{
+    return Eigen::Tensor<double, 4>(m_weights_4d); // Return a copy
+}
+
+Eigen::Tensor<double, 4> Adam::getVWeights4D() const
+{
+    return Eigen::Tensor<double, 4>(v_weights_4d); // Return a copy
+}
+
+Eigen::Tensor<double, 1> Adam::getMBiases4D() const
+{
+    return Eigen::Tensor<double, 1>(m_biases_4d); // Return a copy
+}
+
+Eigen::Tensor<double, 1> Adam::getVBiases4D() const
+{
+    return Eigen::Tensor<double, 1>(v_biases_4d); // Return a copy
+}
+
+void Adam::setMWeights2D(const Eigen::Tensor<double, 2> &m_weights)
+{
+    m_weights_2d = Eigen::Tensor<double, 2>(m_weights); // Copy the input tensor
+}
+
+void Adam::setVWeights2D(const Eigen::Tensor<double, 2> &v_weights)
+{
+    v_weights_2d = Eigen::Tensor<double, 2>(v_weights); // Copy the input tensor
+}
+
+void Adam::setMBiases2D(const Eigen::Tensor<double, 1> &m_biases)
+{
+    m_biases_2d = Eigen::Tensor<double, 1>(m_biases); // Copy the input tensor
+}
+
+void Adam::setVBiases2D(const Eigen::Tensor<double, 1> &v_biases)
+{
+    v_biases_2d = Eigen::Tensor<double, 1>(v_biases); // Copy the input tensor
+}
+
+void Adam::setMWeights4D(const Eigen::Tensor<double, 4> &m_weights)
+{
+    m_weights_4d = Eigen::Tensor<double, 4>(m_weights); // Copy the input tensor
+}
+
+void Adam::setVWeights4D(const Eigen::Tensor<double, 4> &v_weights)
+{
+    v_weights_4d = Eigen::Tensor<double, 4>(v_weights); // Copy the input tensor
+}
+
+void Adam::setMBiases4D(const Eigen::Tensor<double, 1> &m_biases)
+{
+    m_biases_4d = Eigen::Tensor<double, 1>(m_biases); // Copy the input tensor
+}
+
+void Adam::setVBiases4D(const Eigen::Tensor<double, 1> &v_biases)
+{
+    v_biases_4d = Eigen::Tensor<double, 1>(v_biases); // Copy the input tensor
+}
+
 // RMSprop implementation
 RMSprop::RMSprop(double beta, double epsilon)
     : beta(beta), epsilon(epsilon), s_weights_2d(Eigen::Tensor<double, 2>(1, 1)), s_biases_2d(Eigen::Tensor<double, 1>(1)),
@@ -208,4 +328,44 @@ void RMSprop::update(Eigen::Tensor<double, 4> &weights, Eigen::Tensor<double, 1>
 
     TensorOperations::applyUpdates(weights, d_weights / (s_weights_4d.sqrt() + epsilon), learning_rate);
     TensorOperations::applyUpdates(biases, d_biases / (s_biases_4d.sqrt() + epsilon), learning_rate);
+}
+
+Eigen::Tensor<double, 2> RMSprop::getSWeights2D() const
+{
+    return Eigen::Tensor<double, 2>(s_weights_2d); // Return a copy
+}
+
+Eigen::Tensor<double, 1> RMSprop::getSBiases2D() const
+{
+    return Eigen::Tensor<double, 1>(s_biases_2d); // Return a copy
+}
+
+Eigen::Tensor<double, 4> RMSprop::getSWeights4D() const
+{
+    return Eigen::Tensor<double, 4>(s_weights_4d); // Return a copy
+}
+
+Eigen::Tensor<double, 1> RMSprop::getSBiases4D() const
+{
+    return Eigen::Tensor<double, 1>(s_biases_4d); // Return a copy
+}
+
+void RMSprop::setSWeights2D(const Eigen::Tensor<double, 2> &s_weights)
+{
+    s_weights_2d = Eigen::Tensor<double, 2>(s_weights); // Copy the input tensor
+}
+
+void RMSprop::setSBiases2D(const Eigen::Tensor<double, 1> &s_biases)
+{
+    s_biases_2d = Eigen::Tensor<double, 1>(s_biases); // Copy the input tensor
+}
+
+void RMSprop::setSWeights4D(const Eigen::Tensor<double, 4> &s_weights)
+{
+    s_weights_4d = Eigen::Tensor<double, 4>(s_weights); // Copy the input tensor
+}
+
+void RMSprop::setSBiases4D(const Eigen::Tensor<double, 1> &s_biases)
+{
+    s_biases_4d = Eigen::Tensor<double, 1>(s_biases); // Copy the input tensor
 }

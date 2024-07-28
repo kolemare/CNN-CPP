@@ -16,33 +16,7 @@
 #include "FullyConnectedLayer.hpp"
 #include "ActivationLayer.hpp"
 #include "GradientClipping.hpp"
-
-enum class LogLevel
-{
-    None,
-    LayerOutputs,
-    All
-};
-
-enum class ProgressLevel
-{
-    None,
-    Time,
-    Progress,
-    ProgressTime
-};
-
-enum PropagationType
-{
-    FORWARD,
-    BACK
-};
-
-enum class GradientClippingMode
-{
-    ENABLED,
-    DISABLED
-};
+#include "NNLogger.hpp"
 
 class NeuralNetwork
 {
@@ -60,7 +34,7 @@ public:
     void setProgressLevel(ProgressLevel level);
     void setGradientClipping(GradientClippingMode clipping = GradientClippingMode::ENABLED, double clipValue = 1.0);
 
-    void compile(Optimizer::Type optimizerType, const std::unordered_map<std::string, double> &optimizer_params = {});
+    void compile(OptimizerType optimizerType, const std::unordered_map<std::string, double> &optimizer_params = {});
     Eigen::Tensor<double, 4> forward(const Eigen::Tensor<double, 4> &input);
     void backward(const Eigen::Tensor<double, 4> &d_output, double learning_rate);
     void train(const ImageContainer &imageContainer, int epochs, int batch_size, double learning_rate = 0.001);
@@ -82,12 +56,6 @@ private:
     ProgressLevel progressLevel;
     GradientClippingMode clippingMode;
     double clipValue;
-
-    void printTensorSummary(const Eigen::Tensor<double, 4> &tensor, const std::string &layerType, PropagationType propagationType);
-    void printTensorSummary(const Eigen::Tensor<double, 2> &tensor, const std::string &layerType, PropagationType propagationType);
-    void printFullTensor(const Eigen::Tensor<double, 4> &tensor, const std::string &layerType, PropagationType propagationType);
-    void printFullTensor(const Eigen::Tensor<double, 2> &tensor, const std::string &layerType, PropagationType propagationType);
-    void printProgress(int epoch, int epochs, int batch, int totalBatches, std::chrono::steady_clock::time_point start, double batch_loss);
 };
 
 #endif // NEURALNETWORK_HPP

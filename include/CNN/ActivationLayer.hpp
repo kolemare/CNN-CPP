@@ -6,16 +6,6 @@
 #include "Optimizer.hpp"
 #include <iostream>
 
-enum ActivationType
-{
-    RELU,
-    LEAKY_RELU,
-    SIGMOID,
-    TANH,
-    SOFTMAX,
-    ELU
-};
-
 class ActivationLayer : public Layer
 {
 public:

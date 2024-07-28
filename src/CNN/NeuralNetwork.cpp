@@ -90,7 +90,7 @@ void NeuralNetwork::addActivationLayer(ActivationType type)
     layers.push_back(std::make_shared<ActivationLayer>(type));
     if (logLevel == LogLevel::All)
     {
-        std::cout << "Added Activation Layer of type " << type << std::endl;
+        std::cout << "Added Activation Layer of type " << static_cast<int>(type) << std::endl;
     }
 }
 
@@ -103,22 +103,22 @@ void NeuralNetwork::setLossFunction(LossType type)
     }
 }
 
-void NeuralNetwork::compile(Optimizer::Type optimizerType, const std::unordered_map<std::string, double> &optimizer_params)
+void NeuralNetwork::compile(OptimizerType optimizerType, const std::unordered_map<std::string, double> &optimizer_params)
 {
     std::unordered_map<std::string, double> default_params;
 
     switch (optimizerType)
     {
-    case Optimizer::Type::SGD:
+    case OptimizerType::SGD:
         // No parameters needed for SGD, empty map
         break;
-    case Optimizer::Type::SGDWithMomentum:
+    case OptimizerType::SGDWithMomentum:
         default_params = {{"momentum", 0.9}};
         break;
-    case Optimizer::Type::Adam:
+    case OptimizerType::Adam:
         default_params = {{"beta1", 0.9}, {"beta2", 0.999}, {"epsilon", 1e-7}};
         break;
-    case Optimizer::Type::RMSprop:
+    case OptimizerType::RMSprop:
         default_params = {{"beta", 0.9}, {"epsilon", 1e-7}};
         break;
     default:
@@ -184,9 +184,7 @@ Eigen::Tensor<double, 4> NeuralNetwork::forward(const Eigen::Tensor<double, 4> &
 {
     if (logLevel == LogLevel::All || logLevel == LogLevel::LayerOutputs)
     {
-        std::cout << "-------------------------------------------------------------------" << std::endl;
-        printTensorSummary(input, "INPUT", PropagationType::FORWARD);
-        std::cout << "-------------------------------------------------------------------" << std::endl;
+        NNLogger::printTensorSummary(input, "INPUT", PropagationType::FORWARD);
     }
 
     Eigen::Tensor<double, 4> output = input;
@@ -225,169 +223,25 @@ Eigen::Tensor<double, 4> NeuralNetwork::forward(const Eigen::Tensor<double, 4> &
                 layerType = "Activation Layer";
             }
 
-            std::cout << "-------------------------------------------------------------------" << std::endl;
             if (logLevel == LogLevel::All)
             {
-                printFullTensor(output, layerType, PropagationType::FORWARD);
+                NNLogger::printFullTensor(output, layerType, PropagationType::FORWARD);
             }
             else
             {
-                printTensorSummary(output, layerType, PropagationType::FORWARD);
+                NNLogger::printTensorSummary(output, layerType, PropagationType::FORWARD);
             }
-            std::cout << "-------------------------------------------------------------------" << std::endl;
         }
     }
 
     return output;
 }
 
-void NeuralNetwork::printFullTensor(const Eigen::Tensor<double, 4> &tensor, const std::string &layerType, PropagationType propagationType)
-{
-    switch (propagationType)
-    {
-    case PropagationType::FORWARD:
-        std::cout << layerType << " Forward pass:\n";
-        break;
-
-    case PropagationType::BACK:
-        std::cout << layerType << " Back pass:\n";
-        break;
-
-    default:
-        break;
-    }
-    // Add logic to print tensor
-    std::cout << tensor << std::endl;
-}
-
-void NeuralNetwork::printFullTensor(const Eigen::Tensor<double, 2> &tensor, const std::string &layerType, PropagationType propagationType)
-{
-    switch (propagationType)
-    {
-    case PropagationType::FORWARD:
-        std::cout << layerType << " Forward pass:\n";
-        break;
-
-    case PropagationType::BACK:
-        std::cout << layerType << " Back pass:\n";
-        break;
-
-    default:
-        break;
-    }
-    // Add logic to print tensor
-    std::cout << tensor << std::endl;
-}
-
-void NeuralNetwork::printTensorSummary(const Eigen::Tensor<double, 4> &tensor, const std::string &layerType, PropagationType propagationType)
-{
-    std::vector<double> tensorVec(tensor.size());
-    std::copy(tensor.data(), tensor.data() + tensor.size(), tensorVec.begin());
-
-    double mean = std::accumulate(tensorVec.begin(), tensorVec.end(), 0.0) / tensorVec.size();
-
-    std::vector<double> diff(tensorVec.size());
-    std::transform(tensorVec.begin(), tensorVec.end(), diff.begin(), [mean](double x)
-                   { return x - mean; });
-
-    std::vector<double> squaredDiff(diff.size());
-    std::transform(diff.begin(), diff.end(), squaredDiff.begin(), [](double x)
-                   { return x * x; });
-
-    double variance = std::accumulate(squaredDiff.begin(), squaredDiff.end(), 0.0) / squaredDiff.size();
-    double stddev = std::sqrt(variance);
-
-    double minCoeff = *std::min_element(tensorVec.begin(), tensorVec.end());
-    double maxCoeff = *std::max_element(tensorVec.begin(), tensorVec.end());
-
-    double zeroPercentage = std::count(tensorVec.begin(), tensorVec.end(), 0.0) / static_cast<double>(tensorVec.size()) * 100.0;
-    double negativeCount = std::count_if(tensorVec.begin(), tensorVec.end(), [](double x)
-                                         { return x < 0.0; });
-    double positiveCount = std::count_if(tensorVec.begin(), tensorVec.end(), [](double x)
-                                         { return x > 0.0; });
-
-    switch (propagationType)
-    {
-    case PropagationType::FORWARD:
-        std::cout << layerType << " Forward pass summary:\n";
-        break;
-
-    case PropagationType::BACK:
-        std::cout << layerType << " Back pass summary:\n";
-        break;
-
-    default:
-        break;
-    }
-
-    std::cout << "Dimensions: " << tensor.dimension(0) << "x" << tensor.dimension(1) << "x" << tensor.dimension(2) << "x" << tensor.dimension(3) << "\n";
-    std::cout << "Mean: " << mean << "\n";
-    std::cout << "Standard Deviation: " << stddev << "\n";
-    std::cout << "Min: " << minCoeff << "\n";
-    std::cout << "Max: " << maxCoeff << "\n";
-    std::cout << "Percentage of Zeros: " << zeroPercentage << "%\n";
-    std::cout << "Number of Negative Values: " << negativeCount << "\n";
-    std::cout << "Number of Positive Values: " << positiveCount << "\n\n";
-}
-
-void NeuralNetwork::printTensorSummary(const Eigen::Tensor<double, 2> &tensor, const std::string &layerType, PropagationType propagationType)
-{
-    std::vector<double> tensorVec(tensor.size());
-    std::copy(tensor.data(), tensor.data() + tensor.size(), tensorVec.begin());
-
-    double mean = std::accumulate(tensorVec.begin(), tensorVec.end(), 0.0) / tensorVec.size();
-
-    std::vector<double> diff(tensorVec.size());
-    std::transform(tensorVec.begin(), tensorVec.end(), diff.begin(), [mean](double x)
-                   { return x - mean; });
-
-    std::vector<double> squaredDiff(diff.size());
-    std::transform(diff.begin(), diff.end(), squaredDiff.begin(), [](double x)
-                   { return x * x; });
-
-    double variance = std::accumulate(squaredDiff.begin(), squaredDiff.end(), 0.0) / squaredDiff.size();
-    double stddev = std::sqrt(variance);
-
-    double minCoeff = *std::min_element(tensorVec.begin(), tensorVec.end());
-    double maxCoeff = *std::max_element(tensorVec.begin(), tensorVec.end());
-
-    double zeroPercentage = std::count(tensorVec.begin(), tensorVec.end(), 0.0) / static_cast<double>(tensorVec.size()) * 100.0;
-    double negativeCount = std::count_if(tensorVec.begin(), tensorVec.end(), [](double x)
-                                         { return x < 0.0; });
-    double positiveCount = std::count_if(tensorVec.begin(), tensorVec.end(), [](double x)
-                                         { return x > 0.0; });
-
-    switch (propagationType)
-    {
-    case PropagationType::FORWARD:
-        std::cout << layerType << " Forward pass summary:\n";
-        break;
-
-    case PropagationType::BACK:
-        std::cout << layerType << " Back pass summary:\n";
-        break;
-
-    default:
-        break;
-    }
-
-    std::cout << "Dimensions: " << tensor.dimension(0) << "x" << tensor.dimension(1) << "\n";
-    std::cout << "Mean: " << mean << "\n";
-    std::cout << "Standard Deviation: " << stddev << "\n";
-    std::cout << "Min: " << minCoeff << "\n";
-    std::cout << "Max: " << maxCoeff << "\n";
-    std::cout << "Percentage of Zeros: " << zeroPercentage << "%\n";
-    std::cout << "Number of Negative Values: " << negativeCount << "\n";
-    std::cout << "Number of Positive Values: " << positiveCount << "\n\n";
-}
-
 void NeuralNetwork::backward(const Eigen::Tensor<double, 4> &d_output, double learning_rate)
 {
     if (logLevel == LogLevel::All || logLevel == LogLevel::LayerOutputs)
     {
-        std::cout << "-------------------------------------------------------------------" << std::endl;
-        printTensorSummary(d_output, "OUTPUT", PropagationType::BACK);
-        std::cout << "-------------------------------------------------------------------" << std::endl;
+        NNLogger::printTensorSummary(d_output, "OUTPUT", PropagationType::BACK);
     }
 
     Eigen::Tensor<double, 4> d_input = d_output;
@@ -429,110 +283,16 @@ void NeuralNetwork::backward(const Eigen::Tensor<double, 4> &d_output, double le
 
         if (logLevel == LogLevel::All || logLevel == LogLevel::LayerOutputs)
         {
-            std::cout << "-------------------------------------------------------------------" << std::endl;
             if (logLevel == LogLevel::All)
             {
-                printFullTensor(d_input, layerType, PropagationType::BACK);
+                NNLogger::printFullTensor(d_input, layerType, PropagationType::BACK);
             }
             else
             {
-                printTensorSummary(d_input, layerType, PropagationType::BACK);
+                NNLogger::printTensorSummary(d_input, layerType, PropagationType::BACK);
             }
-            std::cout << "-------------------------------------------------------------------" << std::endl;
         }
     }
-}
-
-void NeuralNetwork::printProgress(int epoch, int epochs, int batch, int totalBatches, std::chrono::steady_clock::time_point trainingStart, double currentBatchLoss)
-{
-    if (progressLevel == ProgressLevel::None)
-    {
-        return;
-    }
-
-    static double cumulative_loss = 0.0;
-    static int total_batches_completed = 0;
-
-    cumulative_loss += currentBatchLoss;
-    total_batches_completed++;
-
-    double average_loss = cumulative_loss / total_batches_completed;
-
-    auto now = std::chrono::steady_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - trainingStart).count();
-    double progress = static_cast<double>(batch + 1) / totalBatches;
-    int barWidth = 50;
-    int pos = static_cast<int>(barWidth * progress);
-
-    double timePerBatch = elapsed / static_cast<double>(total_batches_completed);
-    double remainingTime = (totalBatches * epochs - total_batches_completed) * timePerBatch;
-
-    double overallProgress = static_cast<double>(epoch * totalBatches + batch + 1) / (totalBatches * epochs);
-    int overallPos = static_cast<int>(barWidth * overallProgress);
-
-    std::ostringstream oss;
-    oss << "-------------------------------------------------------------------" << std::endl;
-
-    std::ostringstream epochProgress;
-    epochProgress << "Epoch " << epoch + 1 << "/" << epochs << " | Batch " << batch + 1 << "/" << totalBatches << " [";
-    for (int i = 0; i < barWidth; ++i)
-    {
-        if (i < pos)
-            epochProgress << "=";
-        else if (i == pos)
-            epochProgress << ">";
-        else
-            epochProgress << " ";
-    }
-    epochProgress << "] " << int(progress * 100.0) << "%\n";
-
-    oss << epochProgress.str();
-
-    std::ostringstream overallProgressLabel;
-    overallProgressLabel << "Overall Progress: ";
-    int labelLength = overallProgressLabel.str().length();
-
-    // Dynamically adjust the overall progress label length to match epoch progress length
-    std::string epochPrefix = "Epoch " + std::to_string(epoch + 1) + "/" + std::to_string(epochs) + " | Batch " + std::to_string(batch + 1) + "/" + std::to_string(totalBatches);
-    while (overallProgressLabel.str().length() < epochPrefix.length())
-    {
-        overallProgressLabel << " ";
-    }
-
-    overallProgressLabel << " [";
-    for (int i = 0; i < barWidth; ++i)
-    {
-        if (i < overallPos)
-            overallProgressLabel << "=";
-        else if (i == overallPos)
-            overallProgressLabel << ">";
-        else
-            overallProgressLabel << " ";
-    }
-    overallProgressLabel << "] " << int(overallProgress * 100.0) << "%\n";
-
-    oss << overallProgressLabel.str();
-
-    if (progressLevel == ProgressLevel::ProgressTime || progressLevel == ProgressLevel::Time)
-    {
-        auto formatTime = [](double seconds)
-        {
-            int h = static_cast<int>(seconds) / 3600;
-            int m = (static_cast<int>(seconds) % 3600) / 60;
-            int s = static_cast<int>(seconds) % 60;
-            std::ostringstream oss;
-            oss << std::setw(2) << std::setfill('0') << h << "H:"
-                << std::setw(2) << std::setfill('0') << m << "M:"
-                << std::setw(2) << std::setfill('0') << s << "S";
-            return oss.str();
-        };
-
-        oss << "Elapsed: " << formatTime(elapsed) << "\n";
-        oss << "ETA: " << formatTime(remainingTime) << "\n";
-    }
-    oss << "Loss: " << average_loss << "\n";
-    oss << "-------------------------------------------------------------------" << std::endl;
-    std::cout << oss.str() << std::flush;
 }
 
 void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, int batch_size, double learning_rate)
@@ -542,7 +302,7 @@ void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, int 
         throw std::runtime_error("Loss function must be set before training.");
     }
 
-    BatchManager batchManager(imageContainer, batch_size, BatchManager::BatchType::Training);
+    BatchManager batchManager(imageContainer, batch_size, BatchType::Training);
     std::cout << "Training started..." << std::endl;
     auto start = std::chrono::steady_clock::now();
 
@@ -612,8 +372,7 @@ void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, int 
             Eigen::Tensor<double, 4> d_output = lossFunction->derivative(predictions, batch_label);
             backward(d_output, learning_rate);
 
-            // Print progress
-            printProgress(epoch, epochs, batchCounter, totalBatches, start, batch_loss);
+            NNLogger::printProgress(epoch, epochs, batchCounter, totalBatches, start, batch_loss, progressLevel);
             batchCounter++;
         }
 
@@ -640,7 +399,7 @@ void NeuralNetwork::evaluate(const ImageContainer &imageContainer)
         throw std::runtime_error("Loss function must be set before evaluation.");
     }
 
-    BatchManager batchManager(imageContainer, imageContainer.getTestImages().size(), BatchManager::BatchType::Testing);
+    BatchManager batchManager(imageContainer, imageContainer.getTestImages().size(), BatchType::Testing);
     Eigen::Tensor<double, 4> batch_input;
     Eigen::Tensor<int, 2> batch_label;
 
