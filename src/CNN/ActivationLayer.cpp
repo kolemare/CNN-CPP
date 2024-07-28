@@ -30,6 +30,11 @@ void ActivationLayer::setOptimizer(std::shared_ptr<Optimizer> optimizer)
     return;
 }
 
+std::shared_ptr<Optimizer> ActivationLayer::getOptimizer()
+{
+    return nullptr;
+}
+
 void ActivationLayer::setAlpha(double alphaValue)
 {
     alpha = alphaValue;

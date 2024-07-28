@@ -16,6 +16,11 @@ void AveragePoolingLayer::setOptimizer(std::shared_ptr<Optimizer> optimizer)
     return;
 }
 
+std::shared_ptr<Optimizer> AveragePoolingLayer::getOptimizer()
+{
+    return nullptr;
+}
+
 int AveragePoolingLayer::getPoolSize()
 {
     return pool_size;

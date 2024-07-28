@@ -23,6 +23,11 @@ void ConvolutionLayer::setOptimizer(std::shared_ptr<Optimizer> optimizer)
     this->optimizer = optimizer;
 }
 
+std::shared_ptr<Optimizer> ConvolutionLayer::getOptimizer()
+{
+    return this->optimizer;
+}
+
 void ConvolutionLayer::setInputDepth(int depth)
 {
     input_depth = depth;

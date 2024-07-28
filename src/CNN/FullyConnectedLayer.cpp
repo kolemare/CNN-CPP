@@ -24,6 +24,11 @@ void FullyConnectedLayer::setOptimizer(std::shared_ptr<Optimizer> optimizer)
     this->optimizer = optimizer;
 }
 
+std::shared_ptr<Optimizer> FullyConnectedLayer::getOptimizer()
+{
+    return this->optimizer;
+}
+
 // Function to set the input size and initialize weights and biases
 void FullyConnectedLayer::setInputSize(int input_size)
 {

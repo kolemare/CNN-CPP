@@ -20,6 +20,11 @@ void MaxPoolingLayer::setOptimizer(std::shared_ptr<Optimizer> optimizer)
     return;
 }
 
+std::shared_ptr<Optimizer> MaxPoolingLayer::getOptimizer()
+{
+    return nullptr;
+}
+
 // Getter for pool size
 int MaxPoolingLayer::getPoolSize() const
 {

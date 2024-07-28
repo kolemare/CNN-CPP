@@ -7,7 +7,7 @@
 #include <chrono>
 #include <filesystem>
 
-NeuralNetwork::NeuralNetwork() : flattenAdded(false), clippingSet(false), currentDepth(3), logLevel(LogLevel::None), progressLevel(ProgressLevel::None) {}
+NeuralNetwork::NeuralNetwork() : flattenAdded(false), clippingSet(false), elralSet(false), currentDepth(3), logLevel(LogLevel::None), progressLevel(ProgressLevel::None) {}
 
 void NeuralNetwork::setImageSize(const int targetWidth, const int targetHeight)
 {
@@ -23,13 +23,6 @@ void NeuralNetwork::setLogLevel(LogLevel level)
 void NeuralNetwork::setProgressLevel(ProgressLevel level)
 {
     progressLevel = level;
-}
-
-void NeuralNetwork::setGradientClipping(GradientClippingMode mode, double value)
-{
-    clippingMode = mode;
-    clipValue = value;
-    clippingSet = true;
 }
 
 void NeuralNetwork::addConvolutionLayer(int filters, int kernel_size, int stride, int padding, ConvKernelInitialization kernel_init, ConvBiasInitialization bias_init)
@@ -99,7 +92,7 @@ void NeuralNetwork::setLossFunction(LossType type)
     lossFunction = LossFunction::create(type);
     if (logLevel == LogLevel::All)
     {
-        std::cout << "Set Loss Function of type " << (int)type << std::endl;
+        std::cout << "Set Loss Function of type " << static_cast<int>(type) << std::endl;
     }
 }
 
@@ -139,8 +132,14 @@ void NeuralNetwork::compile(OptimizerType optimizerType, const std::unordered_ma
 
     if (!clippingSet)
     {
-        // Default => GradientClipping ENABLED & clipValue = 1
-        this->setGradientClipping();
+        // Default => GradientClipping DISABLED
+        this->enableGradientClipping(0, GradientClippingMode::DISABLED);
+    }
+
+    if (!elralSet)
+    {
+        // Default => ELRAL DISABLED
+        this->enableELRAL(0.0, 0, 0, 0.0, ELRALMode::DISABLED);
     }
 
     for (size_t i = 0; i < layers.size(); ++i)
@@ -305,6 +304,7 @@ void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, int 
     BatchManager batchManager(imageContainer, batch_size, BatchType::Training);
     std::cout << "Training started..." << std::endl;
     auto start = std::chrono::steady_clock::now();
+    double current_learning_rate = learning_rate;
 
     for (int epoch = 0; epoch < epochs; ++epoch)
     {
@@ -370,7 +370,7 @@ void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, int 
 
             // Backward pass
             Eigen::Tensor<double, 4> d_output = lossFunction->derivative(predictions, batch_label);
-            backward(d_output, learning_rate);
+            backward(d_output, current_learning_rate);
 
             NNLogger::printProgress(epoch, epochs, batchCounter, totalBatches, start, batch_loss, progressLevel);
             batchCounter++;
@@ -379,20 +379,49 @@ void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, int 
         double average_loss = total_epoch_loss / num_epoch_samples;
         double accuracy = static_cast<double>(correct_predictions) / num_epoch_samples;
 
-        std::cout << std::endl
-                  << "Epoch " << epoch + 1 << " complete." << std::endl;
-        std::cout << "Training Accuracy: " << accuracy << std::endl;
-        std::cout << "Average Loss: " << average_loss << std::endl;
+        std::ostringstream evaluationStream = evaluate(imageContainer);
 
-        std::cout << "Evaluating..." << std::endl;
+        if (ELRALMode::DISABLED != elralMode)
+        {
+            if (elral->updateState(average_loss, layers, current_learning_rate, elralMode))
+            {
+                std::cout << std::endl
+                          << "Epoch " << epoch + 1 << " completed." << std::endl;
+                std::cout << "Training Accuracy: " << accuracy << std::endl;
+                std::cout << "Average Loss: " << average_loss << std::endl;
 
-        // Perform evaluation after each epoch
-        evaluate(imageContainer);
+                std::cout << "Evaluating..." << std::endl;
+            }
+            else
+            {
+                std::cout << std::endl
+                          << "Wasted Epoch " << epoch + 1 << " completed." << std::endl;
+                std::cout << "Wasted Training Accuracy: " << accuracy << std::endl;
+                std::cout << "wasted Average Loss: " << average_loss << std::endl;
+
+                std::cout << "Wasted Evaluating..." << std::endl;
+                --epoch;
+            }
+            elralTimeLine.push_back(static_cast<ELRALMode>(elralMode));
+        }
+        else
+        {
+            std::cout << std::endl
+                      << "Epoch " << epoch + 1 << " completed." << std::endl;
+            std::cout << "Training Accuracy: " << accuracy << std::endl;
+            std::cout << "Average Loss: " << average_loss << std::endl;
+
+            std::cout << "Evaluating..." << std::endl;
+        }
+        std::cout << evaluationStream.str();
     }
+    std::cout << "Final Evaluation" << std::endl;
+    std::ostringstream finalEvaluation = evaluate(imageContainer);
+    std::cout << finalEvaluation.str();
     std::cout << "Training ended!" << std::endl;
 }
 
-void NeuralNetwork::evaluate(const ImageContainer &imageContainer)
+std::ostringstream NeuralNetwork::evaluate(const ImageContainer &imageContainer)
 {
     if (!lossFunction)
     {
@@ -461,6 +490,55 @@ void NeuralNetwork::evaluate(const ImageContainer &imageContainer)
     double average_loss = total_loss / num_samples;
     double accuracy = static_cast<double>(correct_predictions) / num_samples;
 
-    std::cout << "Testing Accuracy: " << accuracy << std::endl;
-    std::cout << "Testing Loss(avg): " << average_loss << std::endl;
+    std::ostringstream oss;
+    oss << "Testing Accuracy: " << accuracy << std::endl;
+    oss << "Testing Loss(avg): " << average_loss << std::endl;
+    return oss;
+}
+
+void NeuralNetwork::enableGradientClipping(double value, GradientClippingMode mode)
+{
+    clippingMode = mode;
+    clipValue = value;
+    clippingSet = true;
+    if (GradientClippingMode::ENABLED == mode)
+    {
+        std::cout << "|Gradient Clipping: " << value << "|" << std::endl;
+    }
+    else
+    {
+        std::cout << "|Gradient Clipping Disabled|" << std::endl;
+    }
+}
+
+void NeuralNetwork::enableELRAL(double learning_rate_coef, int maxSuccessiveFailures, int maxFails, double tolerance, ELRALMode mode)
+{
+    elralMode = mode;
+    elralSet = true;
+    this->learning_rate_coef = learning_rate_coef;
+    this->maxSuccessiveFailures = maxSuccessiveFailures;
+    this->maxFails = maxFails;
+    this->tolerance = tolerance;
+    if (ELRALMode::ENABLED == mode)
+    {
+        elral = std::make_unique<ELRAL>(learning_rate_coef, maxSuccessiveFailures, maxFails, tolerance, layers);
+        std::cout << "|ELRAL Enabled with LRC: " << learning_rate_coef << ", MSEF: " << maxSuccessiveFailures << ", MEF: " << maxFails << ", TOL:" << tolerance << "|" << std::endl;
+    }
+    else if (ELRALMode::NORMAL == mode)
+    {
+        throw std::runtime_error("Cannot initialize ELRAL in NORMAL mode => Initialize it with ENABLED.");
+    }
+    else if (ELRALMode::RECOVERY == mode)
+    {
+        throw std::runtime_error("Cannot initialize ELRAL in RECOVERY mode => Initialize it with ENABLED.");
+    }
+    else if (ELRALMode::DISABLED == mode)
+    {
+        std::cout << "|Epoch Loss Recovery Adaptive Learning Disabled|" << std::endl;
+    }
+    else
+    {
+        throw std::runtime_error("Unknown ELRAL mode.");
+    }
+    elralTimeLine.push_back(static_cast<ELRALMode>(elralMode));
 }

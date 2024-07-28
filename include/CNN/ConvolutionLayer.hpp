@@ -35,6 +35,7 @@ public:
 
     bool needsOptimizer() const override;
     void setOptimizer(std::shared_ptr<Optimizer> optimizer) override;
+    std::shared_ptr<Optimizer> getOptimizer() override;
 
 private:
     int filters;

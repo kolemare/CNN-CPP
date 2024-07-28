@@ -127,6 +127,12 @@ void tensorModel(const std::string &datasetPath)
     LossType loss_type = LossType::BINARY_CROSS_ENTROPY;
     cnn.setLossFunction(loss_type);
 
+    // Enable Default Gradient Clipping
+    cnn.enableGradientClipping();
+
+    // Enable Default ELRAL
+    cnn.enableELRAL();
+
     // Compile the network with an optimizer
     cnn.compile(OptimizerType::Adam);
 

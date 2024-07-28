@@ -12,6 +12,7 @@ public:
     Eigen::Tensor<double, 4> backward(const Eigen::Tensor<double, 4> &d_output_batch, const Eigen::Tensor<double, 4> &input_batch, double learning_rate) override;
     bool needsOptimizer() const override;
     void setOptimizer(std::shared_ptr<Optimizer> optimizer) override;
+    std::shared_ptr<Optimizer> getOptimizer() override;
 
 private:
     int batch_size;

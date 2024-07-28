@@ -29,6 +29,15 @@ enum class OptimizerType
     RMSprop
 };
 
+enum class ELRALMode
+{
+    ENABLED,
+    DISABLED,
+    NORMAL,
+    RECOVERY,
+    LOSING
+};
+
 enum class BatchType
 {
     Training,

@@ -17,6 +17,7 @@
 #include "ActivationLayer.hpp"
 #include "GradientClipping.hpp"
 #include "NNLogger.hpp"
+#include "ELRAL.hpp"
 
 class NeuralNetwork
 {
@@ -32,14 +33,15 @@ public:
     void setLossFunction(LossType type);
     void setLogLevel(LogLevel level);
     void setProgressLevel(ProgressLevel level);
-    void setGradientClipping(GradientClippingMode clipping = GradientClippingMode::ENABLED, double clipValue = 1.0);
+    void enableGradientClipping(double clipValue = 1.0, GradientClippingMode mode = GradientClippingMode::ENABLED);
 
     void compile(OptimizerType optimizerType, const std::unordered_map<std::string, double> &optimizer_params = {});
     Eigen::Tensor<double, 4> forward(const Eigen::Tensor<double, 4> &input);
     void backward(const Eigen::Tensor<double, 4> &d_output, double learning_rate);
     void train(const ImageContainer &imageContainer, int epochs, int batch_size, double learning_rate = 0.001);
-    void evaluate(const ImageContainer &imageContainer);
+    std::ostringstream evaluate(const ImageContainer &imageContainer);
     void setImageSize(const int targetWidth, const int targetHeight);
+    void enableELRAL(double learning_rate_coef = 0.5, int maxSuccessiveFailures = 3, int maxFails = 10, double tolerance = 0.0, ELRALMode mode = ELRALMode::ENABLED);
 
 private:
     std::vector<std::shared_ptr<Layer>> layers;
@@ -48,14 +50,25 @@ private:
     std::vector<Eigen::Tensor<double, 4>> layerInputs;
     bool flattenAdded;
     bool clippingSet;
+    bool elralSet;
     int currentDepth;
     int inputSize;
     int inputHeight;
     int inputWidth;
     LogLevel logLevel;
     ProgressLevel progressLevel;
-    GradientClippingMode clippingMode;
     double clipValue;
+
+    GradientClippingMode clippingMode = GradientClippingMode::DISABLED;
+    ELRALMode elralMode = ELRALMode::DISABLED;
+    std::vector<ELRALMode> elralTimeLine;
+
+    // ELRAL
+    double learning_rate_coef;
+    int maxSuccessiveFailures;
+    int maxFails;
+    double tolerance;
+    std::unique_ptr<ELRAL> elral = nullptr;
 };
 
 #endif // NEURALNETWORK_HPP

@@ -14,6 +14,11 @@ void FlattenLayer::setOptimizer(std::shared_ptr<Optimizer> optimizer)
     return;
 }
 
+std::shared_ptr<Optimizer> FlattenLayer::getOptimizer()
+{
+    return nullptr;
+}
+
 // Forward pass for flatten layer
 Eigen::Tensor<double, 4> FlattenLayer::forward(const Eigen::Tensor<double, 4> &input_batch)
 {
