@@ -7,9 +7,15 @@
 #include <chrono>
 #include <filesystem>
 
-NeuralNetwork::NeuralNetwork() : flattenAdded(false), clippingSet(false), elralSet(false), currentDepth(3), logLevel(LogLevel::None), progressLevel(ProgressLevel::None) {}
+NeuralNetwork::NeuralNetwork() : flattenAdded(false),
+                                 clippingSet(false),
+                                 elralesSet(false),
+                                 currentDepth(3),
+                                 logLevel(LogLevel::None),
+                                 progressLevel(ProgressLevel::None) {}
 
-void NeuralNetwork::setImageSize(const int targetWidth, const int targetHeight)
+void NeuralNetwork::setImageSize(const int targetWidth,
+                                 const int targetHeight)
 {
     inputHeight = targetHeight;
     inputWidth = targetWidth;
@@ -25,7 +31,12 @@ void NeuralNetwork::setProgressLevel(ProgressLevel level)
     progressLevel = level;
 }
 
-void NeuralNetwork::addConvolutionLayer(int filters, int kernel_size, int stride, int padding, ConvKernelInitialization kernel_init, ConvBiasInitialization bias_init)
+void NeuralNetwork::addConvolutionLayer(int filters,
+                                        int kernel_size,
+                                        int stride,
+                                        int padding,
+                                        ConvKernelInitialization kernel_init,
+                                        ConvBiasInitialization bias_init)
 {
     layers.push_back(std::make_shared<ConvolutionLayer>(filters, kernel_size, stride, padding, kernel_init, bias_init));
     if (logLevel == LogLevel::All)
@@ -34,7 +45,8 @@ void NeuralNetwork::addConvolutionLayer(int filters, int kernel_size, int stride
     }
 }
 
-void NeuralNetwork::addMaxPoolingLayer(int pool_size, int stride)
+void NeuralNetwork::addMaxPoolingLayer(int pool_size,
+                                       int stride)
 {
     layers.push_back(std::make_shared<MaxPoolingLayer>(pool_size, stride));
     if (logLevel == LogLevel::All)
@@ -43,7 +55,8 @@ void NeuralNetwork::addMaxPoolingLayer(int pool_size, int stride)
     }
 }
 
-void NeuralNetwork::addAveragePoolingLayer(int pool_size, int stride)
+void NeuralNetwork::addAveragePoolingLayer(int pool_size,
+                                           int stride)
 {
     layers.push_back(std::make_shared<AveragePoolingLayer>(pool_size, stride));
     if (logLevel == LogLevel::All)
@@ -69,7 +82,9 @@ void NeuralNetwork::addFlattenLayer()
     }
 }
 
-void NeuralNetwork::addFullyConnectedLayer(int output_size, DenseWeightInitialization weight_init, DenseBiasInitialization bias_init)
+void NeuralNetwork::addFullyConnectedLayer(int output_size,
+                                           DenseWeightInitialization weight_init,
+                                           DenseBiasInitialization bias_init)
 {
     layers.push_back(std::make_shared<FullyConnectedLayer>(output_size, weight_init, bias_init));
     if (logLevel == LogLevel::All)
@@ -96,7 +111,8 @@ void NeuralNetwork::setLossFunction(LossType type)
     }
 }
 
-void NeuralNetwork::compile(OptimizerType optimizerType, const std::unordered_map<std::string, double> &optimizer_params)
+void NeuralNetwork::compile(OptimizerType optimizerType,
+                            const std::unordered_map<std::string, double> &optimizer_params)
 {
     std::unordered_map<std::string, double> default_params;
 
@@ -136,10 +152,10 @@ void NeuralNetwork::compile(OptimizerType optimizerType, const std::unordered_ma
         this->enableGradientClipping(0, GradientClippingMode::DISABLED);
     }
 
-    if (!elralSet)
+    if (!elralesSet)
     {
-        // Default => ELRAL DISABLED
-        this->enableELRAL(0.0, 0, 0, 0.0, ELRALMode::DISABLED);
+        // Default => ELRALES DISABLED
+        this->enableELRALES(0.0, 0, 0, 0.0, ELRALES_Mode::DISABLED);
     }
 
     for (size_t i = 0; i < layers.size(); ++i)
@@ -236,7 +252,8 @@ Eigen::Tensor<double, 4> NeuralNetwork::forward(const Eigen::Tensor<double, 4> &
     return output;
 }
 
-void NeuralNetwork::backward(const Eigen::Tensor<double, 4> &d_output, double learning_rate)
+void NeuralNetwork::backward(const Eigen::Tensor<double, 4> &d_output,
+                             double learning_rate)
 {
     if (logLevel == LogLevel::All || logLevel == LogLevel::LayerOutputs)
     {
@@ -294,7 +311,10 @@ void NeuralNetwork::backward(const Eigen::Tensor<double, 4> &d_output, double le
     }
 }
 
-void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, int batch_size, double learning_rate)
+void NeuralNetwork::train(const ImageContainer &imageContainer,
+                          int epochs,
+                          int batch_size,
+                          double learning_rate)
 {
     if (!lossFunction)
     {
@@ -379,49 +399,59 @@ void NeuralNetwork::train(const ImageContainer &imageContainer, int epochs, int 
         double average_loss = total_epoch_loss / num_epoch_samples;
         double accuracy = static_cast<double>(correct_predictions) / num_epoch_samples;
 
-        std::ostringstream evaluationStream = evaluate(imageContainer);
+        std::tuple<double, double> evaluation = evaluate(imageContainer);
 
-        if (ELRALMode::DISABLED != elralMode)
+        if (ELRALES_Mode::ENABLED == elralesMode)
         {
-            if (elral->updateState(average_loss, layers, current_learning_rate, elralMode))
+            ELRALES_Retval elralesEvaluation = elrales->updateState(average_loss, layers, current_learning_rate, elralesStateMachine);
+            if (ELRALES_Retval::SUCCESSFUL_EPOCH == elralesEvaluation)
             {
-                std::cout << std::endl
-                          << "Epoch " << epoch + 1 << " completed." << std::endl;
+                std::cout << "Epoch " << epoch + 1 << " completed." << std::endl;
                 std::cout << "Training Accuracy: " << accuracy << std::endl;
-                std::cout << "Average Loss: " << average_loss << std::endl;
-
-                std::cout << "Evaluating..." << std::endl;
+                std::cout << "Training Loss: " << average_loss << std::endl;
+                std::cout << "Testing Accuracy: " << std::get<0>(evaluation) << std::endl;
+                std::cout << "Testing Loss: " << std::get<1>(evaluation) << std::endl;
+                std::cout << "ELRALES: " << toString(elralesStateMachine) << std::endl;
             }
-            else
+            else if (ELRALES_Retval::WASTED_EPOCH == elralesEvaluation)
             {
-                std::cout << std::endl
-                          << "Wasted Epoch " << epoch + 1 << " completed." << std::endl;
+                std::cout << "Wasted Epoch " << epoch + 1 << " completed." << std::endl;
                 std::cout << "Wasted Training Accuracy: " << accuracy << std::endl;
-                std::cout << "wasted Average Loss: " << average_loss << std::endl;
-
-                std::cout << "Wasted Evaluating..." << std::endl;
-                --epoch;
+                std::cout << "Wasted Training Loss: " << average_loss << std::endl;
+                std::cout << "Wasted Testing Accuracy: " << std::get<0>(evaluation) << std::endl;
+                std::cout << "Wasted Testing Loss: " << std::get<1>(evaluation) << std::endl;
+                std::cout << "ELRALES: " << toString(elralesStateMachine) << std::endl;
+                ++epochs;
             }
-            elralTimeLine.push_back(static_cast<ELRALMode>(elralMode));
+            else if (ELRALES_Retval::END_LEARNING == elralesEvaluation)
+            {
+                std::cout << "EarlyStopping Epoch " << epoch + 1 << " completed." << std::endl;
+                std::cout << "EarlyStopping Training Accuracy: " << accuracy << std::endl;
+                std::cout << "EarlyStopping Training Loss: " << average_loss << std::endl;
+                std::cout << "EarlyStopping Testing Accuracy: " << std::get<0>(evaluation) << std::endl;
+                std::cout << "EarlyStopping Testing Loss: " << std::get<1>(evaluation) << std::endl;
+                std::cout << "ELRALES: " << toString(elralesStateMachine) << std::endl;
+                break;
+            }
+            elralesStateMachineTimeLine.push_back(static_cast<ELRALES_StateMachine>(elralesStateMachine));
         }
         else
         {
-            std::cout << std::endl
-                      << "Epoch " << epoch + 1 << " completed." << std::endl;
+            std::cout << "Epoch " << epoch + 1 << " completed." << std::endl;
             std::cout << "Training Accuracy: " << accuracy << std::endl;
-            std::cout << "Average Loss: " << average_loss << std::endl;
-
-            std::cout << "Evaluating..." << std::endl;
+            std::cout << "Training Loss: " << average_loss << std::endl;
+            std::cout << "Testing Accuracy: " << std::get<0>(evaluation) << std::endl;
+            std::cout << "Testing Loss: " << std::get<1>(evaluation) << std::endl;
         }
-        std::cout << evaluationStream.str();
     }
     std::cout << "Final Evaluation" << std::endl;
-    std::ostringstream finalEvaluation = evaluate(imageContainer);
-    std::cout << finalEvaluation.str();
+    std::tuple<double, double> finalEvaluation = evaluate(imageContainer);
+    std::cout << "Final Testing Accuracy: " << std::get<0>(finalEvaluation) << std::endl;
+    std::cout << "Final Testing Loss: " << std::get<1>(finalEvaluation) << std::endl;
     std::cout << "Training ended!" << std::endl;
 }
 
-std::ostringstream NeuralNetwork::evaluate(const ImageContainer &imageContainer)
+std::tuple<double, double> NeuralNetwork::evaluate(const ImageContainer &imageContainer)
 {
     if (!lossFunction)
     {
@@ -490,13 +520,11 @@ std::ostringstream NeuralNetwork::evaluate(const ImageContainer &imageContainer)
     double average_loss = total_loss / num_samples;
     double accuracy = static_cast<double>(correct_predictions) / num_samples;
 
-    std::ostringstream oss;
-    oss << "Testing Accuracy: " << accuracy << std::endl;
-    oss << "Testing Loss(avg): " << average_loss << std::endl;
-    return oss;
+    return std::make_tuple(accuracy, average_loss);
 }
 
-void NeuralNetwork::enableGradientClipping(double value, GradientClippingMode mode)
+void NeuralNetwork::enableGradientClipping(double value,
+                                           GradientClippingMode mode)
 {
     clippingMode = mode;
     clipValue = value;
@@ -511,34 +539,36 @@ void NeuralNetwork::enableGradientClipping(double value, GradientClippingMode mo
     }
 }
 
-void NeuralNetwork::enableELRAL(double learning_rate_coef, int maxSuccessiveFailures, int maxFails, double tolerance, ELRALMode mode)
+void NeuralNetwork::enableELRALES(double learning_rate_coef,
+                                  int maxSuccessiveFailures,
+                                  int maxFails,
+                                  double tolerance,
+                                  ELRALES_Mode mode)
 {
-    elralMode = mode;
-    elralSet = true;
+    this->elralesMode = mode;
+    this->elralesSet = true;
+    this->elralesStateMachine = ELRALES_StateMachine::NORMAL;
     this->learning_rate_coef = learning_rate_coef;
     this->maxSuccessiveFailures = maxSuccessiveFailures;
     this->maxFails = maxFails;
     this->tolerance = tolerance;
-    if (ELRALMode::ENABLED == mode)
+
+    if (ELRALES_Mode::ENABLED == mode)
     {
-        elral = std::make_unique<ELRAL>(learning_rate_coef, maxSuccessiveFailures, maxFails, tolerance, layers);
-        std::cout << "|ELRAL Enabled with LRC: " << learning_rate_coef << ", MSEF: " << maxSuccessiveFailures << ", MEF: " << maxFails << ", TOL:" << tolerance << "|" << std::endl;
+        this->elrales = std::make_unique<ELRALES>(learning_rate_coef, maxSuccessiveFailures, maxFails, tolerance, layers);
+        std::cout << "|ELRALES Enabled with LRC: " << learning_rate_coef
+                  << ", MSEF: " << maxSuccessiveFailures
+                  << ", MEF: " << maxFails
+                  << ", TOL: " << tolerance
+                  << "|" << std::endl;
     }
-    else if (ELRALMode::NORMAL == mode)
+    else if (ELRALES_Mode::DISABLED == mode)
     {
-        throw std::runtime_error("Cannot initialize ELRAL in NORMAL mode => Initialize it with ENABLED.");
-    }
-    else if (ELRALMode::RECOVERY == mode)
-    {
-        throw std::runtime_error("Cannot initialize ELRAL in RECOVERY mode => Initialize it with ENABLED.");
-    }
-    else if (ELRALMode::DISABLED == mode)
-    {
-        std::cout << "|Epoch Loss Recovery Adaptive Learning Disabled|" << std::endl;
+        std::cout << "|Epoch Loss Recovery Adaptive Learning Early Stopping|" << std::endl;
     }
     else
     {
-        throw std::runtime_error("Unknown ELRAL mode.");
+        throw std::runtime_error("Unknown ELRALES mode.");
     }
-    elralTimeLine.push_back(static_cast<ELRALMode>(elralMode));
+    elralesStateMachineTimeLine.push_back(static_cast<ELRALES_StateMachine>(elralesStateMachine));
 }

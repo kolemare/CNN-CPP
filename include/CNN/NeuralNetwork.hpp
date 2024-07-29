@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <memory>
+#include <tuple>
 #include <unsupported/Eigen/CXX11/Tensor>
 #include "Layer.hpp"
 #include "LossFunction.hpp"
@@ -17,31 +18,65 @@
 #include "ActivationLayer.hpp"
 #include "GradientClipping.hpp"
 #include "NNLogger.hpp"
-#include "ELRAL.hpp"
+#include "ELRALES.hpp"
 
 class NeuralNetwork
 {
 public:
     NeuralNetwork();
 
-    void addConvolutionLayer(int filters, int kernel_size, int stride, int padding, ConvKernelInitialization kernel_init = ConvKernelInitialization::HE, ConvBiasInitialization bias_init = ConvBiasInitialization::ZERO);
-    void addMaxPoolingLayer(int pool_size, int stride);
-    void addAveragePoolingLayer(int pool_size, int stride);
-    void addFlattenLayer();
-    void addFullyConnectedLayer(int output_size, DenseWeightInitialization weight_init = DenseWeightInitialization::XAVIER, DenseBiasInitialization bias_init = DenseBiasInitialization::ZERO);
-    void addActivationLayer(ActivationType type);
-    void setLossFunction(LossType type);
-    void setLogLevel(LogLevel level);
-    void setProgressLevel(ProgressLevel level);
-    void enableGradientClipping(double clipValue = 1.0, GradientClippingMode mode = GradientClippingMode::ENABLED);
+    void addConvolutionLayer(int filters,
+                             int kernel_size,
+                             int stride = 1,
+                             int padding = 1,
+                             ConvKernelInitialization kernel_init = ConvKernelInitialization::XAVIER,
+                             ConvBiasInitialization bias_init = ConvBiasInitialization::ZERO);
 
-    void compile(OptimizerType optimizerType, const std::unordered_map<std::string, double> &optimizer_params = {});
+    void addMaxPoolingLayer(int pool_size,
+                            int stride);
+
+    void addAveragePoolingLayer(int pool_size,
+                                int stride);
+
+    void addFlattenLayer();
+
+    void addFullyConnectedLayer(int output_size,
+                                DenseWeightInitialization weight_init = DenseWeightInitialization::XAVIER,
+                                DenseBiasInitialization bias_init = DenseBiasInitialization::ZERO);
+
+    void addActivationLayer(ActivationType type);
+
+    void setLossFunction(LossType type);
+
+    void setLogLevel(LogLevel level);
+
+    void setProgressLevel(ProgressLevel level);
+
+    void enableGradientClipping(double clipValue = 1.0,
+                                GradientClippingMode mode = GradientClippingMode::ENABLED);
+
+    void compile(OptimizerType optimizerType,
+                 const std::unordered_map<std::string, double> &optimizer_params = {});
+
     Eigen::Tensor<double, 4> forward(const Eigen::Tensor<double, 4> &input);
-    void backward(const Eigen::Tensor<double, 4> &d_output, double learning_rate);
-    void train(const ImageContainer &imageContainer, int epochs, int batch_size, double learning_rate = 0.001);
-    std::ostringstream evaluate(const ImageContainer &imageContainer);
+
+    void backward(const Eigen::Tensor<double, 4> &d_output,
+                  double learning_rate);
+
+    void train(const ImageContainer &imageContainer,
+               int epochs,
+               int batch_size,
+               double learning_rate = 0.001);
+
+    std::tuple<double, double> evaluate(const ImageContainer &imageContainer);
+
     void setImageSize(const int targetWidth, const int targetHeight);
-    void enableELRAL(double learning_rate_coef = 0.5, int maxSuccessiveFailures = 3, int maxFails = 10, double tolerance = 0.0, ELRALMode mode = ELRALMode::ENABLED);
+
+    void enableELRALES(double learning_rate_coef = 0.5,
+                       int maxSuccessiveFailures = 3,
+                       int maxFails = 10,
+                       double tolerance = 0.0,
+                       ELRALES_Mode mode = ELRALES_Mode::ENABLED);
 
 private:
     std::vector<std::shared_ptr<Layer>> layers;
@@ -50,7 +85,7 @@ private:
     std::vector<Eigen::Tensor<double, 4>> layerInputs;
     bool flattenAdded;
     bool clippingSet;
-    bool elralSet;
+    bool elralesSet;
     int currentDepth;
     int inputSize;
     int inputHeight;
@@ -60,15 +95,16 @@ private:
     double clipValue;
 
     GradientClippingMode clippingMode = GradientClippingMode::DISABLED;
-    ELRALMode elralMode = ELRALMode::DISABLED;
-    std::vector<ELRALMode> elralTimeLine;
+    ELRALES_Mode elralesMode = ELRALES_Mode::DISABLED;
+    ELRALES_StateMachine elralesStateMachine = ELRALES_StateMachine::NORMAL;
+    std::vector<ELRALES_StateMachine> elralesStateMachineTimeLine{};
 
-    // ELRAL
+    // ELRALES
     double learning_rate_coef;
     int maxSuccessiveFailures;
     int maxFails;
     double tolerance;
-    std::unique_ptr<ELRAL> elral = nullptr;
+    std::unique_ptr<ELRALES> elrales = nullptr;
 };
 
 #endif // NEURALNETWORK_HPP

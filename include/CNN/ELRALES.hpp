@@ -1,5 +1,5 @@
-#ifndef ELRAL_HPP
-#define ELRAL_HPP
+#ifndef ELRALES_HPP
+#define ELRALES_HPP
 
 #include <vector>
 #include <memory>
@@ -9,20 +9,28 @@
 #include "ConvolutionLayer.hpp"
 #include "FullyConnectedLayer.hpp"
 
-class ELRAL
+class ELRALES
 {
 public:
-    ELRAL(double learning_rate_coef, int maxSuccessiveFailures, int maxFails, double tolerance, const std::vector<std::shared_ptr<Layer>> &layers);
+    ELRALES(double learning_rate_coef,
+            int maxSuccessiveEpochFailures,
+            int maxEpochFailures,
+            double tolerance,
+            const std::vector<std::shared_ptr<Layer>> &layers);
 
-    bool updateState(double current_loss, std::vector<std::shared_ptr<Layer>> &layers, double &learning_rate, ELRALMode &mode);
+    ELRALES_Retval updateState(double current_loss,
+                               std::vector<std::shared_ptr<Layer>> &layers,
+                               double &learning_rate,
+                               ELRALES_StateMachine &mode);
 
 private:
     double learning_rate_coef;
     int maxSuccessiveEpochFailures;
-    int maxEpochFails;
+    int maxEpochFailures;
     double tolerance;
 
     double best_loss;
+    double previous_loss;
     int successiveEpochFailures;
     int totalEpochFailures;
 
@@ -65,4 +73,4 @@ private:
     void restoreState(std::vector<std::shared_ptr<Layer>> &layers);
 };
 
-#endif // ELRAL_HPP
+#endif // ELRALES_HPP

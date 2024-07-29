@@ -130,8 +130,8 @@ void tensorModel(const std::string &datasetPath)
     // Enable Default Gradient Clipping
     cnn.enableGradientClipping();
 
-    // Enable Default ELRAL
-    cnn.enableELRAL();
+    // Enable Default ELRALES
+    cnn.enableELRALES();
 
     // Compile the network with an optimizer
     cnn.compile(OptimizerType::Adam);
@@ -143,7 +143,7 @@ void tensorModel(const std::string &datasetPath)
     cnn.train(container, epochs, batch_size, learning_rate);
 
     // Step 6: Evaluate the neural network
-    cnn.evaluate(container);
+    std::tuple<double, double> evaluation = cnn.evaluate(container);
 
     // Step 7: Making a single prediction
     std::vector<std::string> imagePaths = {"datasets/catsdogs/single_prediction/cat_or_dog_1.jpg", "datasets/catsdogs/single_prediction/cat_or_dog_2.jpg"};

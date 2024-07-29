@@ -11,39 +11,6 @@
 
 // Enum class declarations
 
-enum class ActivationType
-{
-    RELU,
-    LEAKY_RELU,
-    SIGMOID,
-    TANH,
-    SOFTMAX,
-    ELU
-};
-
-enum class OptimizerType
-{
-    SGD,
-    SGDWithMomentum,
-    Adam,
-    RMSprop
-};
-
-enum class ELRALMode
-{
-    ENABLED,
-    DISABLED,
-    NORMAL,
-    RECOVERY,
-    LOSING
-};
-
-enum class BatchType
-{
-    Training,
-    Testing
-};
-
 enum class ConvKernelInitialization
 {
     HE,
@@ -72,11 +39,69 @@ enum class DenseBiasInitialization
     NONE
 };
 
+enum class ActivationType
+{
+    RELU,
+    LEAKY_RELU,
+    SIGMOID,
+    TANH,
+    SOFTMAX,
+    ELU
+};
+
+enum class OptimizerType
+{
+    SGD,
+    SGDWithMomentum,
+    Adam,
+    RMSprop
+};
+
 enum class LossType
 {
     BINARY_CROSS_ENTROPY,
     MEAN_SQUARED_ERROR,
     CATEGORICAL_CROSS_ENTROPY
+};
+
+enum class PropagationType
+{
+    FORWARD,
+    BACK
+};
+
+enum class GradientClippingMode
+{
+    ENABLED,
+    DISABLED
+};
+
+enum class BatchType
+{
+    Training,
+    Testing
+};
+
+enum class ELRALES_Mode
+{
+    ENABLED,
+    DISABLED
+};
+
+enum class ELRALES_StateMachine
+{
+    NORMAL,
+    RECOVERY,
+    LOSING,
+    DONE,
+    EARLY_STOPPING
+};
+
+enum class ELRALES_Retval
+{
+    WASTED_EPOCH,
+    SUCCESSFUL_EPOCH,
+    END_LEARNING
 };
 
 enum class LogLevel
@@ -94,18 +119,6 @@ enum class ProgressLevel
     ProgressTime
 };
 
-enum class PropagationType
-{
-    FORWARD,
-    BACK
-};
-
-enum class GradientClippingMode
-{
-    ENABLED,
-    DISABLED
-};
-
 enum class AugmentTarget
 {
     TRAIN_DATASET,
@@ -113,5 +126,23 @@ enum class AugmentTarget
     WHOLE_DATASET,
     NONE
 };
+
+// Function declarations for converting enums to strings
+std::string toString(ConvKernelInitialization value);
+std::string toString(ConvBiasInitialization value);
+std::string toString(DenseWeightInitialization value);
+std::string toString(DenseBiasInitialization value);
+std::string toString(ActivationType value);
+std::string toString(OptimizerType value);
+std::string toString(LossType value);
+std::string toString(PropagationType value);
+std::string toString(GradientClippingMode value);
+std::string toString(BatchType value);
+std::string toString(ELRALES_Mode value);
+std::string toString(ELRALES_StateMachine value);
+std::string toString(ELRALES_Retval value);
+std::string toString(LogLevel value);
+std::string toString(ProgressLevel value);
+std::string toString(AugmentTarget value);
 
 #endif // COMMON_HPP

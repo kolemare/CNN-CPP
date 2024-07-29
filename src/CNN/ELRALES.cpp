@@ -1,76 +1,110 @@
-#include "ELRAL.hpp"
+#include "ELRALES.hpp"
 #include <iostream>
 
-ELRAL::ELRAL(double learning_rate_coef, int maxSuccessiveEpochFailures, int maxEpochFails, double tolerance, const std::vector<std::shared_ptr<Layer>> &layers)
-    : learning_rate_coef(learning_rate_coef), maxSuccessiveEpochFailures(maxSuccessiveEpochFailures), maxEpochFails(maxEpochFails), tolerance(tolerance),
-      best_loss(std::numeric_limits<double>::max()), successiveEpochFailures(0), totalEpochFailures(0)
+ELRALES::ELRALES(double learning_rate_coef,
+                 int maxSuccessiveEpochFailures,
+                 int maxEpochFailures,
+                 double tolerance,
+                 const std::vector<std::shared_ptr<Layer>> &layers)
 {
     if (1 < learning_rate_coef || 0 > learning_rate_coef)
     {
-        throw std::runtime_error("ELRAL => Learning rate coefficient must be between 0 and 1.");
+        throw std::runtime_error("ELRALES => Learning rate coefficient must be between 0 and 1.");
     }
-    if (0 > tolerance || 1 < tolerance)
+    if (1 < tolerance || 0 > tolerance)
     {
-        throw std::runtime_error("ELRAL => Tolerance must be between 0 and 1.");
+        throw std::runtime_error("ELRALES => Tolerance must be between 0 and 1.");
     }
+    this->learning_rate_coef = learning_rate_coef;
+    this->maxSuccessiveEpochFailures = maxSuccessiveEpochFailures;
+    this->maxEpochFailures = maxEpochFailures;
+    this->tolerance = tolerance;
+    this->best_loss = std::numeric_limits<double>::max();
+    this->previous_loss = std::numeric_limits<double>::max();
+    this->successiveEpochFailures = 0;
+    this->totalEpochFailures = 0;
     saveState(layers);
 }
 
-bool ELRAL::updateState(double current_loss, std::vector<std::shared_ptr<Layer>> &layers, double &learning_rate, ELRALMode &mode)
+ELRALES_Retval ELRALES::updateState(double current_loss,
+                                    std::vector<std::shared_ptr<Layer>> &layers,
+                                    double &learning_rate,
+                                    ELRALES_StateMachine &mode)
 {
+    ELRALES_Retval elralesRetval;
     if (current_loss < best_loss)
     {
         best_loss = current_loss;
         successiveEpochFailures = 0;
         saveState(layers);
+        mode = ELRALES_StateMachine::NORMAL;
+        elralesRetval = ELRALES_Retval::SUCCESSFUL_EPOCH;
         std::cout << "New best model saved with loss: " << best_loss << std::endl;
-        mode = ELRALMode::NORMAL;
+    }
+    else if (current_loss < previous_loss)
+    {
+        successiveEpochFailures++;
+        totalEpochFailures++;
+        if (successiveEpochFailures <= maxSuccessiveEpochFailures && totalEpochFailures <= maxEpochFailures)
+        {
+            mode = ELRALES_StateMachine::RECOVERY;
+            elralesRetval = ELRALES_Retval::WASTED_EPOCH;
+        }
+        else
+        {
+            mode = ELRALES_StateMachine::EARLY_STOPPING;
+            elralesRetval = ELRALES_Retval::END_LEARNING;
+            restoreState(layers);
+        }
     }
     else if (current_loss < best_loss * (1 + tolerance))
     {
-        double thresholdToBreak = best_loss * (1 + tolerance) - current_loss;
-        std::cout << "Epoch loss within tolerance, threshold left to break: " << thresholdToBreak << std::endl;
         successiveEpochFailures++;
-        mode = ELRALMode::LOSING;
+        totalEpochFailures++;
+        if (successiveEpochFailures <= maxSuccessiveEpochFailures && totalEpochFailures <= maxEpochFailures)
+        {
+            mode = ELRALES_StateMachine::LOSING;
+            elralesRetval = ELRALES_Retval::WASTED_EPOCH;
+        }
+        else
+        {
+            mode = ELRALES_StateMachine::EARLY_STOPPING;
+            elralesRetval = ELRALES_Retval::END_LEARNING;
+            restoreState(layers);
+        }
+        double percentageToReachThreshold = ((best_loss * (1 + tolerance) - current_loss) / (best_loss * tolerance)) * 100;
+        std::cout << "Epoch loss within tolerance, percentage left to reach tolerance: "
+                  << percentageToReachThreshold
+                  << " => "
+                  << tolerance * 100
+                  << "%"
+                  << std::endl;
     }
     else
     {
         successiveEpochFailures++;
         totalEpochFailures++;
-
-        if (successiveEpochFailures <= maxSuccessiveEpochFailures)
+        if (successiveEpochFailures <= maxSuccessiveEpochFailures && totalEpochFailures <= maxEpochFailures)
         {
-            if (totalEpochFailures <= maxEpochFails)
-            {
-                restoreState(layers);
-                learning_rate *= learning_rate_coef;
-                successiveEpochFailures = 0;
-                std::cout << "Restored to best learning epoch. Learning rate reduced to: " << learning_rate << std::endl;
-                mode = ELRALMode::RECOVERY;
-            }
-            else
-            {
-                mode = ELRALMode::DISABLED;
-                throw std::runtime_error("ELRAL => Maximum number of failures reached.");
-            }
+            mode = ELRALES_StateMachine::RECOVERY;
+            elralesRetval = ELRALES_Retval::WASTED_EPOCH;
         }
         else
         {
-            mode = ELRALMode::DISABLED;
-            throw std::runtime_error("ELRAL => Maximum number of successive failures reached.");
+            mode = ELRALES_StateMachine::EARLY_STOPPING;
+            elralesRetval = ELRALES_Retval::END_LEARNING;
         }
+        restoreState(layers);
+        learning_rate *= learning_rate_coef;
+        std::cout << "Restored to best learning epoch with loss " << best_loss << std::endl;
+        std::cout << "Learning rate reduced to " << learning_rate << std::endl;
     }
-    if (ELRALMode::RECOVERY == mode || ELRALMode::LOSING == mode)
-    {
-        return false;
-    }
-    else
-    {
-        return true;
-    }
+
+    previous_loss = current_loss;
+    return elralesRetval;
 }
 
-void ELRAL::saveState(const std::vector<std::shared_ptr<Layer>> &layers)
+void ELRALES::saveState(const std::vector<std::shared_ptr<Layer>> &layers)
 {
     savedConvLayerStates.clear();
     savedFCLayerStates.clear();
@@ -156,7 +190,7 @@ void ELRAL::saveState(const std::vector<std::shared_ptr<Layer>> &layers)
     }
 }
 
-void ELRAL::restoreState(std::vector<std::shared_ptr<Layer>> &layers)
+void ELRALES::restoreState(std::vector<std::shared_ptr<Layer>> &layers)
 {
     size_t conv_index = 0;
     size_t fc_index = 0;
