@@ -11,7 +11,7 @@
 class ConvolutionLayer : public Layer
 {
 public:
-    ConvolutionLayer(int filters, int kernel_size, int stride, int padding, ConvKernelInitialization kernel_init = ConvKernelInitialization::HE, ConvBiasInitialization bias_init = ConvBiasInitialization::ZERO);
+    ConvolutionLayer(int filters, int kernel_size, int stride, int padding, ConvKernelInitialization kernel_init = ConvKernelInitialization::XAVIER, ConvBiasInitialization bias_init = ConvBiasInitialization::ZERO);
 
     void setInputDepth(int depth);
     int getFilters() const;

@@ -73,8 +73,8 @@ public:
     void setImageSize(const int targetWidth, const int targetHeight);
 
     void enableELRALES(double learning_rate_coef = 0.5,
-                       int maxSuccessiveFailures = 3,
-                       int maxFails = 10,
+                       int maxSuccessiveEpochFailures = 3,
+                       int maxEpochFails = 10,
                        double tolerance = 0.0,
                        ELRALES_Mode mode = ELRALES_Mode::ENABLED);
 
@@ -101,8 +101,8 @@ private:
 
     // ELRALES
     double learning_rate_coef;
-    int maxSuccessiveFailures;
-    int maxFails;
+    int maxSuccessiveEpochFailures;
+    int maxEpochFailures;
     double tolerance;
     std::unique_ptr<ELRALES> elrales = nullptr;
 };

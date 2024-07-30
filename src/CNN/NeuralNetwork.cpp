@@ -399,6 +399,7 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
         double average_loss = total_epoch_loss / num_epoch_samples;
         double accuracy = static_cast<double>(correct_predictions) / num_epoch_samples;
 
+        std::cout << "Evaluating..." << std::endl;
         std::tuple<double, double> evaluation = evaluate(imageContainer);
 
         if (ELRALES_Mode::ENABLED == elralesMode)
@@ -442,6 +443,7 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
             std::cout << "Training Loss: " << average_loss << std::endl;
             std::cout << "Testing Accuracy: " << std::get<0>(evaluation) << std::endl;
             std::cout << "Testing Loss: " << std::get<1>(evaluation) << std::endl;
+            std::cout << "ELRALES: OFF" << std::endl;
         }
     }
     std::cout << "Final Evaluation" << std::endl;
@@ -540,8 +542,8 @@ void NeuralNetwork::enableGradientClipping(double value,
 }
 
 void NeuralNetwork::enableELRALES(double learning_rate_coef,
-                                  int maxSuccessiveFailures,
-                                  int maxFails,
+                                  int maxSuccessiveEpochFailures,
+                                  int maxEpochFailures,
                                   double tolerance,
                                   ELRALES_Mode mode)
 {
@@ -549,16 +551,16 @@ void NeuralNetwork::enableELRALES(double learning_rate_coef,
     this->elralesSet = true;
     this->elralesStateMachine = ELRALES_StateMachine::NORMAL;
     this->learning_rate_coef = learning_rate_coef;
-    this->maxSuccessiveFailures = maxSuccessiveFailures;
-    this->maxFails = maxFails;
+    this->maxSuccessiveEpochFailures = maxSuccessiveEpochFailures;
+    this->maxEpochFailures = maxEpochFailures;
     this->tolerance = tolerance;
 
     if (ELRALES_Mode::ENABLED == mode)
     {
-        this->elrales = std::make_unique<ELRALES>(learning_rate_coef, maxSuccessiveFailures, maxFails, tolerance, layers);
+        this->elrales = std::make_unique<ELRALES>(learning_rate_coef, maxSuccessiveEpochFailures, maxEpochFailures, tolerance, layers);
         std::cout << "|ELRALES Enabled with LRC: " << learning_rate_coef
-                  << ", MSEF: " << maxSuccessiveFailures
-                  << ", MEF: " << maxFails
+                  << ", MSEF: " << maxSuccessiveEpochFailures
+                  << ", MEF: " << maxEpochFailures
                   << ", TOL: " << tolerance
                   << "|" << std::endl;
     }

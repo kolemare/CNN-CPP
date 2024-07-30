@@ -31,7 +31,7 @@ std::shared_ptr<Optimizer> ConvolutionLayer::getOptimizer()
 void ConvolutionLayer::setInputDepth(int depth)
 {
     input_depth = depth;
-    initializeKernels(ConvKernelInitialization::HE); // Reinitialize kernels with new input depth
+    initializeKernels(ConvKernelInitialization::XAVIER); // Reinitialize kernels with new input depth
 }
 
 int ConvolutionLayer::getStride() const

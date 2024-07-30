@@ -130,8 +130,12 @@ void tensorModel(const std::string &datasetPath)
     // Enable Default Gradient Clipping
     cnn.enableGradientClipping();
 
-    // Enable Default ELRALES
-    cnn.enableELRALES();
+    // Enable ELRALES
+    double learning_rate_coef = 0.5; // 0.5 Learning Coefficient Multiplier
+    int maxSuccessiveFailures = 3;   // 3 Sucessive Epoch Failures
+    int maxFails = 20;               // 20 Total Epoch Failures
+    double tolerance = 0.0;          // 0% Tolerance
+    cnn.enableELRALES(learning_rate_coef, maxSuccessiveFailures, maxFails, tolerance);
 
     // Compile the network with an optimizer
     cnn.compile(OptimizerType::Adam);
@@ -177,7 +181,7 @@ void tensorModel(const std::string &datasetPath)
     for (size_t i = 0; i < imagePaths.size(); ++i)
     {
         double score = predictions(i, 0, 0, 0);
-        std::string result = score >= 0.5 ? "dog" : "cat";
+        std::string result = score >= 0.5 ? "cat" : "dog";
         double confidence = score >= 0.5 ? score * 100.0 : (1 - score) * 100.0;
         std::cout << "Prediction for " << imagePaths[i] << ": " << result << " (Score: " << score << ", Confidence: " << confidence << "%)\n";
     }
