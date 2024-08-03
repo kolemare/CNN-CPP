@@ -234,3 +234,29 @@ void NNLogger::printProgress(int epoch, int epochs, int batch, int totalBatches,
     oss << "-------------------------------------------------------------------" << std::endl;
     std::cout << oss.str() << std::flush;
 }
+
+void NNLogger::initializeCSV(const std::string &filename)
+{
+    std::ofstream csvFile(filename, std::ios::out);
+    if (!csvFile.is_open())
+    {
+        throw std::runtime_error("Unable to open file for CSV initialization.");
+    }
+
+    // Write the headers
+    csvFile << "epoch_num;training_accuracy;training_loss;testing_accuracy;testing_loss;elrales\n";
+    csvFile.close();
+}
+
+void NNLogger::appendToCSV(const std::string &filename, int epoch, double trainAcc, double trainLoss, double testAcc, double testLoss, const std::string &elralesState)
+{
+    std::ofstream csvFile(filename, std::ios::app);
+    if (!csvFile.is_open())
+    {
+        throw std::runtime_error("Unable to open file for appending CSV data.");
+    }
+
+    // Append the epoch data
+    csvFile << epoch << ";" << trainAcc << ";" << trainLoss << ";" << testAcc << ";" << testLoss << ";" << elralesState << "\n";
+    csvFile.close();
+}

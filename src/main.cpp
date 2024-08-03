@@ -131,19 +131,19 @@ void tensorModel(const std::string &datasetPath)
     cnn.enableGradientClipping();
 
     // Enable ELRALES
-    double learning_rate_coef = 0.5; // 0.5 Learning Coefficient Multiplier
-    int maxSuccessiveFailures = 3;   // 3 Sucessive Epoch Failures
-    int maxFails = 20;               // 20 Total Epoch Failures
-    double tolerance = 0.0;          // 0% Tolerance
-    cnn.enableELRALES(learning_rate_coef, maxSuccessiveFailures, maxFails, tolerance);
+    // double learning_rate_coef = 0.5; // 0.5 Learning Coefficient Multiplier
+    // int maxSuccessiveFailures = 3;   // 3 Sucessive Epoch Failures
+    // int maxFails = 20;               // 20 Total Epoch Failures
+    // double tolerance = 0.0;          // 0% Tolerance
+    // cnn.enableELRALES(learning_rate_coef, maxSuccessiveFailures, maxFails, tolerance);
 
     // Compile the network with an optimizer
     cnn.compile(OptimizerType::Adam);
 
     // Step 5: Train the neural network
-    int epochs = 25;
+    int epochs = 40;
     int batch_size = 32;
-    double learning_rate = 0.0001;
+    double learning_rate = 0.000025;
     cnn.train(container, epochs, batch_size, learning_rate);
 
     // Step 6: Evaluate the neural network

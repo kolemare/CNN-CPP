@@ -321,6 +321,8 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
         throw std::runtime_error("Loss function must be set before training.");
     }
 
+    NNLogger::initializeCSV("cnn.csv");
+
     BatchManager batchManager(imageContainer, batch_size, BatchType::Training);
     std::cout << "Training started..." << std::endl;
     auto start = std::chrono::steady_clock::now();
@@ -405,6 +407,8 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
         if (ELRALES_Mode::ENABLED == elralesMode)
         {
             ELRALES_Retval elralesEvaluation = elrales->updateState(average_loss, layers, current_learning_rate, elralesStateMachine);
+            std::string elralesState = toString(elralesStateMachine);
+
             if (ELRALES_Retval::SUCCESSFUL_EPOCH == elralesEvaluation)
             {
                 std::cout << "Epoch " << epoch + 1 << " completed." << std::endl;
@@ -412,7 +416,8 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
                 std::cout << "Training Loss: " << average_loss << std::endl;
                 std::cout << "Testing Accuracy: " << std::get<0>(evaluation) << std::endl;
                 std::cout << "Testing Loss: " << std::get<1>(evaluation) << std::endl;
-                std::cout << "ELRALES: " << toString(elralesStateMachine) << std::endl;
+                std::cout << "ELRALES: " << elralesState << std::endl;
+                NNLogger::appendToCSV("cnn.csv", epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), elralesState);
             }
             else if (ELRALES_Retval::WASTED_EPOCH == elralesEvaluation)
             {
@@ -421,8 +426,9 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
                 std::cout << "Wasted Training Loss: " << average_loss << std::endl;
                 std::cout << "Wasted Testing Accuracy: " << std::get<0>(evaluation) << std::endl;
                 std::cout << "Wasted Testing Loss: " << std::get<1>(evaluation) << std::endl;
-                std::cout << "ELRALES: " << toString(elralesStateMachine) << std::endl;
-                ++epochs;
+                std::cout << "ELRALES: " << elralesState << std::endl;
+                NNLogger::appendToCSV("cnn.csv", epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), elralesState);
+                ++epochs; // This ensures the number of successful epochs remains constant
             }
             else if (ELRALES_Retval::END_LEARNING == elralesEvaluation)
             {
@@ -431,7 +437,8 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
                 std::cout << "EarlyStopping Training Loss: " << average_loss << std::endl;
                 std::cout << "EarlyStopping Testing Accuracy: " << std::get<0>(evaluation) << std::endl;
                 std::cout << "EarlyStopping Testing Loss: " << std::get<1>(evaluation) << std::endl;
-                std::cout << "ELRALES: " << toString(elralesStateMachine) << std::endl;
+                std::cout << "ELRALES: " << elralesState << std::endl;
+                NNLogger::appendToCSV("cnn.csv", epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), elralesState);
                 break;
             }
             elralesStateMachineTimeLine.push_back(static_cast<ELRALES_StateMachine>(elralesStateMachine));
@@ -444,8 +451,11 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
             std::cout << "Testing Accuracy: " << std::get<0>(evaluation) << std::endl;
             std::cout << "Testing Loss: " << std::get<1>(evaluation) << std::endl;
             std::cout << "ELRALES: OFF" << std::endl;
+            NNLogger::appendToCSV("cnn.csv", epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), "OFF");
         }
     }
+
+    // After the training loop
     std::cout << "Final Evaluation" << std::endl;
     std::tuple<double, double> finalEvaluation = evaluate(imageContainer);
     std::cout << "Final Testing Accuracy: " << std::get<0>(finalEvaluation) << std::endl;
@@ -566,7 +576,7 @@ void NeuralNetwork::enableELRALES(double learning_rate_coef,
     }
     else if (ELRALES_Mode::DISABLED == mode)
     {
-        std::cout << "|Epoch Loss Recovery Adaptive Learning Early Stopping|" << std::endl;
+        std::cout << "|Epoch Loss Recovery Adaptive Learning Early Stopping Disabled|" << std::endl;
     }
     else
     {
