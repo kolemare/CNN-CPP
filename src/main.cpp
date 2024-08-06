@@ -137,13 +137,20 @@ void tensorModel(const std::string &datasetPath)
     // double tolerance = 0.0;          // 0% Tolerance
     // cnn.enableELRALES(learning_rate_coef, maxSuccessiveFailures, maxFails, tolerance);
 
+    std::unordered_map<std::string, double> polynomial_params = {
+        {"end_learning_rate", 0.00001},
+        {"decay_steps", 50},
+        {"power", 2.0}};
+
+    cnn.enableLearningDecay(LearningDecayType::POLYNOMIAL, polynomial_params);
+
     // Compile the network with an optimizer
     cnn.compile(OptimizerType::Adam);
 
     // Step 5: Train the neural network
-    int epochs = 40;
+    int epochs = 50;
     int batch_size = 32;
-    double learning_rate = 0.000025;
+    double learning_rate = 0.0001;
     cnn.train(container, epochs, batch_size, learning_rate);
 
     // Step 6: Evaluate the neural network

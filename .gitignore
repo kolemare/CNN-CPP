@@ -4,6 +4,9 @@
 # Ignore all .txt files
 *.txt
 
+# Ignore all .csv files
+*.csv
+
 # Do not ignore CMakeLists.txt
 !CMakeLists.txt
 

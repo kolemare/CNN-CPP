@@ -19,6 +19,7 @@
 #include "GradientClipping.hpp"
 #include "NNLogger.hpp"
 #include "ELRALES.hpp"
+#include "LearningDecay.hpp"
 
 class NeuralNetwork
 {
@@ -78,6 +79,8 @@ public:
                        double tolerance = 0.0,
                        ELRALES_Mode mode = ELRALES_Mode::ENABLED);
 
+    void enableLearningDecay(LearningDecayType decayType, const std::unordered_map<std::string, double> &params);
+
 private:
     std::vector<std::shared_ptr<Layer>> layers;
     std::unique_ptr<LossFunction> lossFunction;
@@ -98,6 +101,8 @@ private:
     ELRALES_Mode elralesMode = ELRALES_Mode::DISABLED;
     ELRALES_StateMachine elralesStateMachine = ELRALES_StateMachine::NORMAL;
     std::vector<ELRALES_StateMachine> elralesStateMachineTimeLine{};
+    std::unique_ptr<LearningDecay> learningDecay;
+    LearningDecayType learningDecayMode = LearningDecayType::NONE;
 
     // ELRALES
     double learning_rate_coef;

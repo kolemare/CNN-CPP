@@ -263,3 +263,25 @@ std::string toString(AugmentTarget value)
         return "UNKNOWN";
     }
 }
+
+// Function to convert LearningDecayType to string
+std::string toString(LearningDecayType value)
+{
+    switch (value)
+    {
+    case LearningDecayType::NONE:
+        return "NONE";
+    case LearningDecayType::EXPONENTIAL:
+        return "EXPONENTIAL";
+    case LearningDecayType::STEP:
+        return "STEP";
+    case LearningDecayType::POLYNOMIAL:
+        return "POLYNOMIAL";
+    case LearningDecayType::INVERSE_TIME:
+        return "INVERSE_TIME";
+    case LearningDecayType::COSINE:
+        return "COSINE";
+    default:
+        return "UNKNOWN";
+    }
+}

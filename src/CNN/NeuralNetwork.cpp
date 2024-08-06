@@ -158,6 +158,11 @@ void NeuralNetwork::compile(OptimizerType optimizerType,
         this->enableELRALES(0.0, 0, 0, 0.0, ELRALES_Mode::DISABLED);
     }
 
+    if (elralesMode == ELRALES_Mode::ENABLED && learningDecayMode != LearningDecayType::NONE)
+    {
+        throw std::runtime_error("Cannot use both ELRALES and LearningDecay simultaneously.");
+    }
+
     for (size_t i = 0; i < layers.size(); ++i)
     {
         if (auto conv_layer = dynamic_cast<ConvolutionLayer *>(layers[i].get()))
@@ -330,6 +335,11 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
 
     for (int epoch = 0; epoch < epochs; ++epoch)
     {
+        if (LearningDecayType::NONE != learningDecayMode && learningDecay)
+        {
+            current_learning_rate = learningDecay->computeLearningRate(learning_rate, epoch);
+            std::cout << "Learning rate during epoch " << epoch + 1 << ": " << current_learning_rate << std::endl;
+        }
         Eigen::Tensor<double, 4> batch_input;
         Eigen::Tensor<int, 2> batch_label;
         int totalBatches = batchManager.getTotalBatches();
@@ -565,6 +575,11 @@ void NeuralNetwork::enableELRALES(double learning_rate_coef,
     this->maxEpochFailures = maxEpochFailures;
     this->tolerance = tolerance;
 
+    if (LearningDecayType::NONE != learningDecayMode && ELRALES_Mode::ENABLED == elralesMode)
+    {
+        throw std::runtime_error("Cannot use ELRALES when LearningDecay is enabled.");
+    }
+
     if (ELRALES_Mode::ENABLED == mode)
     {
         this->elrales = std::make_unique<ELRALES>(learning_rate_coef, maxSuccessiveEpochFailures, maxEpochFailures, tolerance, layers);
@@ -583,4 +598,16 @@ void NeuralNetwork::enableELRALES(double learning_rate_coef,
         throw std::runtime_error("Unknown ELRALES mode.");
     }
     elralesStateMachineTimeLine.push_back(static_cast<ELRALES_StateMachine>(elralesStateMachine));
+}
+
+void NeuralNetwork::enableLearningDecay(LearningDecayType decayType, const std::unordered_map<std::string, double> &params)
+{
+    if (ELRALES_Mode::ENABLED == elralesMode)
+    {
+        throw std::runtime_error("Cannot use LearningDecay when ELRALES is enabled.");
+    }
+
+    learningDecayMode = decayType;
+    learningDecay = std::make_unique<LearningDecay>(decayType, params);
+    std::cout << "|Learning Decay Enabled with Type: " << toString(decayType) << "|" << std::endl;
 }

@@ -127,6 +127,16 @@ enum class AugmentTarget
     NONE
 };
 
+enum class LearningDecayType
+{
+    NONE,
+    EXPONENTIAL,
+    STEP,
+    POLYNOMIAL,
+    INVERSE_TIME,
+    COSINE
+};
+
 // Function declarations for converting enums to strings
 std::string toString(ConvKernelInitialization value);
 std::string toString(ConvBiasInitialization value);
@@ -144,5 +154,6 @@ std::string toString(ELRALES_Retval value);
 std::string toString(LogLevel value);
 std::string toString(ProgressLevel value);
 std::string toString(AugmentTarget value);
+std::string toString(LearningDecayType value);
 
 #endif // COMMON_HPP
