@@ -55,6 +55,9 @@ void tensorModel(const std::string &datasetPath)
     int padding1 = 1;
     cnn.addConvolutionLayer(filters1, kernel_size1, stride1, padding1, ConvKernelInitialization::XAVIER, ConvBiasInitialization::ZERO);
 
+    // Batch Normalization Layer 1
+    cnn.addBatchNormalizationLayer();
+
     // Activation Layer 1
     ActivationType activation1 = ActivationType::RELU;
     cnn.addActivationLayer(activation1);
@@ -70,6 +73,9 @@ void tensorModel(const std::string &datasetPath)
     int stride2 = 1;
     int padding2 = 1;
     cnn.addConvolutionLayer(filters2, kernel_size2, stride2, padding2, ConvKernelInitialization::XAVIER, ConvBiasInitialization::ZERO);
+
+    // Batch Normalization Layer 2
+    cnn.addBatchNormalizationLayer();
 
     // Activation Layer 2
     ActivationType activation2 = ActivationType::RELU;
@@ -89,6 +95,9 @@ void tensorModel(const std::string &datasetPath)
     DenseBiasInitialization fc_bias_init1 = DenseBiasInitialization::ZERO;
     cnn.addFullyConnectedLayer(fc_output_size1, fc_weight_init1, fc_bias_init1);
 
+    // Batch Normalization Layer 3
+    cnn.addBatchNormalizationLayer();
+
     // Activation Layer 3
     ActivationType activation3 = ActivationType::RELU;
     cnn.addActivationLayer(activation3);
@@ -99,6 +108,9 @@ void tensorModel(const std::string &datasetPath)
     DenseBiasInitialization fc_bias_init2 = DenseBiasInitialization::ZERO;
     cnn.addFullyConnectedLayer(fc_output_size2, fc_weight_init2, fc_bias_init2);
 
+    // Batch Normalization Layer 4
+    cnn.addBatchNormalizationLayer();
+
     // Activation Layer 4
     ActivationType activation4 = ActivationType::RELU;
     cnn.addActivationLayer(activation4);
@@ -108,6 +120,9 @@ void tensorModel(const std::string &datasetPath)
     DenseWeightInitialization fc_weight_init3 = DenseWeightInitialization::XAVIER;
     DenseBiasInitialization fc_bias_init3 = DenseBiasInitialization::ZERO;
     cnn.addFullyConnectedLayer(fc_output_size3, fc_weight_init3, fc_bias_init3);
+
+    // Batch Normalization Layer 5
+    cnn.addBatchNormalizationLayer();
 
     // Activation Layer 5
     ActivationType activation5 = ActivationType::RELU;

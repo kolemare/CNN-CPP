@@ -1,100 +1,273 @@
-// #include "BatchNormalizationLayer.hpp"
-// #include <iostream>
+#include "BatchNormalizationLayer.hpp"
+#include <iostream>
+#include <cmath>
 
-// BatchNormalizationLayer::BatchNormalizationLayer(double epsilon, double momentum)
-//     : epsilon(epsilon), momentum(momentum), initialized(false) {}
+// Constructor initializing epsilon and momentum
+BatchNormalizationLayer::BatchNormalizationLayer(double epsilon, double momentum)
+    : epsilon(epsilon), momentum(momentum), initialized(false) {}
 
-// bool BatchNormalizationLayer::needsOptimizer() const
-// {
-//     return false;
-// }
+// Returns false as batch normalization does not need an optimizer
+bool BatchNormalizationLayer::needsOptimizer() const
+{
+    return false;
+}
 
-// void BatchNormalizationLayer::setOptimizer(std::unique_ptr<Optimizer> optimizer)
-// {
-//     return;
-// }
+// Empty implementation as the optimizer is not used
+void BatchNormalizationLayer::setOptimizer(std::shared_ptr<Optimizer> optimizer)
+{
+    return;
+}
 
-// void BatchNormalizationLayer::initialize(int input_dim)
-// {
-//     gamma = Eigen::VectorXd::Ones(input_dim);
-//     beta = Eigen::VectorXd::Zero(input_dim);
-//     moving_mean = Eigen::VectorXd::Zero(input_dim);
-//     moving_variance = Eigen::VectorXd::Ones(input_dim);
-//     dgamma = Eigen::VectorXd::Zero(input_dim);
-//     dbeta = Eigen::VectorXd::Zero(input_dim);
-//     initialized = true;
-// }
+// Return nullpointer as batch normalization does not have an optimizer
+std::shared_ptr<Optimizer> BatchNormalizationLayer::getOptimizer()
+{
+    return nullptr;
+}
 
-// Eigen::MatrixXd BatchNormalizationLayer::forward(const Eigen::MatrixXd &input)
-// {
-//     if (!initialized)
-//     {
-//         initialize(input.cols());
-//     }
+// Initializes gamma, beta, moving mean, and moving variance
+void BatchNormalizationLayer::initialize(int feature_size)
+{
+    gamma = Eigen::Tensor<double, 1>(feature_size);
+    beta = Eigen::Tensor<double, 1>(feature_size);
+    moving_mean = Eigen::Tensor<double, 1>(feature_size);
+    moving_variance = Eigen::Tensor<double, 1>(feature_size);
+    dgamma = Eigen::Tensor<double, 1>(feature_size);
+    dbeta = Eigen::Tensor<double, 1>(feature_size);
 
-//     cache_mean = input.colwise().mean();
-//     Eigen::MatrixXd input_centered = input.rowwise() - cache_mean.transpose();
-//     cache_variance = input_centered.array().square().colwise().mean();
+    // Set initial values for parameters
+    gamma.setConstant(1.0);           // Initialize scale to 1
+    beta.setZero();                   // Initialize shift to 0
+    moving_mean.setZero();            // Initialize moving mean to 0
+    moving_variance.setConstant(1.0); // Initialize moving variance to 1
 
-//     Eigen::VectorXd sqrt_variance = (cache_variance.array() + epsilon).sqrt();
-//     Eigen::VectorXd inv_sqrt_variance = 1.0 / sqrt_variance.array();
-//     cache_normalized = input_centered.array().rowwise() * inv_sqrt_variance.transpose().array();
+    initialized = true;
+}
 
-//     moving_mean = momentum * moving_mean + (1 - momentum) * cache_mean;
-//     moving_variance = momentum * moving_variance + (1 - momentum) * cache_variance;
+// Forward pass: normalizes the input and scales it using gamma and beta
+Eigen::Tensor<double, 4> BatchNormalizationLayer::forward(const Eigen::Tensor<double, 4> &input_batch)
+{
+    // Get dimensions of the input batch
+    int batch_size = input_batch.dimension(0);
+    int input_depth = input_batch.dimension(1);
+    int height = input_batch.dimension(2);
+    int width = input_batch.dimension(3);
+    int feature_size = input_depth * height * width;
 
-//     Eigen::MatrixXd scaled = cache_normalized.array().rowwise() * gamma.transpose().array();
-//     Eigen::MatrixXd shifted = scaled.rowwise() + beta.transpose();
+    // Initialize parameters if not already done
+    if (!initialized)
+    {
+        initialize(feature_size);
+    }
 
-//     return shifted;
-// }
+    // Compute mean and variance for the current batch
+    Eigen::Tensor<double, 1> input_mean(feature_size);
+    Eigen::Tensor<double, 1> input_variance(feature_size);
+    input_mean.setZero();
+    input_variance.setZero();
 
-// Eigen::MatrixXd BatchNormalizationLayer::backward(const Eigen::MatrixXd &d_output, const Eigen::MatrixXd &input, double learning_rate)
-// {
-//     int batch_size = input.rows();
-//     int input_dim = input.cols();
+    // Compute mean
+    for (int d = 0; d < input_depth; ++d)
+    {
+        for (int h = 0; h < height; ++h)
+        {
+            for (int w = 0; w < width; ++w)
+            {
+                for (int n = 0; n < batch_size; ++n)
+                {
+                    input_mean(d * height * width + h * width + w) += input_batch(n, d, h, w);
+                }
+                input_mean(d * height * width + h * width + w) /= batch_size;
+            }
+        }
+    }
 
-//     // Compute gradients for gamma and beta
-//     Eigen::MatrixXd d_normalized = d_output.array().rowwise() * gamma.transpose().array();
-//     dgamma = (d_output.array() * cache_normalized.array()).colwise().sum();
-//     dbeta = d_output.colwise().sum();
+    // Compute variance
+    for (int d = 0; d < input_depth; ++d)
+    {
+        for (int h = 0; h < height; ++h)
+        {
+            for (int w = 0; w < width; ++w)
+            {
+                for (int n = 0; n < batch_size; ++n)
+                {
+                    double diff = input_batch(n, d, h, w) - input_mean(d * height * width + h * width + w);
+                    input_variance(d * height * width + h * width + w) += diff * diff;
+                }
+                input_variance(d * height * width + h * width + w) /= batch_size;
+            }
+        }
+    }
 
-//     // Compute inverse square root of variance
-//     Eigen::ArrayXd inv_sqrt_variance = (cache_variance.array() + epsilon).pow(-0.5);
-//     Eigen::MatrixXd input_centered = input.rowwise() - cache_mean.transpose();
+    // Cache mean and variance for use in backward pass
+    cache_mean = input_mean;
+    cache_variance = input_variance;
 
-//     // Compute gradient with respect to variance
-//     Eigen::MatrixXd d_variance_part = d_normalized.array() * input_centered.array();
-//     Eigen::ArrayXd d_variance_sum = d_variance_part.colwise().sum();
-//     Eigen::ArrayXd d_variance = d_variance_sum * -0.5 * inv_sqrt_variance.pow(3);
+    // Compute inverse square root of variance
+    Eigen::Tensor<double, 1> inv_sqrt_variance(feature_size);
+    for (int i = 0; i < feature_size; ++i)
+    {
+        inv_sqrt_variance(i) = 1.0 / std::sqrt(cache_variance(i) + epsilon);
+    }
 
-//     // Compute gradient with respect to mean
-//     Eigen::MatrixXd d_mean_part1 = d_normalized.array().rowwise() * inv_sqrt_variance.transpose().array();
-//     Eigen::MatrixXd d_mean_part1_sum = d_mean_part1.colwise().sum();
+    // Normalize the input batch
+    cache_normalized = input_batch;
+    for (int n = 0; n < batch_size; ++n)
+    {
+        for (int d = 0; d < input_depth; ++d)
+        {
+            for (int h = 0; h < height; ++h)
+            {
+                for (int w = 0; w < width; ++w)
+                {
+                    int index = d * height * width + h * width + w;
+                    cache_normalized(n, d, h, w) = (input_batch(n, d, h, w) - input_mean(index)) * inv_sqrt_variance(index);
+                }
+            }
+        }
+    }
 
-//     Eigen::MatrixXd d_variance_replicated = d_variance.transpose().replicate(batch_size, 1);
-//     Eigen::MatrixXd d_mean_part2 = d_variance_replicated.array() * input_centered.array() * 2.0 / batch_size;
-//     Eigen::MatrixXd d_mean_part2_sum = d_mean_part2.colwise().sum();
+    // Update moving averages of mean and variance
+    for (int i = 0; i < feature_size; ++i)
+    {
+        moving_mean(i) = momentum * moving_mean(i) + (1.0 - momentum) * cache_mean(i);
+        moving_variance(i) = momentum * moving_variance(i) + (1.0 - momentum) * cache_variance(i);
+    }
 
-//     Eigen::MatrixXd d_mean = d_mean_part1_sum + d_mean_part2_sum * -1.0 / batch_size;
+    // Return the scaled and shifted output
+    Eigen::Tensor<double, 4> output(batch_size, input_depth, height, width);
+    for (int n = 0; n < batch_size; ++n)
+    {
+        for (int d = 0; d < input_depth; ++d)
+        {
+            for (int h = 0; h < height; ++h)
+            {
+                for (int w = 0; w < width; ++w)
+                {
+                    int index = d * height * width + h * width + w;
+                    output(n, d, h, w) = cache_normalized(n, d, h, w) * gamma(index) + beta(index);
+                }
+            }
+        }
+    }
 
-//     // Compute final gradient with respect to input
-//     Eigen::MatrixXd d_input_part1 = d_normalized.array().rowwise() * inv_sqrt_variance.transpose().array();
-//     Eigen::MatrixXd d_input_part2 = d_variance_replicated.array() * input_centered.array() * 2.0 / batch_size;
-//     Eigen::MatrixXd d_input = d_input_part1 + d_input_part2;
+    return output;
+}
 
-//     // Correctly subtract the mean gradient
-//     Eigen::MatrixXd d_mean_replicated = d_mean.replicate(batch_size, 1);
-//     d_input -= d_mean_replicated;
+// Backward pass: computes the gradient of the loss with respect to the input
+Eigen::Tensor<double, 4> BatchNormalizationLayer::backward(const Eigen::Tensor<double, 4> &d_output_batch, const Eigen::Tensor<double, 4> &input_batch, double learning_rate)
+{
+    // Get dimensions of the input batch
+    int batch_size = input_batch.dimension(0);
+    int input_depth = input_batch.dimension(1);
+    int height = input_batch.dimension(2);
+    int width = input_batch.dimension(3);
+    int feature_size = input_depth * height * width;
 
-//     // Update gamma and beta parameters
-//     updateParameters(learning_rate);
+    // Compute gradients for gamma and beta
+    dgamma.setZero();
+    dbeta.setZero();
+    for (int n = 0; n < batch_size; ++n)
+    {
+        for (int d = 0; d < input_depth; ++d)
+        {
+            for (int h = 0; h < height; ++h)
+            {
+                for (int w = 0; w < width; ++w)
+                {
+                    int index = d * height * width + h * width + w;
+                    dgamma(index) += d_output_batch(n, d, h, w) * cache_normalized(n, d, h, w);
+                    dbeta(index) += d_output_batch(n, d, h, w);
+                }
+            }
+        }
+    }
 
-//     return d_input;
-// }
+    // Compute inverse square root of variance
+    Eigen::Tensor<double, 1> inv_sqrt_variance(feature_size);
+    for (int i = 0; i < feature_size; ++i)
+    {
+        inv_sqrt_variance(i) = 1.0 / std::sqrt(cache_variance(i) + epsilon);
+    }
 
-// void BatchNormalizationLayer::updateParameters(double learning_rate)
-// {
-//     gamma -= learning_rate * dgamma;
-//     beta -= learning_rate * dbeta;
-// }
+    // Compute gradient with respect to variance
+    Eigen::Tensor<double, 1> d_variance(feature_size);
+    d_variance.setZero();
+    for (int n = 0; n < batch_size; ++n)
+    {
+        for (int d = 0; d < input_depth; ++d)
+        {
+            for (int h = 0; h < height; ++h)
+            {
+                for (int w = 0; w < width; ++w)
+                {
+                    int index = d * height * width + h * width + w;
+                    double diff = input_batch(n, d, h, w) - cache_mean(index);
+                    d_variance(index) += d_output_batch(n, d, h, w) * diff * inv_sqrt_variance(index);
+                }
+            }
+        }
+    }
+
+    for (int i = 0; i < feature_size; ++i)
+    {
+        d_variance(i) *= -0.5 * std::pow(inv_sqrt_variance(i), 3);
+    }
+
+    // Compute gradient with respect to mean
+    Eigen::Tensor<double, 1> d_mean(feature_size);
+    d_mean.setZero();
+    for (int n = 0; n < batch_size; ++n)
+    {
+        for (int d = 0; d < input_depth; ++d)
+        {
+            for (int h = 0; h < height; ++h)
+            {
+                for (int w = 0; w < width; ++w)
+                {
+                    int index = d * height * width + h * width + w;
+                    d_mean(index) += d_output_batch(n, d, h, w) * inv_sqrt_variance(index);
+                }
+            }
+        }
+    }
+
+    for (int i = 0; i < feature_size; ++i)
+    {
+        d_mean(i) += d_variance(i) * -2.0 * cache_mean(i) / batch_size;
+    }
+
+    // Compute final gradient with respect to input
+    Eigen::Tensor<double, 4> d_input(batch_size, input_depth, height, width);
+    for (int n = 0; n < batch_size; ++n)
+    {
+        for (int d = 0; d < input_depth; ++d)
+        {
+            for (int h = 0; h < height; ++h)
+            {
+                for (int w = 0; w < width; ++w)
+                {
+                    int index = d * height * width + h * width + w;
+                    d_input(n, d, h, w) = d_output_batch(n, d, h, w) * inv_sqrt_variance(index) -
+                                          d_mean(index) / batch_size -
+                                          d_variance(index) * 2.0 * (input_batch(n, d, h, w) - cache_mean(index)) / batch_size;
+                }
+            }
+        }
+    }
+
+    // Update gamma and beta parameters
+    updateParameters(learning_rate);
+
+    // Return the gradient with respect to the input batch
+    return d_input;
+}
+
+// Update gamma and beta using the computed gradients
+void BatchNormalizationLayer::updateParameters(double learning_rate)
+{
+    for (int i = 0; i < gamma.size(); ++i)
+    {
+        gamma(i) -= learning_rate * dgamma(i);
+        beta(i) -= learning_rate * dbeta(i);
+    }
+}

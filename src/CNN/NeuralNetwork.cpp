@@ -102,6 +102,16 @@ void NeuralNetwork::addActivationLayer(ActivationType type)
     }
 }
 
+void NeuralNetwork::addBatchNormalizationLayer(double epsilon,
+                                               double momentum)
+{
+    layers.push_back(std::make_shared<BatchNormalizationLayer>(epsilon, momentum));
+    if (logLevel == LogLevel::All)
+    {
+        std::cout << "Added Batch Normalization Layer" << std::endl;
+    }
+}
+
 void NeuralNetwork::setLossFunction(LossType type)
 {
     lossFunction = LossFunction::create(type);
@@ -242,6 +252,10 @@ Eigen::Tensor<double, 4> NeuralNetwork::forward(const Eigen::Tensor<double, 4> &
             {
                 layerType = "Activation Layer";
             }
+            else if (dynamic_cast<BatchNormalizationLayer *>(layers[i].get()))
+            {
+                layerType = "Batch Normalization Layer";
+            }
 
             if (logLevel == LogLevel::All)
             {
@@ -293,6 +307,10 @@ void NeuralNetwork::backward(const Eigen::Tensor<double, 4> &d_output,
         else if (dynamic_cast<ActivationLayer *>(layers[i].get()))
         {
             layerType = "Activation Layer";
+        }
+        else if (dynamic_cast<BatchNormalizationLayer *>(layers[i].get()))
+        {
+            layerType = "Batch Normalization Layer";
         }
 
         d_input = layers[i]->backward(d_input, layerInputs[i], learning_rate);

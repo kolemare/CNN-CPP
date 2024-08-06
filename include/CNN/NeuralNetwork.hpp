@@ -16,6 +16,7 @@
 #include "FlattenLayer.hpp"
 #include "FullyConnectedLayer.hpp"
 #include "ActivationLayer.hpp"
+#include "BatchNormalizationLayer.hpp"
 #include "GradientClipping.hpp"
 #include "NNLogger.hpp"
 #include "ELRALES.hpp"
@@ -46,6 +47,8 @@ public:
                                 DenseBiasInitialization bias_init = DenseBiasInitialization::ZERO);
 
     void addActivationLayer(ActivationType type);
+
+    void addBatchNormalizationLayer(double epsilon = 1e-5, double momentum = 0.9);
 
     void setLossFunction(LossType type);
 
