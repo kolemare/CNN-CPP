@@ -154,7 +154,7 @@ void tensorModel(const std::string &datasetPath)
 
     std::unordered_map<std::string, double> polynomial_params = {
         {"end_learning_rate", 0.00001},
-        {"decay_steps", 50},
+        {"decay_steps", 25},
         {"power", 2.0}};
 
     cnn.enableLearningDecay(LearningDecayType::POLYNOMIAL, polynomial_params);
@@ -163,7 +163,7 @@ void tensorModel(const std::string &datasetPath)
     cnn.compile(OptimizerType::Adam);
 
     // Step 5: Train the neural network
-    int epochs = 50;
+    int epochs = 25;
     int batch_size = 32;
     double learning_rate = 0.0001;
     cnn.train(container, epochs, batch_size, learning_rate);

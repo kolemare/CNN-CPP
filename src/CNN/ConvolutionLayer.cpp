@@ -5,55 +5,144 @@
 #include <future>
 #include <mutex>
 
-// Constructor with specified kernel and bias initializations
-ConvolutionLayer::ConvolutionLayer(int filters, int kernel_size, int stride, int padding, ConvKernelInitialization kernel_init, ConvBiasInitialization bias_init)
-    : filters(filters), kernel_size(kernel_size), input_depth(0), stride(stride), padding(padding), forwardThreadPool(std::thread::hardware_concurrency()), backwardThreadPool(std::thread::hardware_concurrency())
+/**
+ * @brief Constructor for ConvolutionLayer with specified kernel and bias initializations.
+ *
+ * @param filters Number of filters.
+ * @param kernel_size Size of the convolution kernel.
+ * @param stride Stride of the convolution.
+ * @param padding Padding added to the input.
+ * @param kernel_init Method for initializing the kernels.
+ * @param bias_init Method for initializing the biases.
+ */
+ConvolutionLayer::ConvolutionLayer(int filters,
+                                   int kernel_size,
+                                   int stride,
+                                   int padding,
+                                   ConvKernelInitialization kernel_init,
+                                   ConvBiasInitialization bias_init)
 {
+    this->filters = filters;
+    this->kernel_size = kernel_size;
+    this->input_depth = 0;
+    this->stride = stride;
+    this->padding = padding;
+    this->kernel_init = kernel_init;
+    this->bias_init = bias_init;
+
+    new (&forwardThreadPool) ThreadPool(std::thread::hardware_concurrency());
+    new (&backwardThreadPool) ThreadPool(std::thread::hardware_concurrency());
+
     initializeKernels(kernel_init);
     initializeBiases(bias_init);
 }
 
+/**
+ * @brief Destructor for ConvolutionLayer class.
+ *
+ * This destructor explicitly calls the destructors of the `forwardThreadPool`
+ * and `backwardThreadPool` objects to ensure proper cleanup of resources
+ * allocated by these thread pools. This is necessary because placement `new`
+ * was used to initialize the thread pools, requiring manual management
+ * of their lifetimes.
+ *
+ * @note Ensure that the `ThreadPool` class has a proper destructor to handle
+ * any resources it manages, such as threads or allocated memory.
+ */
+ConvolutionLayer::~ConvolutionLayer()
+{
+    // Call the destructors explicitly
+    forwardThreadPool.~ThreadPool();
+    backwardThreadPool.~ThreadPool();
+}
+
+/**
+ * @brief Indicates that the ConvolutionLayer needs an optimizer.
+ *
+ * @return true Always returns true.
+ */
 bool ConvolutionLayer::needsOptimizer() const
 {
     return true;
 }
 
+/**
+ * @brief Set the optimizer for the convolution layer.
+ *
+ * @param optimizer A shared pointer to the optimizer to use.
+ */
 void ConvolutionLayer::setOptimizer(std::shared_ptr<Optimizer> optimizer)
 {
     this->optimizer = optimizer;
 }
 
+/**
+ * @brief Get the optimizer associated with the convolution layer.
+ *
+ * @return A shared pointer to the optimizer.
+ */
 std::shared_ptr<Optimizer> ConvolutionLayer::getOptimizer()
 {
     return this->optimizer;
 }
 
+/**
+ * @brief Set the input depth and reinitialize the kernels.
+ *
+ * @param depth The depth of the input.
+ */
 void ConvolutionLayer::setInputDepth(int depth)
 {
     input_depth = depth;
-    initializeKernels(ConvKernelInitialization::XAVIER); // Reinitialize kernels with new input depth
+    initializeKernels(this->kernel_init); // Reinitialize kernels with new input depth
+    initializeBiases(this->bias_init);    // Reinitialize biases, no need for this
 }
 
+/**
+ * @brief Get the stride used by the convolution layer.
+ *
+ * @return The stride.
+ */
 int ConvolutionLayer::getStride() const
 {
     return stride;
 }
 
+/**
+ * @brief Get the number of filters in the convolution layer.
+ *
+ * @return The number of filters.
+ */
 int ConvolutionLayer::getFilters() const
 {
     return filters;
 }
 
+/**
+ * @brief Get the kernel size used by the convolution layer.
+ *
+ * @return The kernel size.
+ */
 int ConvolutionLayer::getKernelSize() const
 {
     return kernel_size;
 }
 
+/**
+ * @brief Get the padding used by the convolution layer.
+ *
+ * @return The padding.
+ */
 int ConvolutionLayer::getPadding() const
 {
     return padding;
 }
 
+/**
+ * @brief Initialize the kernels based on the specified initialization method.
+ *
+ * @param kernel_init The method for initializing the kernels.
+ */
 void ConvolutionLayer::initializeKernels(ConvKernelInitialization kernel_init)
 {
     std::random_device rd;
@@ -89,6 +178,11 @@ void ConvolutionLayer::initializeKernels(ConvKernelInitialization kernel_init)
     }
 }
 
+/**
+ * @brief Initialize the biases based on the specified initialization method.
+ *
+ * @param bias_init The method for initializing the biases.
+ */
 void ConvolutionLayer::initializeBiases(ConvBiasInitialization bias_init)
 {
     std::random_device rd;
@@ -119,6 +213,12 @@ void ConvolutionLayer::initializeBiases(ConvBiasInitialization bias_init)
     }
 }
 
+/**
+ * @brief Perform the forward pass of the convolution layer.
+ *
+ * @param input_batch A 4D tensor containing the input data.
+ * @return A 4D tensor containing the output of the convolution.
+ */
 Eigen::Tensor<double, 4> ConvolutionLayer::forward(const Eigen::Tensor<double, 4> &input_batch)
 {
     // Batch size (number of images in the batch)
@@ -159,7 +259,16 @@ Eigen::Tensor<double, 4> ConvolutionLayer::forward(const Eigen::Tensor<double, 4
     return output_batch;
 }
 
-void ConvolutionLayer::processForwardBatch(Eigen::Tensor<double, 4> &output_batch, const Eigen::Tensor<double, 4> &input_batch, int batch_index)
+/**
+ * @brief Process each batch for the forward pass.
+ *
+ * @param output_batch A 4D tensor to store the result of the convolution.
+ * @param input_batch A 4D tensor containing the input data.
+ * @param batch_index The index of the batch to process.
+ */
+void ConvolutionLayer::processForwardBatch(Eigen::Tensor<double, 4> &output_batch,
+                                           const Eigen::Tensor<double, 4> &input_batch,
+                                           int batch_index)
 {
     // Input channels (depth), height, and width
     int input_depth = input_batch.dimension(1);  // Depth of the input, e.g., 3 for RGB
@@ -236,8 +345,17 @@ void ConvolutionLayer::processForwardBatch(Eigen::Tensor<double, 4> &output_batc
     }
 }
 
-// Backward pass with parallel processing
-Eigen::Tensor<double, 4> ConvolutionLayer::backward(const Eigen::Tensor<double, 4> &d_output_batch, const Eigen::Tensor<double, 4> &input_batch, double learning_rate)
+/**
+ * @brief Perform the backward pass of the convolution layer with parallel processing.
+ *
+ * @param d_output_batch A 4D tensor containing the gradient of the loss with respect to the output.
+ * @param input_batch A 4D tensor containing the input data.
+ * @param learning_rate The learning rate for updating the parameters.
+ * @return A 4D tensor containing the gradient of the loss with respect to the input.
+ */
+Eigen::Tensor<double, 4> ConvolutionLayer::backward(const Eigen::Tensor<double, 4> &d_output_batch,
+                                                    const Eigen::Tensor<double, 4> &input_batch,
+                                                    double learning_rate)
 {
     // Batch size (number of images in the batch)
     int batch_size = input_batch.dimension(0); // Number of images
@@ -283,9 +401,22 @@ Eigen::Tensor<double, 4> ConvolutionLayer::backward(const Eigen::Tensor<double, 
     return d_input_batch;
 }
 
-// Method to process each batch for backward pass
-void ConvolutionLayer::processBackwardBatch(const Eigen::Tensor<double, 4> &d_output_batch, const Eigen::Tensor<double, 4> &input_batch, Eigen::Tensor<double, 4> &d_input_batch,
-                                            Eigen::Tensor<double, 4> &d_kernels, Eigen::Tensor<double, 1> &d_biases, int batch_index)
+/**
+ * @brief Process each batch for the backward pass.
+ *
+ * @param d_output_batch A 4D tensor containing the gradient of the loss with respect to the output.
+ * @param input_batch A 4D tensor containing the input data.
+ * @param d_input_batch A 4D tensor to store the gradient of the loss with respect to the input.
+ * @param d_kernels A 4D tensor to store the gradient with respect to the kernels.
+ * @param d_biases A 1D tensor to store the gradient with respect to the biases.
+ * @param batch_index The index of the batch to process.
+ */
+void ConvolutionLayer::processBackwardBatch(const Eigen::Tensor<double, 4> &d_output_batch,
+                                            const Eigen::Tensor<double, 4> &input_batch,
+                                            Eigen::Tensor<double, 4> &d_input_batch,
+                                            Eigen::Tensor<double, 4> &d_kernels,
+                                            Eigen::Tensor<double, 1> &d_biases,
+                                            int batch_index)
 {
     // Input channels (depth), height, and width
     int input_depth = input_batch.dimension(1);  // Depth of the input, e.g., 3 for RGB
@@ -390,6 +521,11 @@ void ConvolutionLayer::processBackwardBatch(const Eigen::Tensor<double, 4> &d_ou
     }
 }
 
+/**
+ * @brief Set the biases for the convolution layer.
+ *
+ * @param new_biases A 1D tensor containing the new biases.
+ */
 void ConvolutionLayer::setBiases(const Eigen::Tensor<double, 1> &new_biases)
 {
     if (new_biases.dimension(0) == filters)
@@ -402,12 +538,25 @@ void ConvolutionLayer::setBiases(const Eigen::Tensor<double, 1> &new_biases)
     }
 }
 
+/**
+ * @brief Get the biases of the convolution layer.
+ *
+ * @return A 1D tensor containing the biases.
+ */
 Eigen::Tensor<double, 1> ConvolutionLayer::getBiases() const
 {
     return Eigen::Tensor<double, 1>(biases); // Return a copy
 }
 
-Eigen::Tensor<double, 2> ConvolutionLayer::padInput(const Eigen::Tensor<double, 2> &input, int pad)
+/**
+ * @brief Pad the input tensor with zeros.
+ *
+ * @param input A 2D tensor representing the input to pad.
+ * @param pad The number of pixels to pad on each side.
+ * @return A 2D tensor representing the padded input.
+ */
+Eigen::Tensor<double, 2> ConvolutionLayer::padInput(const Eigen::Tensor<double, 2> &input,
+                                                    int pad)
 {
     int input_height = input.dimension(0); // Height of the input tensor
     int input_width = input.dimension(1);  // Width of the input tensor
@@ -429,8 +578,19 @@ Eigen::Tensor<double, 2> ConvolutionLayer::padInput(const Eigen::Tensor<double, 
     return padded_input;
 }
 
-// Convolution operation
-double ConvolutionLayer::convolve(const Eigen::Tensor<double, 2> &input, const Eigen::Tensor<double, 2> &kernel, int start_row, int start_col)
+/**
+ * @brief Perform the convolution operation.
+ *
+ * @param input A 2D tensor representing the input.
+ * @param kernel A 2D tensor representing the kernel.
+ * @param start_row The starting row index for the convolution.
+ * @param start_col The starting column index for the convolution.
+ * @return The result of the convolution as a double.
+ */
+double ConvolutionLayer::convolve(const Eigen::Tensor<double, 2> &input,
+                                  const Eigen::Tensor<double, 2> &kernel,
+                                  int start_row,
+                                  int start_col)
 {
     double sum = 0.0;                        // Sum of the element-wise products
     int kernel_height = kernel.dimension(0); // Height of the kernel tensor
@@ -447,6 +607,11 @@ double ConvolutionLayer::convolve(const Eigen::Tensor<double, 2> &input, const E
     return sum; // Return the result of the convolution
 }
 
+/**
+ * @brief Set the kernels for the convolution layer.
+ *
+ * @param new_kernels A 4D tensor containing the new kernels.
+ */
 void ConvolutionLayer::setKernels(const Eigen::Tensor<double, 4> &new_kernels)
 {
     if (new_kernels.dimension(0) == filters && new_kernels.dimension(1) == input_depth)
@@ -459,6 +624,11 @@ void ConvolutionLayer::setKernels(const Eigen::Tensor<double, 4> &new_kernels)
     }
 }
 
+/**
+ * @brief Get the kernels of the convolution layer.
+ *
+ * @return A 4D tensor containing the kernels.
+ */
 Eigen::Tensor<double, 4> ConvolutionLayer::getKernels() const
 {
     return Eigen::Tensor<double, 4>(kernels); // Return a copy
