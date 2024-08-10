@@ -3,12 +3,6 @@
 #include <stdexcept>
 #include <iostream>
 
-/**
- * @brief Constructor to initialize an AveragePoolingLayer with a specific pool size and stride.
- *
- * @param pool_size Size of the pooling window.
- * @param stride Stride of the pooling operation.
- */
 AveragePoolingLayer::AveragePoolingLayer(int pool_size,
                                          int stride)
 {
@@ -16,64 +10,31 @@ AveragePoolingLayer::AveragePoolingLayer(int pool_size,
     this->stride = stride;
 }
 
-/**
- * @brief Indicates whether the layer needs an optimizer.
- *
- * @return False, as average pooling layers do not require an optimizer.
- */
 bool AveragePoolingLayer::needsOptimizer() const
 {
-    return false;
+    return false; // Average pooling layers do not require an optimizer
 }
 
-/**
- * @brief Sets the optimizer for the layer.
- *
- * Average pooling layers do not use optimizers, so this function does nothing.
- *
- * @param optimizer A shared pointer to the optimizer.
- */
 void AveragePoolingLayer::setOptimizer(std::shared_ptr<Optimizer> optimizer)
 {
-    return;
+    return; // No-op, as average pooling layers do not use optimizers
 }
 
-/**
- * @brief Gets the optimizer associated with the layer.
- *
- * @return A nullptr, as average pooling layers do not use optimizers.
- */
 std::shared_ptr<Optimizer> AveragePoolingLayer::getOptimizer()
 {
-    return nullptr;
+    return nullptr; // Average pooling layers do not use optimizers
 }
 
-/**
- * @brief Gets the pool size used in the average pooling operation.
- *
- * @return The size of the pooling window.
- */
 int AveragePoolingLayer::getPoolSize()
 {
-    return pool_size;
+    return pool_size; // Get pool size used in the average pooling operation
 }
 
-/**
- * @brief Gets the stride used in the average pooling operation.
- *
- * @return The stride of the pooling operation.
- */
 int AveragePoolingLayer::getStride()
 {
-    return stride;
+    return stride; // Get stride used in the average pooling operation
 }
 
-/**
- * @brief Performs the forward pass using average pooling on the input batch.
- *
- * @param input_batch A 4D tensor representing the input batch.
- * @return A 4D tensor with the pooled output.
- */
 Eigen::Tensor<double, 4> AveragePoolingLayer::forward(const Eigen::Tensor<double, 4> &input_batch)
 {
     // Get dimensions of the input batch
@@ -124,14 +85,6 @@ Eigen::Tensor<double, 4> AveragePoolingLayer::forward(const Eigen::Tensor<double
     return output_batch;
 }
 
-/**
- * @brief Performs the backward pass, computing gradients with respect to the input batch.
- *
- * @param d_output_batch A 4D tensor of gradients with respect to the output.
- * @param input_batch A 4D tensor representing the original input batch.
- * @param learning_rate The learning rate used for weight updates (not used here).
- * @return A 4D tensor of gradients with respect to the input.
- */
 Eigen::Tensor<double, 4> AveragePoolingLayer::backward(const Eigen::Tensor<double, 4> &d_output_batch,
                                                        const Eigen::Tensor<double, 4> &input_batch,
                                                        double learning_rate)

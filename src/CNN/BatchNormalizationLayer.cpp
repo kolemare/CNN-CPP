@@ -2,12 +2,6 @@
 #include <iostream>
 #include <cmath>
 
-/**
- * @brief Constructs a BatchNormalizationLayer with the specified epsilon and momentum.
- *
- * @param epsilon A small constant to avoid division by zero during normalization.
- * @param momentum The momentum for the moving average of mean and variance.
- */
 BatchNormalizationLayer::BatchNormalizationLayer(double epsilon, double momentum)
 {
     this->epsilon = epsilon;
@@ -15,41 +9,21 @@ BatchNormalizationLayer::BatchNormalizationLayer(double epsilon, double momentum
     this->initialized = false;
 }
 
-/**
- * @brief Returns false, indicating that batch normalization does not need an optimizer.
- *
- * @return False as batch normalization does not use an optimizer.
- */
 bool BatchNormalizationLayer::needsOptimizer() const
 {
-    return false;
+    return false; // Batch normalization does not use an optimizer
 }
 
-/**
- * @brief Sets the optimizer for batch normalization (not used).
- *
- * @param optimizer A shared pointer to an optimizer.
- */
 void BatchNormalizationLayer::setOptimizer(std::shared_ptr<Optimizer> optimizer)
 {
-    return;
+    return; // No-op, as batch normalization does not use an optimizer
 }
 
-/**
- * @brief Returns a null pointer as batch normalization does not have an optimizer.
- *
- * @return A null pointer.
- */
 std::shared_ptr<Optimizer> BatchNormalizationLayer::getOptimizer()
 {
-    return nullptr;
+    return nullptr; // Batch normalization does not have an optimizer
 }
 
-/**
- * @brief Initializes gamma, beta, moving mean, and moving variance.
- *
- * @param feature_size The size of the feature to initialize parameters.
- */
 void BatchNormalizationLayer::initialize(int feature_size)
 {
     gamma = Eigen::Tensor<double, 1>(feature_size);
@@ -68,12 +42,6 @@ void BatchNormalizationLayer::initialize(int feature_size)
     initialized = true;
 }
 
-/**
- * @brief Forward pass: normalizes the input and scales it using gamma and beta.
- *
- * @param input_batch A 4D tensor containing the input data.
- * @return A 4D tensor containing the normalized output data.
- */
 Eigen::Tensor<double, 4> BatchNormalizationLayer::forward(const Eigen::Tensor<double, 4> &input_batch)
 {
     // Get dimensions of the input batch
@@ -183,14 +151,6 @@ Eigen::Tensor<double, 4> BatchNormalizationLayer::forward(const Eigen::Tensor<do
     return output;
 }
 
-/**
- * @brief Backward pass: computes the gradient of the loss with respect to the input.
- *
- * @param d_output_batch A 4D tensor containing the gradient of the loss with respect to the output.
- * @param input_batch A 4D tensor containing the input data.
- * @param learning_rate The learning rate for updating gamma and beta.
- * @return A 4D tensor containing the gradient of the loss with respect to the input.
- */
 Eigen::Tensor<double, 4> BatchNormalizationLayer::backward(const Eigen::Tensor<double, 4> &d_output_batch,
                                                            const Eigen::Tensor<double, 4> &input_batch,
                                                            double learning_rate)
@@ -301,11 +261,6 @@ Eigen::Tensor<double, 4> BatchNormalizationLayer::backward(const Eigen::Tensor<d
     return d_input;
 }
 
-/**
- * @brief Updates gamma and beta using the computed gradients.
- *
- * @param learning_rate The learning rate for updating gamma and beta.
- */
 void BatchNormalizationLayer::updateParameters(double learning_rate)
 {
     for (int i = 0; i < gamma.size(); ++i)

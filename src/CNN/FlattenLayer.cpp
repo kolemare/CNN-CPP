@@ -2,24 +2,21 @@
 #include <iostream>
 #include <stdexcept>
 
-// Check if the layer needs an optimizer
 bool FlattenLayer::needsOptimizer() const
 {
-    return false;
+    return false; // Flatten layer does not need an optimizer
 }
 
-// Placeholder for setting the optimizer (not used for flatten layer)
 void FlattenLayer::setOptimizer(std::shared_ptr<Optimizer> optimizer)
 {
-    return;
+    return; // No operation for flatten layer as it does not use an optimizer
 }
 
 std::shared_ptr<Optimizer> FlattenLayer::getOptimizer()
 {
-    return nullptr;
+    return nullptr; // Return nullptr since no optimizer is associated with the flatten layer
 }
 
-// Forward pass for flatten layer
 Eigen::Tensor<double, 4> FlattenLayer::forward(const Eigen::Tensor<double, 4> &input_batch)
 {
     // Store the batch size and original dimensions
@@ -36,8 +33,9 @@ Eigen::Tensor<double, 4> FlattenLayer::forward(const Eigen::Tensor<double, 4> &i
     return flattened_input.reshape(Eigen::array<int, 4>{batch_size, 1, 1, flattened_size});
 }
 
-// Backward pass for flatten layer
-Eigen::Tensor<double, 4> FlattenLayer::backward(const Eigen::Tensor<double, 4> &d_output_batch, const Eigen::Tensor<double, 4> &input_batch, double learning_rate)
+Eigen::Tensor<double, 4> FlattenLayer::backward(const Eigen::Tensor<double, 4> &d_output_batch,
+                                                const Eigen::Tensor<double, 4> &input_batch,
+                                                double learning_rate)
 {
     // Calculate the flattened size by multiplying the dimensions (depth * height * width)
     int flattened_size = original_dimensions[1] * original_dimensions[2] * original_dimensions[3];

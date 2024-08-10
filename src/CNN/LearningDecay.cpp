@@ -2,9 +2,11 @@
 #include <cmath>
 #include <stdexcept>
 
-LearningDecay::LearningDecay(LearningDecayType decayType, const std::unordered_map<std::string, double> &params)
-    : decayType(decayType), params(params)
+LearningDecay::LearningDecay(LearningDecayType decayType,
+                             const std::unordered_map<std::string, double> &params)
 {
+    this->decayType = decayType;
+    this->params = params;
     // Set default parameters if they are not provided
     switch (decayType)
     {
@@ -69,7 +71,8 @@ LearningDecay::LearningDecay(LearningDecayType decayType, const std::unordered_m
     }
 }
 
-double LearningDecay::computeLearningRate(double initial_learning_rate, int epoch) const
+double LearningDecay::computeLearningRate(double initial_learning_rate,
+                                          int epoch) const
 {
     switch (decayType)
     {

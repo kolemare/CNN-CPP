@@ -3,11 +3,6 @@
 #include <stdexcept>
 #include <iostream>
 
-/**
- * @brief Constructs an ActivationLayer with a specified activation type.
- *
- * @param type The type of activation function to use.
- */
 ActivationLayer::ActivationLayer(ActivationType type)
 {
     this->type = type;
@@ -26,64 +21,31 @@ ActivationLayer::ActivationLayer(ActivationType type)
     }
 }
 
-/**
- * @brief Checks if the activation layer needs an optimizer.
- *
- * @return false, as activation layers do not require optimizers.
- */
 bool ActivationLayer::needsOptimizer() const
 {
-    return false;
+    return false; // Activation layers do not require optimizers
 }
 
-/**
- * @brief Sets an optimizer for the activation layer.
- *
- * This is a no-op as activation layers do not use optimizers.
- *
- * @param optimizer A shared pointer to an Optimizer.
- */
 void ActivationLayer::setOptimizer(std::shared_ptr<Optimizer> optimizer)
 {
-    return;
+    return; // No-op as activation layers do not use optimizers
 }
 
-/**
- * @brief Gets the optimizer for the activation layer.
- *
- * @return nullptr, since activation layers do not use optimizers.
- */
 std::shared_ptr<Optimizer> ActivationLayer::getOptimizer()
 {
-    return nullptr;
+    return nullptr; // Activation layers do not use optimizers
 }
 
-/**
- * @brief Sets the alpha value for activations that use it, such as Leaky ReLU and ELU.
- *
- * @param alphaValue The alpha value to set.
- */
 void ActivationLayer::setAlpha(double alphaValue)
 {
-    alpha = alphaValue;
+    alpha = alphaValue; // Set alpha value for applicable activations
 }
 
-/**
- * @brief Gets the current alpha value.
- *
- * @return The current alpha value.
- */
 double ActivationLayer::getAlpha() const
 {
-    return alpha;
+    return alpha; // Get current alpha value
 }
 
-/**
- * @brief Performs the forward pass of the activation layer.
- *
- * @param input_batch A 4D tensor representing the input batch.
- * @return A 4D tensor representing the activated output.
- */
 Eigen::Tensor<double, 4> ActivationLayer::forward(const Eigen::Tensor<double, 4> &input_batch)
 {
     // Check if input is effectively 2D
@@ -143,14 +105,6 @@ Eigen::Tensor<double, 4> ActivationLayer::forward(const Eigen::Tensor<double, 4>
     }
 }
 
-/**
- * @brief Performs the backward pass of the activation layer.
- *
- * @param d_output_batch A 4D tensor of the gradient from the next layer.
- * @param input_batch A 4D tensor representing the input batch.
- * @param learning_rate The learning rate, unused here.
- * @return A 4D tensor representing the gradient with respect to the input.
- */
 Eigen::Tensor<double, 4> ActivationLayer::backward(const Eigen::Tensor<double, 4> &d_output_batch,
                                                    const Eigen::Tensor<double, 4> &input_batch,
                                                    double learning_rate)
@@ -213,12 +167,6 @@ Eigen::Tensor<double, 4> ActivationLayer::backward(const Eigen::Tensor<double, 4
     }
 }
 
-/**
- * @brief Converts a 2D tensor to a 4D tensor.
- *
- * @param input A 2D tensor to convert.
- * @return A 4D tensor with the same data as input.
- */
 Eigen::Tensor<double, 4> ActivationLayer::wrap2DTensor(const Eigen::Tensor<double, 2> &input)
 {
     // Create a 4D tensor from a 2D tensor by adding singleton dimensions
@@ -233,12 +181,6 @@ Eigen::Tensor<double, 4> ActivationLayer::wrap2DTensor(const Eigen::Tensor<doubl
     return output;
 }
 
-/**
- * @brief Converts a 4D tensor to a 2D tensor.
- *
- * @param input A 4D tensor to convert.
- * @return A 2D tensor with the same data as input.
- */
 Eigen::Tensor<double, 2> ActivationLayer::unwrap4DTensor(const Eigen::Tensor<double, 4> &input)
 {
     // Flatten the 4D tensor into a 2D tensor by collapsing singleton dimensions
@@ -253,12 +195,6 @@ Eigen::Tensor<double, 2> ActivationLayer::unwrap4DTensor(const Eigen::Tensor<dou
     return output;
 }
 
-/**
- * @brief Applies the ReLU activation function element-wise on a 4D tensor.
- *
- * @param input_batch A 4D tensor.
- * @return A 4D tensor with ReLU applied.
- */
 Eigen::Tensor<double, 4> ActivationLayer::relu(const Eigen::Tensor<double, 4> &input_batch)
 {
     // Apply ReLU activation element-wise
@@ -266,12 +202,6 @@ Eigen::Tensor<double, 4> ActivationLayer::relu(const Eigen::Tensor<double, 4> &i
                                  { return std::max(0.0, x); });
 }
 
-/**
- * @brief Applies the ReLU activation function element-wise on a 2D tensor.
- *
- * @param input_batch A 2D tensor.
- * @return A 2D tensor with ReLU applied.
- */
 Eigen::Tensor<double, 2> ActivationLayer::relu(const Eigen::Tensor<double, 2> &input_batch)
 {
     // Apply ReLU activation element-wise
@@ -279,12 +209,6 @@ Eigen::Tensor<double, 2> ActivationLayer::relu(const Eigen::Tensor<double, 2> &i
                                  { return std::max(0.0, x); });
 }
 
-/**
- * @brief Applies the Leaky ReLU activation function element-wise on a 4D tensor.
- *
- * @param input_batch A 4D tensor.
- * @return A 4D tensor with Leaky ReLU applied.
- */
 Eigen::Tensor<double, 4> ActivationLayer::leakyRelu(const Eigen::Tensor<double, 4> &input_batch)
 {
     // Apply Leaky ReLU activation element-wise
@@ -292,12 +216,6 @@ Eigen::Tensor<double, 4> ActivationLayer::leakyRelu(const Eigen::Tensor<double, 
                                  { return x > 0 ? x : alpha * x; });
 }
 
-/**
- * @brief Applies the Leaky ReLU activation function element-wise on a 2D tensor.
- *
- * @param input_batch A 2D tensor.
- * @return A 2D tensor with Leaky ReLU applied.
- */
 Eigen::Tensor<double, 2> ActivationLayer::leakyRelu(const Eigen::Tensor<double, 2> &input_batch)
 {
     // Apply Leaky ReLU activation element-wise
@@ -305,12 +223,6 @@ Eigen::Tensor<double, 2> ActivationLayer::leakyRelu(const Eigen::Tensor<double, 
                                  { return x > 0 ? x : alpha * x; });
 }
 
-/**
- * @brief Applies the Sigmoid activation function element-wise on a 4D tensor.
- *
- * @param input_batch A 4D tensor.
- * @return A 4D tensor with Sigmoid applied.
- */
 Eigen::Tensor<double, 4> ActivationLayer::sigmoid(const Eigen::Tensor<double, 4> &input_batch)
 {
     // Apply Sigmoid activation element-wise
@@ -318,12 +230,6 @@ Eigen::Tensor<double, 4> ActivationLayer::sigmoid(const Eigen::Tensor<double, 4>
                                  { return 1.0 / (1.0 + std::exp(-x)); });
 }
 
-/**
- * @brief Applies the Sigmoid activation function element-wise on a 2D tensor.
- *
- * @param input_batch A 2D tensor.
- * @return A 2D tensor with Sigmoid applied.
- */
 Eigen::Tensor<double, 2> ActivationLayer::sigmoid(const Eigen::Tensor<double, 2> &input_batch)
 {
     // Apply Sigmoid activation element-wise
@@ -331,12 +237,6 @@ Eigen::Tensor<double, 2> ActivationLayer::sigmoid(const Eigen::Tensor<double, 2>
                                  { return 1.0 / (1.0 + std::exp(-x)); });
 }
 
-/**
- * @brief Applies the Tanh activation function element-wise on a 4D tensor.
- *
- * @param input_batch A 4D tensor.
- * @return A 4D tensor with Tanh applied.
- */
 Eigen::Tensor<double, 4> ActivationLayer::tanh(const Eigen::Tensor<double, 4> &input_batch)
 {
     // Apply Tanh activation element-wise
@@ -344,12 +244,6 @@ Eigen::Tensor<double, 4> ActivationLayer::tanh(const Eigen::Tensor<double, 4> &i
                                  { return std::tanh(x); });
 }
 
-/**
- * @brief Applies the Tanh activation function element-wise on a 2D tensor.
- *
- * @param input_batch A 2D tensor.
- * @return A 2D tensor with Tanh applied.
- */
 Eigen::Tensor<double, 2> ActivationLayer::tanh(const Eigen::Tensor<double, 2> &input_batch)
 {
     // Apply Tanh activation element-wise
@@ -357,59 +251,32 @@ Eigen::Tensor<double, 2> ActivationLayer::tanh(const Eigen::Tensor<double, 2> &i
                                  { return std::tanh(x); });
 }
 
-/**
- * @brief Applies the Softmax activation function along the last dimension of a 4D tensor.
- *
- * @param input_batch A 4D tensor.
- * @return A 4D tensor with Softmax applied.
- */
 Eigen::Tensor<double, 4> ActivationLayer::softmax(const Eigen::Tensor<double, 4> &input_batch)
 {
-    // Softmax applied along the last dimension
-    Eigen::Tensor<double, 4> output_batch = input_batch;
-    for (int b = 0; b < input_batch.dimension(0); ++b)
-    {
-        // Unwrap the 4D tensor to 2D
-        Eigen::Tensor<double, 2> input_2d = unwrap4DTensor(input_batch.chip(b, 0));
+    // Subtract the maximum value from each batch to prevent overflow
+    Eigen::Tensor<double, 4> shifted_logits = input_batch - input_batch.maximum(Eigen::array<int, 1>{3}).eval().reshape(Eigen::array<int, 4>{input_batch.dimension(0), 1, 1, input_batch.dimension(3)});
 
-        // Calculate exponentials
-        Eigen::Tensor<double, 2> exp_values = input_2d.unaryExpr([](double x)
-                                                                 { return std::exp(x); });
+    // Compute exponentials and sum
+    Eigen::Tensor<double, 4> exp_values = shifted_logits.exp();
+    Eigen::Tensor<double, 4> sum_exp = exp_values.sum(Eigen::array<int, 1>{3}).reshape(Eigen::array<int, 4>{input_batch.dimension(0), 1, 1, 1});
 
-        // Calculate sum of exponentials
-        Eigen::Tensor<double, 2> sum_exp_values = exp_values.sum(Eigen::array<int, 1>{1}).reshape(Eigen::array<int, 2>{exp_values.dimension(0), 1});
-
-        // Normalize the exponentials
-        output_batch.chip(b, 0) = (exp_values / sum_exp_values.broadcast(Eigen::array<int, 2>{1, static_cast<int>(exp_values.dimension(1))})).reshape(Eigen::array<int, 4>{1, 1, 1, static_cast<int>(exp_values.dimension(1))});
-    }
-    return output_batch;
+    // Normalize to get softmax probabilities
+    return exp_values / sum_exp.broadcast(Eigen::array<int, 4>{1, 1, 1, static_cast<int>(input_batch.dimension(3))});
 }
 
-/**
- * @brief Applies the Softmax activation function along the second dimension of a 2D tensor.
- *
- * @param input_batch A 2D tensor.
- * @return A 2D tensor with Softmax applied.
- */
 Eigen::Tensor<double, 2> ActivationLayer::softmax(const Eigen::Tensor<double, 2> &input_batch)
 {
-    // Calculate exponentials
-    Eigen::Tensor<double, 2> exp_values = input_batch.unaryExpr([](double x)
-                                                                { return std::exp(x); });
+    // Subtract the maximum value from each row to prevent overflow
+    Eigen::Tensor<double, 2> shifted_logits = input_batch - input_batch.maximum(Eigen::array<int, 1>{1}).eval().reshape(Eigen::array<int, 2>{input_batch.dimension(0), 1});
 
-    // Calculate sum of exponentials
-    Eigen::Tensor<double, 2> sum_exp_values = exp_values.sum(Eigen::array<int, 1>{1}).reshape(Eigen::array<int, 2>{exp_values.dimension(0), 1});
+    // Compute exponentials and sum
+    Eigen::Tensor<double, 2> exp_values = shifted_logits.exp();
+    Eigen::Tensor<double, 2> sum_exp = exp_values.sum(Eigen::array<int, 1>{1}).reshape(Eigen::array<int, 2>{input_batch.dimension(0), 1});
 
-    // Normalize the exponentials
-    return exp_values / sum_exp_values.broadcast(Eigen::array<int, 2>{1, static_cast<int>(exp_values.dimension(1))});
+    // Normalize to get softmax probabilities
+    return exp_values / sum_exp.broadcast(Eigen::array<int, 2>{1, static_cast<int>(input_batch.dimension(1))});
 }
 
-/**
- * @brief Applies the ELU activation function element-wise on a 4D tensor.
- *
- * @param input_batch A 4D tensor.
- * @return A 4D tensor with ELU applied.
- */
 Eigen::Tensor<double, 4> ActivationLayer::elu(const Eigen::Tensor<double, 4> &input_batch)
 {
     // Apply ELU activation element-wise
@@ -417,12 +284,6 @@ Eigen::Tensor<double, 4> ActivationLayer::elu(const Eigen::Tensor<double, 4> &in
                                  { return x >= 0 ? x : alpha * (std::exp(x) - 1); });
 }
 
-/**
- * @brief Applies the ELU activation function element-wise on a 2D tensor.
- *
- * @param input_batch A 2D tensor.
- * @return A 2D tensor with ELU applied.
- */
 Eigen::Tensor<double, 2> ActivationLayer::elu(const Eigen::Tensor<double, 2> &input_batch)
 {
     // Apply ELU activation element-wise
@@ -430,12 +291,6 @@ Eigen::Tensor<double, 2> ActivationLayer::elu(const Eigen::Tensor<double, 2> &in
                                  { return x >= 0 ? x : alpha * (std::exp(x) - 1); });
 }
 
-/**
- * @brief Computes the derivative of the ReLU activation function element-wise on a 4D tensor.
- *
- * @param input_batch A 4D tensor.
- * @return A 4D tensor representing the derivative.
- */
 Eigen::Tensor<double, 4> ActivationLayer::relu_derivative(const Eigen::Tensor<double, 4> &input_batch)
 {
     // Calculate ReLU derivative element-wise
@@ -443,12 +298,6 @@ Eigen::Tensor<double, 4> ActivationLayer::relu_derivative(const Eigen::Tensor<do
                                  { return x > 0 ? 1.0 : 0.0; });
 }
 
-/**
- * @brief Computes the derivative of the ReLU activation function element-wise on a 2D tensor.
- *
- * @param input_batch A 2D tensor.
- * @return A 2D tensor representing the derivative.
- */
 Eigen::Tensor<double, 2> ActivationLayer::relu_derivative(const Eigen::Tensor<double, 2> &input_batch)
 {
     // Calculate ReLU derivative element-wise
@@ -456,12 +305,6 @@ Eigen::Tensor<double, 2> ActivationLayer::relu_derivative(const Eigen::Tensor<do
                                  { return x > 0 ? 1.0 : 0.0; });
 }
 
-/**
- * @brief Computes the derivative of the Leaky ReLU activation function element-wise on a 4D tensor.
- *
- * @param input_batch A 4D tensor.
- * @return A 4D tensor representing the derivative.
- */
 Eigen::Tensor<double, 4> ActivationLayer::leakyRelu_derivative(const Eigen::Tensor<double, 4> &input_batch)
 {
     // Calculate Leaky ReLU derivative element-wise
@@ -469,12 +312,6 @@ Eigen::Tensor<double, 4> ActivationLayer::leakyRelu_derivative(const Eigen::Tens
                                  { return x > 0 ? 1.0 : alpha; });
 }
 
-/**
- * @brief Computes the derivative of the Leaky ReLU activation function element-wise on a 2D tensor.
- *
- * @param input_batch A 2D tensor.
- * @return A 2D tensor representing the derivative.
- */
 Eigen::Tensor<double, 2> ActivationLayer::leakyRelu_derivative(const Eigen::Tensor<double, 2> &input_batch)
 {
     // Calculate Leaky ReLU derivative element-wise
@@ -482,12 +319,6 @@ Eigen::Tensor<double, 2> ActivationLayer::leakyRelu_derivative(const Eigen::Tens
                                  { return x > 0 ? 1.0 : alpha; });
 }
 
-/**
- * @brief Computes the derivative of the Sigmoid activation function element-wise on a 4D tensor.
- *
- * @param input_batch A 4D tensor.
- * @return A 4D tensor representing the derivative.
- */
 Eigen::Tensor<double, 4> ActivationLayer::sigmoid_derivative(const Eigen::Tensor<double, 4> &input_batch)
 {
     // Calculate the sigmoid function
@@ -497,12 +328,6 @@ Eigen::Tensor<double, 4> ActivationLayer::sigmoid_derivative(const Eigen::Tensor
     return sig * (1.0 - sig);
 }
 
-/**
- * @brief Computes the derivative of the Sigmoid activation function element-wise on a 2D tensor.
- *
- * @param input_batch A 2D tensor.
- * @return A 2D tensor representing the derivative.
- */
 Eigen::Tensor<double, 2> ActivationLayer::sigmoid_derivative(const Eigen::Tensor<double, 2> &input_batch)
 {
     // Calculate the sigmoid function
@@ -512,12 +337,6 @@ Eigen::Tensor<double, 2> ActivationLayer::sigmoid_derivative(const Eigen::Tensor
     return sig * (1.0 - sig);
 }
 
-/**
- * @brief Computes the derivative of the Tanh activation function element-wise on a 4D tensor.
- *
- * @param input_batch A 4D tensor.
- * @return A 4D tensor representing the derivative.
- */
 Eigen::Tensor<double, 4> ActivationLayer::tanh_derivative(const Eigen::Tensor<double, 4> &input_batch)
 {
     // Calculate the tanh function
@@ -527,12 +346,6 @@ Eigen::Tensor<double, 4> ActivationLayer::tanh_derivative(const Eigen::Tensor<do
     return 1.0 - t * t;
 }
 
-/**
- * @brief Computes the derivative of the Tanh activation function element-wise on a 2D tensor.
- *
- * @param input_batch A 2D tensor.
- * @return A 2D tensor representing the derivative.
- */
 Eigen::Tensor<double, 2> ActivationLayer::tanh_derivative(const Eigen::Tensor<double, 2> &input_batch)
 {
     // Calculate the tanh function
@@ -542,12 +355,6 @@ Eigen::Tensor<double, 2> ActivationLayer::tanh_derivative(const Eigen::Tensor<do
     return 1.0 - t * t;
 }
 
-/**
- * @brief Computes the derivative of the Softmax activation function for use with categorical cross-entropy.
- *
- * @param input_batch A 4D tensor.
- * @return A 4D tensor representing the derivative.
- */
 Eigen::Tensor<double, 4> ActivationLayer::softmax_derivative(const Eigen::Tensor<double, 4> &input_batch)
 {
     // Compute the softmax output
@@ -557,12 +364,6 @@ Eigen::Tensor<double, 4> ActivationLayer::softmax_derivative(const Eigen::Tensor
     return softmax_output * (1.0 - softmax_output);
 }
 
-/**
- * @brief Computes the derivative of the Softmax activation function for use with categorical cross-entropy.
- *
- * @param input_batch A 2D tensor.
- * @return A 2D tensor representing the derivative.
- */
 Eigen::Tensor<double, 2> ActivationLayer::softmax_derivative(const Eigen::Tensor<double, 2> &input_batch)
 {
     // Compute the softmax output
@@ -572,12 +373,6 @@ Eigen::Tensor<double, 2> ActivationLayer::softmax_derivative(const Eigen::Tensor
     return softmax_output * (1.0 - softmax_output);
 }
 
-/**
- * @brief Computes the derivative of the ELU activation function element-wise on a 4D tensor.
- *
- * @param input_batch A 4D tensor.
- * @return A 4D tensor representing the derivative.
- */
 Eigen::Tensor<double, 4> ActivationLayer::elu_derivative(const Eigen::Tensor<double, 4> &input_batch)
 {
     // Calculate ELU derivative element-wise
@@ -585,12 +380,6 @@ Eigen::Tensor<double, 4> ActivationLayer::elu_derivative(const Eigen::Tensor<dou
                                  { return x >= 0 ? 1.0 : alpha * std::exp(x); });
 }
 
-/**
- * @brief Computes the derivative of the ELU activation function element-wise on a 2D tensor.
- *
- * @param input_batch A 2D tensor.
- * @return A 2D tensor representing the derivative.
- */
 Eigen::Tensor<double, 2> ActivationLayer::elu_derivative(const Eigen::Tensor<double, 2> &input_batch)
 {
     // Calculate ELU derivative element-wise

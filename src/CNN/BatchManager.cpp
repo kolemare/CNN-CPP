@@ -8,15 +8,6 @@
 
 namespace fs = std::filesystem;
 
-/**
- * @brief Constructs a BatchManager object for managing image batches.
- *
- * Initializes the BatchManager with image data, batch size, and type (training or testing).
- *
- * @param imageContainer The container with images and labels.
- * @param batchSize The size of each batch.
- * @param batchType The type of batch (training or testing).
- */
 BatchManager::BatchManager(const ImageContainer &imageContainer,
                            int batchSize,
                            BatchType batchType)
@@ -33,11 +24,6 @@ BatchManager::BatchManager(const ImageContainer &imageContainer,
     initializeBatches();
 }
 
-/**
- * @brief Initializes batches by categorizing images and labels.
- *
- * Clears existing data and populates images and labels based on category and batch type.
- */
 void BatchManager::initializeBatches()
 {
     // Clear existing data
@@ -87,11 +73,6 @@ void BatchManager::initializeBatches()
     shuffleDataset();
 }
 
-/**
- * @brief Shuffles the dataset using a random seed.
- *
- * Randomly shuffles the images and labels in the dataset.
- */
 void BatchManager::shuffleDataset()
 {
     // Use steady_clock to seed the random generator
@@ -120,12 +101,6 @@ void BatchManager::shuffleDataset()
     allLabels = shuffledAllLabels;
 }
 
-/**
- * @brief Shuffles images and labels within a batch.
- *
- * @param batchImages A 4D tensor containing the batch images to be shuffled.
- * @param batchLabels A 2D tensor containing the batch labels to be shuffled.
- */
 void BatchManager::interBatchShuffle(Eigen::Tensor<double, 4> &batchImages,
                                      Eigen::Tensor<int, 2> &batchLabels)
 {
@@ -156,15 +131,6 @@ void BatchManager::interBatchShuffle(Eigen::Tensor<double, 4> &batchImages,
     batchLabels = shuffledBatchLabels;
 }
 
-/**
- * @brief Saves batch images to disk for debugging or analysis.
- *
- * Saves the images of the current batch to disk, organized by category.
- *
- * @param batchImages A 4D tensor containing the batch images.
- * @param batchLabels A 2D tensor containing the batch labels.
- * @param batchIndex The index of the current batch.
- */
 void BatchManager::saveBatchImages(const Eigen::Tensor<double, 4> &batchImages,
                                    const Eigen::Tensor<int, 2> &batchLabels,
                                    int batchIndex)
@@ -212,16 +178,6 @@ void BatchManager::saveBatchImages(const Eigen::Tensor<double, 4> &batchImages,
     }
 }
 
-/**
- * @brief Retrieves the next batch of images and labels.
- *
- * Gets the next batch of images and labels for training or testing. If all batches
- * have been processed, it reshuffles the dataset and starts a new epoch.
- *
- * @param batchImages A 4D tensor to store the next batch of images.
- * @param batchLabels A 2D tensor to store the next batch of labels.
- * @return True if a new batch is available, false if starting a new epoch.
- */
 bool BatchManager::getNextBatch(Eigen::Tensor<double, 4> &batchImages,
                                 Eigen::Tensor<int, 2> &batchLabels)
 {
@@ -340,12 +296,7 @@ bool BatchManager::getNextBatch(Eigen::Tensor<double, 4> &batchImages,
     return true;
 }
 
-/**
- * @brief Gets the total number of batches in the dataset.
- *
- * @return The total number of batches.
- */
 size_t BatchManager::getTotalBatches() const
 {
-    return totalBatches;
+    return totalBatches; // Return the total number of batches in the dataset
 }

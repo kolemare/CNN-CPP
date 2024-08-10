@@ -135,7 +135,7 @@ def extract_to_csv(ctx, log_file, output_dir):
         print("No epoch data to save.")
 
 @task
-def plot_from_csv(ctx, csv_file, output_dir, mode='elrales'):
+def plot_from_csv(ctx, csv_file, output_dir, mode='normal'):
     """
     Parse the CSV file and generate plots for training and testing metrics.
 

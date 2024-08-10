@@ -2,23 +2,26 @@
 #include <stdexcept>
 #include <iostream>
 
-// Constructor to initialize the fully connected layer
-FullyConnectedLayer::FullyConnectedLayer(int output_size, DenseWeightInitialization weight_init, DenseBiasInitialization bias_init, unsigned int seed)
-    : output_size(output_size), weight_init(weight_init), bias_init(bias_init), seed(seed)
+FullyConnectedLayer::FullyConnectedLayer(int output_size,
+                                         DenseWeightInitialization weight_init,
+                                         DenseBiasInitialization bias_init,
+                                         unsigned int seed)
 {
+    this->output_size = output_size;
+    this->weight_init = weight_init;
+    this->bias_init = bias_init;
+    this->seed = seed;
     if (output_size <= 0)
     {
         throw std::invalid_argument("Output size must be a positive integer.");
     }
 }
 
-// Function to check if an optimizer is needed
 bool FullyConnectedLayer::needsOptimizer() const
 {
-    return true;
+    return true; // Fully connected layers typically require an optimizer for training
 }
 
-// Function to set the optimizer
 void FullyConnectedLayer::setOptimizer(std::shared_ptr<Optimizer> optimizer)
 {
     this->optimizer = optimizer;
@@ -29,7 +32,6 @@ std::shared_ptr<Optimizer> FullyConnectedLayer::getOptimizer()
     return this->optimizer;
 }
 
-// Function to set the input size and initialize weights and biases
 void FullyConnectedLayer::setInputSize(int input_size)
 {
     if (input_size <= 0)
@@ -42,7 +44,6 @@ void FullyConnectedLayer::setInputSize(int input_size)
     initializeBiases();
 }
 
-// Function to initialize the weights of the layer
 void FullyConnectedLayer::initializeWeights()
 {
     std::default_random_engine generator(seed);
@@ -72,7 +73,6 @@ void FullyConnectedLayer::initializeWeights()
     }
 }
 
-// Function to initialize the biases of the layer
 void FullyConnectedLayer::initializeBiases()
 {
     biases = Eigen::Tensor<double, 1>(output_size);
@@ -104,7 +104,6 @@ void FullyConnectedLayer::initializeBiases()
     }
 }
 
-// Forward pass for the fully connected layer
 Eigen::Tensor<double, 4> FullyConnectedLayer::forward(const Eigen::Tensor<double, 4> &input_batch)
 {
     int batch_size = input_batch.dimension(0);                                                                 // Number of images in the batch
@@ -150,8 +149,9 @@ Eigen::Tensor<double, 4> FullyConnectedLayer::forward(const Eigen::Tensor<double
     return output_2d.reshape(Eigen::array<int, 4>{batch_size, 1, 1, output_size});
 }
 
-// Backward pass for the fully connected layer
-Eigen::Tensor<double, 4> FullyConnectedLayer::backward(const Eigen::Tensor<double, 4> &d_output_batch, const Eigen::Tensor<double, 4> &input_batch, double learning_rate)
+Eigen::Tensor<double, 4> FullyConnectedLayer::backward(const Eigen::Tensor<double, 4> &d_output_batch,
+                                                       const Eigen::Tensor<double, 4> &input_batch,
+                                                       double learning_rate)
 {
     int batch_size = input_batch.dimension(0);                                                                 // Number of images in the batch
     int input_flattened_size = input_batch.dimension(1) * input_batch.dimension(2) * input_batch.dimension(3); // Flattened input size
@@ -231,7 +231,6 @@ Eigen::Tensor<double, 4> FullyConnectedLayer::backward(const Eigen::Tensor<doubl
     return d_input_2d.reshape(Eigen::array<int, 4>{batch_size, static_cast<int>(input_batch.dimension(1)), static_cast<int>(input_batch.dimension(2)), static_cast<int>(input_batch.dimension(3))});
 }
 
-// Function to set the weights of the layer
 void FullyConnectedLayer::setWeights(const Eigen::Tensor<double, 2> &new_weights)
 {
     if (new_weights.dimension(0) != output_size || new_weights.dimension(1) != input_size)
@@ -241,13 +240,11 @@ void FullyConnectedLayer::setWeights(const Eigen::Tensor<double, 2> &new_weights
     weights = new_weights;
 }
 
-// Function to get the weights of the layer
 Eigen::Tensor<double, 2> FullyConnectedLayer::getWeights() const
 {
     return Eigen::Tensor<double, 2>(weights); // Return a copy
 }
 
-// Function to set the biases of the layer
 void FullyConnectedLayer::setBiases(const Eigen::Tensor<double, 1> &new_biases)
 {
     if (new_biases.dimension(0) != output_size)
@@ -257,13 +254,11 @@ void FullyConnectedLayer::setBiases(const Eigen::Tensor<double, 1> &new_biases)
     biases = new_biases;
 }
 
-// Function to get the biases of the layer
 Eigen::Tensor<double, 1> FullyConnectedLayer::getBiases() const
 {
     return Eigen::Tensor<double, 1>(biases); // Return a copy
 }
 
-// Function to get the output size of the layer
 int FullyConnectedLayer::getOutputSize() const
 {
     return output_size;
