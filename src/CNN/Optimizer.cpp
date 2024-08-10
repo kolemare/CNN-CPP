@@ -5,7 +5,8 @@
 #include <cmath>
 
 // Factory method to create optimizers
-std::shared_ptr<Optimizer> Optimizer::create(OptimizerType type, const std::unordered_map<std::string, double> &params)
+std::shared_ptr<Optimizer> Optimizer::create(OptimizerType type,
+                                             const std::unordered_map<std::string, double> &params)
 {
     switch (type)
     {
@@ -35,13 +36,21 @@ std::shared_ptr<Optimizer> Optimizer::create(OptimizerType type, const std::unor
 }
 
 // SGD implementation
-void SGD::update(Eigen::Tensor<double, 2> &weights, Eigen::Tensor<double, 1> &biases, const Eigen::Tensor<double, 2> &d_weights, const Eigen::Tensor<double, 1> &d_biases, double learning_rate)
+void SGD::update(Eigen::Tensor<double, 2> &weights,
+                 Eigen::Tensor<double, 1> &biases,
+                 const Eigen::Tensor<double, 2> &d_weights,
+                 const Eigen::Tensor<double, 1> &d_biases,
+                 double learning_rate)
 {
     TensorOperations::applyUpdates(weights, d_weights, learning_rate);
     TensorOperations::applyUpdates(biases, d_biases, learning_rate);
 }
 
-void SGD::update(Eigen::Tensor<double, 4> &weights, Eigen::Tensor<double, 1> &biases, const Eigen::Tensor<double, 4> &d_weights, const Eigen::Tensor<double, 1> &d_biases, double learning_rate)
+void SGD::update(Eigen::Tensor<double, 4> &weights,
+                 Eigen::Tensor<double, 1> &biases,
+                 const Eigen::Tensor<double, 4> &d_weights,
+                 const Eigen::Tensor<double, 1> &d_biases,
+                 double learning_rate)
 {
     TensorOperations::applyUpdates(weights, d_weights, learning_rate);
     TensorOperations::applyUpdates(biases, d_biases, learning_rate);
@@ -49,9 +58,19 @@ void SGD::update(Eigen::Tensor<double, 4> &weights, Eigen::Tensor<double, 1> &bi
 
 // SGD with Momentum implementation
 SGDWithMomentum::SGDWithMomentum(double momentum)
-    : momentum(momentum), v_weights_2d(Eigen::Tensor<double, 2>(1, 1)), v_biases_2d(Eigen::Tensor<double, 1>(1)), v_weights_4d(Eigen::Tensor<double, 4>(1, 1, 1, 1)), v_biases_4d(Eigen::Tensor<double, 1>(1)) {}
+{
+    this->momentum = momentum;
+    v_weights_2d = Eigen::Tensor<double, 2>(1, 1);
+    v_biases_2d = Eigen::Tensor<double, 1>(1);
+    v_weights_4d = Eigen::Tensor<double, 4>(1, 1, 1, 1);
+    v_biases_4d = Eigen::Tensor<double, 1>(1);
+}
 
-void SGDWithMomentum::update(Eigen::Tensor<double, 2> &weights, Eigen::Tensor<double, 1> &biases, const Eigen::Tensor<double, 2> &d_weights, const Eigen::Tensor<double, 1> &d_biases, double learning_rate)
+void SGDWithMomentum::update(Eigen::Tensor<double, 2> &weights,
+                             Eigen::Tensor<double, 1> &biases,
+                             const Eigen::Tensor<double, 2> &d_weights,
+                             const Eigen::Tensor<double, 1> &d_biases,
+                             double learning_rate)
 {
     if (v_weights_2d.dimension(0) != weights.dimension(0) || v_weights_2d.dimension(1) != weights.dimension(1))
     {
@@ -71,7 +90,11 @@ void SGDWithMomentum::update(Eigen::Tensor<double, 2> &weights, Eigen::Tensor<do
     TensorOperations::applyUpdates(biases, v_biases_2d, 1.0);
 }
 
-void SGDWithMomentum::update(Eigen::Tensor<double, 4> &weights, Eigen::Tensor<double, 1> &biases, const Eigen::Tensor<double, 4> &d_weights, const Eigen::Tensor<double, 1> &d_biases, double learning_rate)
+void SGDWithMomentum::update(Eigen::Tensor<double, 4> &weights,
+                             Eigen::Tensor<double, 1> &biases,
+                             const Eigen::Tensor<double, 4> &d_weights,
+                             const Eigen::Tensor<double, 1> &d_biases,
+                             double learning_rate)
 {
     if (v_weights_4d.dimension(0) != weights.dimension(0) || v_weights_4d.dimension(1) != weights.dimension(1) || v_weights_4d.dimension(2) != weights.dimension(2) || v_weights_4d.dimension(3) != weights.dimension(3))
     {
@@ -132,12 +155,29 @@ void SGDWithMomentum::setVBiases4D(const Eigen::Tensor<double, 1> &v_biases)
 }
 
 // Adam implementation
-Adam::Adam(double beta1, double beta2, double epsilon)
-    : beta1(beta1), beta2(beta2), epsilon(epsilon), t(0),
-      m_weights_2d(Eigen::Tensor<double, 2>(1, 1)), v_weights_2d(Eigen::Tensor<double, 2>(1, 1)), m_biases_2d(Eigen::Tensor<double, 1>(1)), v_biases_2d(Eigen::Tensor<double, 1>(1)),
-      m_weights_4d(Eigen::Tensor<double, 4>(1, 1, 1, 1)), v_weights_4d(Eigen::Tensor<double, 4>(1, 1, 1, 1)), m_biases_4d(Eigen::Tensor<double, 1>(1)), v_biases_4d(Eigen::Tensor<double, 1>(1)) {}
+Adam::Adam(double beta1,
+           double beta2,
+           double epsilon)
+{
+    this->beta1 = beta1;
+    this->beta2 = beta2;
+    this->epsilon = epsilon;
+    t = 0;
+    m_weights_2d = Eigen::Tensor<double, 2>(1, 1);
+    v_weights_2d = Eigen::Tensor<double, 2>(1, 1);
+    m_biases_2d = Eigen::Tensor<double, 1>(1);
+    v_biases_2d = Eigen::Tensor<double, 1>(1);
+    m_weights_4d = Eigen::Tensor<double, 4>(1, 1, 1, 1);
+    v_weights_4d = Eigen::Tensor<double, 4>(1, 1, 1, 1);
+    m_biases_4d = Eigen::Tensor<double, 1>(1);
+    v_biases_4d = Eigen::Tensor<double, 1>(1);
+}
 
-void Adam::update(Eigen::Tensor<double, 2> &weights, Eigen::Tensor<double, 1> &biases, const Eigen::Tensor<double, 2> &d_weights, const Eigen::Tensor<double, 1> &d_biases, double learning_rate)
+void Adam::update(Eigen::Tensor<double, 2> &weights,
+                  Eigen::Tensor<double, 1> &biases,
+                  const Eigen::Tensor<double, 2> &d_weights,
+                  const Eigen::Tensor<double, 1> &d_biases,
+                  double learning_rate)
 {
     if (m_weights_2d.dimension(0) != weights.dimension(0) || m_weights_2d.dimension(1) != weights.dimension(1))
     {
@@ -171,7 +211,11 @@ void Adam::update(Eigen::Tensor<double, 2> &weights, Eigen::Tensor<double, 1> &b
     TensorOperations::applyUpdates(biases, m_hat_biases / (v_hat_biases.sqrt() + epsilon), learning_rate);
 }
 
-void Adam::update(Eigen::Tensor<double, 4> &weights, Eigen::Tensor<double, 1> &biases, const Eigen::Tensor<double, 4> &d_weights, const Eigen::Tensor<double, 1> &d_biases, double learning_rate)
+void Adam::update(Eigen::Tensor<double, 4> &weights,
+                  Eigen::Tensor<double, 1> &biases,
+                  const Eigen::Tensor<double, 4> &d_weights,
+                  const Eigen::Tensor<double, 1> &d_biases,
+                  double learning_rate)
 {
     if (m_weights_4d.dimension(0) != weights.dimension(0) || m_weights_4d.dimension(1) != weights.dimension(1) || m_weights_4d.dimension(2) != weights.dimension(2) || m_weights_4d.dimension(3) != weights.dimension(3))
     {
@@ -286,11 +330,22 @@ void Adam::setVBiases4D(const Eigen::Tensor<double, 1> &v_biases)
 }
 
 // RMSprop implementation
-RMSprop::RMSprop(double beta, double epsilon)
-    : beta(beta), epsilon(epsilon), s_weights_2d(Eigen::Tensor<double, 2>(1, 1)), s_biases_2d(Eigen::Tensor<double, 1>(1)),
-      s_weights_4d(Eigen::Tensor<double, 4>(1, 1, 1, 1)), s_biases_4d(Eigen::Tensor<double, 1>(1)) {}
+RMSprop::RMSprop(double beta,
+                 double epsilon)
+{
+    this->beta = beta;
+    this->epsilon = epsilon;
+    s_weights_2d = Eigen::Tensor<double, 2>(1, 1);
+    s_biases_2d = Eigen::Tensor<double, 1>(1);
+    s_weights_4d = Eigen::Tensor<double, 4>(1, 1, 1, 1);
+    s_biases_4d = Eigen::Tensor<double, 1>(1);
+}
 
-void RMSprop::update(Eigen::Tensor<double, 2> &weights, Eigen::Tensor<double, 1> &biases, const Eigen::Tensor<double, 2> &d_weights, const Eigen::Tensor<double, 1> &d_biases, double learning_rate)
+void RMSprop::update(Eigen::Tensor<double, 2> &weights,
+                     Eigen::Tensor<double, 1> &biases,
+                     const Eigen::Tensor<double, 2> &d_weights,
+                     const Eigen::Tensor<double, 1> &d_biases,
+                     double learning_rate)
 {
     if (s_weights_2d.dimension(0) != weights.dimension(0) || s_weights_2d.dimension(1) != weights.dimension(1))
     {
@@ -310,7 +365,11 @@ void RMSprop::update(Eigen::Tensor<double, 2> &weights, Eigen::Tensor<double, 1>
     TensorOperations::applyUpdates(biases, d_biases / (s_biases_2d.sqrt() + epsilon), learning_rate);
 }
 
-void RMSprop::update(Eigen::Tensor<double, 4> &weights, Eigen::Tensor<double, 1> &biases, const Eigen::Tensor<double, 4> &d_weights, const Eigen::Tensor<double, 1> &d_biases, double learning_rate)
+void RMSprop::update(Eigen::Tensor<double, 4> &weights,
+                     Eigen::Tensor<double, 1> &biases,
+                     const Eigen::Tensor<double, 4> &d_weights,
+                     const Eigen::Tensor<double, 1> &d_biases,
+                     double learning_rate)
 {
     if (s_weights_4d.dimension(0) != weights.dimension(0) || s_weights_4d.dimension(1) != weights.dimension(1) || s_weights_4d.dimension(2) != weights.dimension(2) || s_weights_4d.dimension(3) != weights.dimension(3))
     {

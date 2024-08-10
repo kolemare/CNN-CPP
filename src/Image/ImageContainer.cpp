@@ -1,6 +1,8 @@
 #include "ImageContainer.hpp"
 
-void ImageContainer::addImage(const std::shared_ptr<cv::Mat> &image, const std::string &category, const std::string &label)
+void ImageContainer::addImage(const std::shared_ptr<cv::Mat> &image,
+                              const std::string &category,
+                              const std::string &label)
 {
     images.push_back(image);
     labels.push_back(category);
@@ -21,7 +23,8 @@ void ImageContainer::addImage(const std::shared_ptr<cv::Mat> &image, const std::
     }
 }
 
-void ImageContainer::addLabelMapping(const std::string &label, const std::string &mappedLabel)
+void ImageContainer::addLabelMapping(const std::string &label,
+                                     const std::string &mappedLabel)
 {
     labelMapping[label] = mappedLabel;
 }

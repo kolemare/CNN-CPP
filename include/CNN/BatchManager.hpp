@@ -1,8 +1,6 @@
 #ifndef BATCHMANAGER_HPP
 #define BATCHMANAGER_HPP
 
-// #define SAVE_BATCHES
-
 #include "Common.hpp"
 #include "ImageContainer.hpp"
 #include <unsupported/Eigen/CXX11/Tensor>

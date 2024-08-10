@@ -56,7 +56,7 @@ void tensorModel(const std::string &datasetPath)
     cnn.addConvolutionLayer(filters1, kernel_size1, stride1, padding1, ConvKernelInitialization::XAVIER, ConvBiasInitialization::ZERO);
 
     // Batch Normalization Layer 1
-    // cnn.addBatchNormalizationLayer();
+    cnn.addBatchNormalizationLayer();
 
     // Activation Layer 1
     ActivationType activation1 = ActivationType::RELU;
@@ -75,7 +75,7 @@ void tensorModel(const std::string &datasetPath)
     cnn.addConvolutionLayer(filters2, kernel_size2, stride2, padding2, ConvKernelInitialization::XAVIER, ConvBiasInitialization::ZERO);
 
     // Batch Normalization Layer 2
-    // cnn.addBatchNormalizationLayer();
+    cnn.addBatchNormalizationLayer();
 
     // Activation Layer 2
     ActivationType activation2 = ActivationType::RELU;
@@ -96,7 +96,7 @@ void tensorModel(const std::string &datasetPath)
     cnn.addFullyConnectedLayer(fc_output_size1, fc_weight_init1, fc_bias_init1);
 
     // Batch Normalization Layer 3
-    // cnn.addBatchNormalizationLayer();
+    cnn.addBatchNormalizationLayer();
 
     // Activation Layer 3
     ActivationType activation3 = ActivationType::RELU;
@@ -109,7 +109,7 @@ void tensorModel(const std::string &datasetPath)
     cnn.addFullyConnectedLayer(fc_output_size2, fc_weight_init2, fc_bias_init2);
 
     // Batch Normalization Layer 4
-    // cnn.addBatchNormalizationLayer();
+    cnn.addBatchNormalizationLayer();
 
     // Activation Layer 4
     ActivationType activation4 = ActivationType::RELU;
@@ -122,7 +122,7 @@ void tensorModel(const std::string &datasetPath)
     cnn.addFullyConnectedLayer(fc_output_size3, fc_weight_init3, fc_bias_init3);
 
     // Batch Normalization Layer 5
-    // cnn.addBatchNormalizationLayer();
+    cnn.addBatchNormalizationLayer();
 
     // Activation Layer 5
     ActivationType activation5 = ActivationType::RELU;
@@ -152,12 +152,12 @@ void tensorModel(const std::string &datasetPath)
     // double tolerance = 0.0;          // 0% Tolerance
     // cnn.enableELRALES(learning_rate_coef, maxSuccessiveFailures, maxFails, tolerance);
 
-    std::unordered_map<std::string, double> polynomial_params = {
-        {"end_learning_rate", 0.00001},
-        {"decay_steps", 25},
-        {"power", 2.0}};
+    // std::unordered_map<std::string, double> polynomial_params = {
+    //     {"end_learning_rate", 0.00001},
+    //     {"decay_steps", 25},
+    //     {"power", 2.0}};
 
-    cnn.enableLearningDecay(LearningDecayType::POLYNOMIAL, polynomial_params);
+    // cnn.enableLearningDecay(LearningDecayType::POLYNOMIAL, polynomial_params);
 
     // Compile the network with an optimizer
     cnn.compile(OptimizerType::Adam);
@@ -165,7 +165,7 @@ void tensorModel(const std::string &datasetPath)
     // Step 5: Train the neural network
     int epochs = 25;
     int batch_size = 32;
-    double learning_rate = 0.0001;
+    double learning_rate = 0.000025;
     cnn.train(container, epochs, batch_size, learning_rate);
 
     // Step 6: Evaluate the neural network

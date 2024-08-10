@@ -6,154 +6,333 @@
 
 // Macro definitions
 
+/**
+ * @def LOADING_PROGRESS
+ * @brief Macro to enable loading progress display.
+ */
 #define LOADING_PROGRESS
+
+/**
+ * @def AUGMENT_PROGRESS
+ * @brief Macro to enable augmentation progress display.
+ */
 #define AUGMENT_PROGRESS
 
 // Enum class declarations
 
+/**
+ * @enum ConvKernelInitialization
+ * @brief Enumeration for convolutional kernel initialization methods.
+ */
 enum class ConvKernelInitialization
 {
-    HE,
-    XAVIER,
-    RANDOM_NORMAL
+    HE,           /**< He initialization */
+    XAVIER,       /**< Xavier initialization */
+    RANDOM_NORMAL /**< Random normal initialization */
 };
 
+/**
+ * @enum ConvBiasInitialization
+ * @brief Enumeration for convolutional bias initialization methods.
+ */
 enum class ConvBiasInitialization
 {
-    ZERO,
-    RANDOM_NORMAL,
-    NONE
+    ZERO,          /**< Initialize biases to zero */
+    RANDOM_NORMAL, /**< Random normal initialization */
+    NONE           /**< No initialization */
 };
 
+/**
+ * @enum DenseWeightInitialization
+ * @brief Enumeration for dense layer weight initialization methods.
+ */
 enum class DenseWeightInitialization
 {
-    XAVIER,
-    HE,
-    RANDOM_NORMAL
+    XAVIER,       /**< Xavier initialization */
+    HE,           /**< He initialization */
+    RANDOM_NORMAL /**< Random normal initialization */
 };
 
+/**
+ * @enum DenseBiasInitialization
+ * @brief Enumeration for dense layer bias initialization methods.
+ */
 enum class DenseBiasInitialization
 {
-    ZERO,
-    RANDOM_NORMAL,
-    NONE
+    ZERO,          /**< Initialize biases to zero */
+    RANDOM_NORMAL, /**< Random normal initialization */
+    NONE           /**< No initialization */
 };
 
+/**
+ * @enum ActivationType
+ * @brief Enumeration for activation function types.
+ */
 enum class ActivationType
 {
-    RELU,
-    LEAKY_RELU,
-    SIGMOID,
-    TANH,
-    SOFTMAX,
-    ELU
+    RELU,       /**< Rectified Linear Unit activation */
+    LEAKY_RELU, /**< Leaky ReLU activation */
+    SIGMOID,    /**< Sigmoid activation */
+    TANH,       /**< Hyperbolic tangent activation */
+    SOFTMAX,    /**< Softmax activation */
+    ELU         /**< Exponential Linear Unit activation */
 };
 
+/**
+ * @enum OptimizerType
+ * @brief Enumeration for optimizer types.
+ */
 enum class OptimizerType
 {
-    SGD,
-    SGDWithMomentum,
-    Adam,
-    RMSprop
+    SGD,             /**< Stochastic Gradient Descent */
+    SGDWithMomentum, /**< SGD with momentum */
+    Adam,            /**< Adam optimizer */
+    RMSprop          /**< RMSprop optimizer */
 };
 
+/**
+ * @enum LossType
+ * @brief Enumeration for loss function types.
+ */
 enum class LossType
 {
-    BINARY_CROSS_ENTROPY,
-    MEAN_SQUARED_ERROR,
-    CATEGORICAL_CROSS_ENTROPY
+    BINARY_CROSS_ENTROPY,     /**< Binary cross entropy loss */
+    MEAN_SQUARED_ERROR,       /**< Mean squared error loss */
+    CATEGORICAL_CROSS_ENTROPY /**< Categorical cross entropy loss */
 };
 
+/**
+ * @enum PropagationType
+ * @brief Enumeration for propagation types during training.
+ */
 enum class PropagationType
 {
-    FORWARD,
-    BACK
+    FORWARD, /**< Forward propagation */
+    BACK     /**< Backward propagation */
 };
 
+/**
+ * @enum GradientClippingMode
+ * @brief Enumeration for gradient clipping modes.
+ */
 enum class GradientClippingMode
 {
-    ENABLED,
-    DISABLED
+    ENABLED, /**< Gradient clipping enabled */
+    DISABLED /**< Gradient clipping disabled */
 };
 
+/**
+ * @enum BatchType
+ * @brief Enumeration for batch types.
+ */
 enum class BatchType
 {
-    Training,
-    Testing
+    Training, /**< Training batch */
+    Testing   /**< Testing batch */
 };
 
+/**
+ * @enum ELRALES_Mode
+ * @brief Enumeration for ELRALES modes.
+ */
 enum class ELRALES_Mode
 {
-    ENABLED,
-    DISABLED
+    ENABLED, /**< ELRALES enabled */
+    DISABLED /**< ELRALES disabled */
 };
 
+/**
+ * @enum ELRALES_StateMachine
+ * @brief Enumeration for ELRALES state machine states.
+ */
 enum class ELRALES_StateMachine
 {
-    NORMAL,
-    RECOVERY,
-    LOSING,
-    DONE,
-    EARLY_STOPPING
+    NORMAL,        /**< Normal state */
+    RECOVERY,      /**< Recovery state */
+    LOSING,        /**< Losing state */
+    DONE,          /**< Done state */
+    EARLY_STOPPING /**< Early stopping state */
 };
 
+/**
+ * @enum ELRALES_Retval
+ * @brief Enumeration for ELRALES return values.
+ */
 enum class ELRALES_Retval
 {
-    WASTED_EPOCH,
-    SUCCESSFUL_EPOCH,
-    END_LEARNING
+    WASTED_EPOCH,     /**< Wasted epoch */
+    SUCCESSFUL_EPOCH, /**< Successful epoch */
+    END_LEARNING      /**< End learning */
 };
 
+/**
+ * @enum LogLevel
+ * @brief Enumeration for log levels.
+ */
 enum class LogLevel
 {
-    None,
-    LayerOutputs,
-    All
+    None,         /**< No logging */
+    LayerOutputs, /**< Log layer outputs */
+    All           /**< Log all details */
 };
 
+/**
+ * @enum ProgressLevel
+ * @brief Enumeration for progress levels.
+ */
 enum class ProgressLevel
 {
-    None,
-    Time,
-    Progress,
-    ProgressTime
+    None,        /**< No progress display */
+    Time,        /**< Display time only */
+    Progress,    /**< Display progress only */
+    ProgressTime /**< Display both progress and time */
 };
 
+/**
+ * @enum AugmentTarget
+ * @brief Enumeration for data augmentation targets.
+ */
 enum class AugmentTarget
 {
-    TRAIN_DATASET,
-    TEST_DATASET,
-    WHOLE_DATASET,
-    NONE
+    TRAIN_DATASET, /**< Augment training dataset */
+    TEST_DATASET,  /**< Augment testing dataset */
+    WHOLE_DATASET, /**< Augment whole dataset */
+    NONE           /**< No augmentation */
 };
 
+/**
+ * @enum LearningDecayType
+ * @brief Enumeration for learning rate decay types.
+ */
 enum class LearningDecayType
 {
-    NONE,
-    EXPONENTIAL,
-    STEP,
-    POLYNOMIAL,
-    INVERSE_TIME,
-    COSINE
+    NONE,         /**< No decay */
+    EXPONENTIAL,  /**< Exponential decay */
+    STEP,         /**< Step decay */
+    POLYNOMIAL,   /**< Polynomial decay */
+    INVERSE_TIME, /**< Inverse time decay */
+    COSINE        /**< Cosine decay */
 };
 
 // Function declarations for converting enums to strings
+
+/**
+ * @brief Convert ConvKernelInitialization enum to string.
+ * @param value The ConvKernelInitialization value.
+ * @return The string representation of the value.
+ */
 std::string toString(ConvKernelInitialization value);
+
+/**
+ * @brief Convert ConvBiasInitialization enum to string.
+ * @param value The ConvBiasInitialization value.
+ * @return The string representation of the value.
+ */
 std::string toString(ConvBiasInitialization value);
+
+/**
+ * @brief Convert DenseWeightInitialization enum to string.
+ * @param value The DenseWeightInitialization value.
+ * @return The string representation of the value.
+ */
 std::string toString(DenseWeightInitialization value);
+
+/**
+ * @brief Convert DenseBiasInitialization enum to string.
+ * @param value The DenseBiasInitialization value.
+ * @return The string representation of the value.
+ */
 std::string toString(DenseBiasInitialization value);
+
+/**
+ * @brief Convert ActivationType enum to string.
+ * @param value The ActivationType value.
+ * @return The string representation of the value.
+ */
 std::string toString(ActivationType value);
+
+/**
+ * @brief Convert OptimizerType enum to string.
+ * @param value The OptimizerType value.
+ * @return The string representation of the value.
+ */
 std::string toString(OptimizerType value);
+
+/**
+ * @brief Convert LossType enum to string.
+ * @param value The LossType value.
+ * @return The string representation of the value.
+ */
 std::string toString(LossType value);
+
+/**
+ * @brief Convert PropagationType enum to string.
+ * @param value The PropagationType value.
+ * @return The string representation of the value.
+ */
 std::string toString(PropagationType value);
+
+/**
+ * @brief Convert GradientClippingMode enum to string.
+ * @param value The GradientClippingMode value.
+ * @return The string representation of the value.
+ */
 std::string toString(GradientClippingMode value);
+
+/**
+ * @brief Convert BatchType enum to string.
+ * @param value The BatchType value.
+ * @return The string representation of the value.
+ */
 std::string toString(BatchType value);
+
+/**
+ * @brief Convert ELRALES_Mode enum to string.
+ * @param value The ELRALES_Mode value.
+ * @return The string representation of the value.
+ */
 std::string toString(ELRALES_Mode value);
+
+/**
+ * @brief Convert ELRALES_StateMachine enum to string.
+ * @param value The ELRALES_StateMachine value.
+ * @return The string representation of the value.
+ */
 std::string toString(ELRALES_StateMachine value);
+
+/**
+ * @brief Convert ELRALES_Retval enum to string.
+ * @param value The ELRALES_Retval value.
+ * @return The string representation of the value.
+ */
 std::string toString(ELRALES_Retval value);
+
+/**
+ * @brief Convert LogLevel enum to string.
+ * @param value The LogLevel value.
+ * @return The string representation of the value.
+ */
 std::string toString(LogLevel value);
+
+/**
+ * @brief Convert ProgressLevel enum to string.
+ * @param value The ProgressLevel value.
+ * @return The string representation of the value.
+ */
 std::string toString(ProgressLevel value);
+
+/**
+ * @brief Convert AugmentTarget enum to string.
+ * @param value The AugmentTarget value.
+ * @return The string representation of the value.
+ */
 std::string toString(AugmentTarget value);
+
+/**
+ * @brief Convert LearningDecayType enum to string.
+ * @param value The LearningDecayType value.
+ * @return The string representation of the value.
+ */
 std::string toString(LearningDecayType value);
 
 #endif // COMMON_HPP

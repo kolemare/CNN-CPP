@@ -22,7 +22,8 @@ std::unique_ptr<LossFunction> LossFunction::create(LossType type)
 
 // Binary Cross Entropy Loss
 
-double BinaryCrossEntropy::compute(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const
+double BinaryCrossEntropy::compute(const Eigen::Tensor<double, 4> &predictions,
+                                   const Eigen::Tensor<int, 2> &targets) const
 {
     int batch_size = predictions.dimension(0);
     double loss = 0.0;
@@ -40,7 +41,8 @@ double BinaryCrossEntropy::compute(const Eigen::Tensor<double, 4> &predictions, 
     return loss / batch_size;
 }
 
-Eigen::Tensor<double, 4> BinaryCrossEntropy::derivative(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const
+Eigen::Tensor<double, 4> BinaryCrossEntropy::derivative(const Eigen::Tensor<double, 4> &predictions,
+                                                        const Eigen::Tensor<int, 2> &targets) const
 {
     int batch_size = predictions.dimension(0);
     Eigen::Tensor<double, 4> d_output(batch_size, 1, 1, 1);
@@ -60,7 +62,8 @@ Eigen::Tensor<double, 4> BinaryCrossEntropy::derivative(const Eigen::Tensor<doub
 
 // Mean Squared Error Loss
 
-double MeanSquaredError::compute(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const
+double MeanSquaredError::compute(const Eigen::Tensor<double, 4> &predictions,
+                                 const Eigen::Tensor<int, 2> &targets) const
 {
     int batch_size = predictions.dimension(0);
     double loss = 0.0;
@@ -78,7 +81,8 @@ double MeanSquaredError::compute(const Eigen::Tensor<double, 4> &predictions, co
     return loss / batch_size;
 }
 
-Eigen::Tensor<double, 4> MeanSquaredError::derivative(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const
+Eigen::Tensor<double, 4> MeanSquaredError::derivative(const Eigen::Tensor<double, 4> &predictions,
+                                                      const Eigen::Tensor<int, 2> &targets) const
 {
     int batch_size = predictions.dimension(0);
     Eigen::Tensor<double, 4> d_output(batch_size, 1, 1, 1);
@@ -98,7 +102,8 @@ Eigen::Tensor<double, 4> MeanSquaredError::derivative(const Eigen::Tensor<double
 
 // Categorical Cross Entropy Loss
 
-double CategoricalCrossEntropy::compute(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const
+double CategoricalCrossEntropy::compute(const Eigen::Tensor<double, 4> &predictions,
+                                        const Eigen::Tensor<int, 2> &targets) const
 {
     int batch_size = predictions.dimension(0);
     int num_classes = predictions.dimension(3);
@@ -120,7 +125,8 @@ double CategoricalCrossEntropy::compute(const Eigen::Tensor<double, 4> &predicti
     return loss / batch_size;
 }
 
-Eigen::Tensor<double, 4> CategoricalCrossEntropy::derivative(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const
+Eigen::Tensor<double, 4> CategoricalCrossEntropy::derivative(const Eigen::Tensor<double, 4> &predictions,
+                                                             const Eigen::Tensor<int, 2> &targets) const
 {
     int batch_size = predictions.dimension(0);
     int num_classes = predictions.dimension(3);

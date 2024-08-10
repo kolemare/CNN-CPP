@@ -7,12 +7,15 @@
 #include <chrono>
 #include <filesystem>
 
-NeuralNetwork::NeuralNetwork() : flattenAdded(false),
-                                 clippingSet(false),
-                                 elralesSet(false),
-                                 currentDepth(3),
-                                 logLevel(LogLevel::None),
-                                 progressLevel(ProgressLevel::None) {}
+NeuralNetwork::NeuralNetwork()
+{
+    this->flattenAdded = false;
+    this->clippingSet = false;
+    this->elralesSet = false;
+    this->currentDepth = 3;
+    this->logLevel = LogLevel::None;
+    this->progressLevel = ProgressLevel::None;
+}
 
 void NeuralNetwork::setImageSize(const int targetWidth,
                                  const int targetHeight)
@@ -618,7 +621,8 @@ void NeuralNetwork::enableELRALES(double learning_rate_coef,
     elralesStateMachineTimeLine.push_back(static_cast<ELRALES_StateMachine>(elralesStateMachine));
 }
 
-void NeuralNetwork::enableLearningDecay(LearningDecayType decayType, const std::unordered_map<std::string, double> &params)
+void NeuralNetwork::enableLearningDecay(LearningDecayType decayType,
+                                        const std::unordered_map<std::string, double> &params)
 {
     if (ELRALES_Mode::ENABLED == elralesMode)
     {

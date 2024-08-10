@@ -6,7 +6,8 @@ namespace fs = std::filesystem;
 
 ImageLoader::ImageLoader() {}
 
-void ImageLoader::loadImagesFromDirectory(const std::string &datasetPath, ImageContainer &container)
+void ImageLoader::loadImagesFromDirectory(const std::string &datasetPath,
+                                          ImageContainer &container)
 {
     int totalImages = 0;
     std::vector<std::string> uniqueLabels;
@@ -79,7 +80,12 @@ std::vector<std::string> ImageLoader::getImagesInDirectory(const std::string &di
     return images;
 }
 
-void ImageLoader::loadImage(const std::string &imagePath, const std::string &category, const std::string &label, ImageContainer &container, int totalImages, int &processedImages)
+void ImageLoader::loadImage(const std::string &imagePath,
+                            const std::string &category,
+                            const std::string &label,
+                            ImageContainer &container,
+                            int totalImages,
+                            int &processedImages)
 {
     try
     {

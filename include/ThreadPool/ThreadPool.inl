@@ -3,7 +3,18 @@
 
 #include "ThreadPool.hpp"
 
-// Enqueue task for execution by the thread pool
+/**
+ * @brief Enqueue a task for execution by the thread pool.
+ *
+ * This method adds a new task to the task queue for execution by the thread pool's worker threads.
+ * The task is wrapped in a `std::packaged_task` to allow the result to be retrieved asynchronously.
+ *
+ * @tparam F The type of the function to execute.
+ * @tparam Args The types of the arguments to pass to the function.
+ * @param f The function to execute.
+ * @param args The arguments to pass to the function.
+ * @return std::future<typename std::result_of<F(Args...)>::type> A future to retrieve the result of the task.
+ */
 template <class F, class... Args>
 auto ThreadPool::enqueue(F &&f, Args &&...args) -> std::future<typename std::result_of<F(Args...)>::type>
 {

@@ -2,7 +2,8 @@
 #include <iostream>
 #include <cmath>
 
-BatchNormalizationLayer::BatchNormalizationLayer(double epsilon, double momentum)
+BatchNormalizationLayer::BatchNormalizationLayer(double epsilon,
+                                                 double momentum)
 {
     this->epsilon = epsilon;
     this->momentum = momentum;

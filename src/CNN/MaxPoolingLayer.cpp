@@ -5,8 +5,12 @@
 #include <cmath>
 
 // Constructor to initialize the pooling layer with pool size and stride
-MaxPoolingLayer::MaxPoolingLayer(int pool_size, int stride)
-    : pool_size(pool_size), stride(stride) {}
+MaxPoolingLayer::MaxPoolingLayer(int pool_size,
+                                 int stride)
+{
+    this->pool_size = pool_size;
+    this->stride = stride;
+}
 
 // Max pooling layer doesn't need an optimizer, so this function returns false
 bool MaxPoolingLayer::needsOptimizer() const
@@ -98,7 +102,8 @@ Eigen::Tensor<double, 4> MaxPoolingLayer::forward(const Eigen::Tensor<double, 4>
 }
 
 // Max pooling operation
-Eigen::Tensor<double, 3> MaxPoolingLayer::maxPool(const Eigen::Tensor<double, 3> &input, Eigen::Tensor<int, 3> &indices)
+Eigen::Tensor<double, 3> MaxPoolingLayer::maxPool(const Eigen::Tensor<double, 3> &input,
+                                                  Eigen::Tensor<int, 3> &indices)
 {
     int input_height = input.dimension(0);                       // Height of the input tensor
     int input_width = input.dimension(1);                        // Width of the input tensor
@@ -145,7 +150,9 @@ Eigen::Tensor<double, 3> MaxPoolingLayer::maxPool(const Eigen::Tensor<double, 3>
 }
 
 // Backward pass for max pooling layer
-Eigen::Tensor<double, 4> MaxPoolingLayer::backward(const Eigen::Tensor<double, 4> &d_output_batch, const Eigen::Tensor<double, 4> &input_batch, double learning_rate)
+Eigen::Tensor<double, 4> MaxPoolingLayer::backward(const Eigen::Tensor<double, 4> &d_output_batch,
+                                                   const Eigen::Tensor<double, 4> &input_batch,
+                                                   double learning_rate)
 {
     int batch_size = d_output_batch.dimension(0);    // Number of images in the batch
     int input_depth = d_output_batch.dimension(1);   // Depth of the input, e.g., 3 for RGB
@@ -200,7 +207,8 @@ Eigen::Tensor<double, 4> MaxPoolingLayer::backward(const Eigen::Tensor<double, 4
 }
 
 // Backward pooling operation
-Eigen::Tensor<double, 3> MaxPoolingLayer::maxPoolBackward(const Eigen::Tensor<double, 3> &d_output, const Eigen::Tensor<int, 3> &indices)
+Eigen::Tensor<double, 3> MaxPoolingLayer::maxPoolBackward(const Eigen::Tensor<double, 3> &d_output,
+                                                          const Eigen::Tensor<int, 3> &indices)
 {
     int input_height = indices.dimension(0) * stride + pool_size - stride; // Height of the input tensor
     int input_width = indices.dimension(1) * stride + pool_size - stride;  // Width of the input tensor

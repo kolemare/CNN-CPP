@@ -5,7 +5,9 @@
 #include <iomanip>
 #include <sstream>
 
-void NNLogger::printFullTensor(const Eigen::Tensor<double, 4> &tensor, const std::string &layerType, PropagationType propagationType)
+void NNLogger::printFullTensor(const Eigen::Tensor<double, 4> &tensor,
+                               const std::string &layerType,
+                               PropagationType propagationType)
 {
     std::cout << "-------------------------------------------------------------------" << std::endl;
     switch (propagationType)
@@ -23,7 +25,9 @@ void NNLogger::printFullTensor(const Eigen::Tensor<double, 4> &tensor, const std
     std::cout << "-------------------------------------------------------------------" << std::endl;
 }
 
-void NNLogger::printFullTensor(const Eigen::Tensor<double, 2> &tensor, const std::string &layerType, PropagationType propagationType)
+void NNLogger::printFullTensor(const Eigen::Tensor<double, 2> &tensor,
+                               const std::string &layerType,
+                               PropagationType propagationType)
 {
     std::cout << "-------------------------------------------------------------------" << std::endl;
     switch (propagationType)
@@ -41,7 +45,9 @@ void NNLogger::printFullTensor(const Eigen::Tensor<double, 2> &tensor, const std
     std::cout << "-------------------------------------------------------------------" << std::endl;
 }
 
-void NNLogger::printTensorSummary(const Eigen::Tensor<double, 4> &tensor, const std::string &layerType, PropagationType propagationType)
+void NNLogger::printTensorSummary(const Eigen::Tensor<double, 4> &tensor,
+                                  const std::string &layerType,
+                                  PropagationType propagationType)
 {
     std::cout << "-------------------------------------------------------------------" << std::endl;
     std::vector<double> tensorVec(tensor.size());
@@ -92,7 +98,9 @@ void NNLogger::printTensorSummary(const Eigen::Tensor<double, 4> &tensor, const 
     std::cout << "-------------------------------------------------------------------" << std::endl;
 }
 
-void NNLogger::printTensorSummary(const Eigen::Tensor<double, 2> &tensor, const std::string &layerType, PropagationType propagationType)
+void NNLogger::printTensorSummary(const Eigen::Tensor<double, 2> &tensor,
+                                  const std::string &layerType,
+                                  PropagationType propagationType)
 {
     std::cout << "-------------------------------------------------------------------" << std::endl;
     std::vector<double> tensorVec(tensor.size());
@@ -143,7 +151,13 @@ void NNLogger::printTensorSummary(const Eigen::Tensor<double, 2> &tensor, const 
     std::cout << "-------------------------------------------------------------------" << std::endl;
 }
 
-void NNLogger::printProgress(int epoch, int epochs, int batch, int totalBatches, std::chrono::steady_clock::time_point start, double currentBatchLoss, ProgressLevel progressLevel)
+void NNLogger::printProgress(int epoch,
+                             int epochs,
+                             int batch,
+                             int totalBatches,
+                             std::chrono::steady_clock::time_point start,
+                             double currentBatchLoss,
+                             ProgressLevel progressLevel)
 {
     if (progressLevel == ProgressLevel::None)
     {
@@ -248,7 +262,13 @@ void NNLogger::initializeCSV(const std::string &filename)
     csvFile.close();
 }
 
-void NNLogger::appendToCSV(const std::string &filename, int epoch, double trainAcc, double trainLoss, double testAcc, double testLoss, const std::string &elralesState)
+void NNLogger::appendToCSV(const std::string &filename,
+                           int epoch,
+                           double trainAcc,
+                           double trainLoss,
+                           double testAcc,
+                           double testLoss,
+                           const std::string &elralesState)
 {
     std::ofstream csvFile(filename, std::ios::app);
     if (!csvFile.is_open())

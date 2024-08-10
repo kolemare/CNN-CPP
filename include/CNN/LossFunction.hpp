@@ -30,7 +30,8 @@ public:
      * @param targets The true target values.
      * @return double The computed loss.
      */
-    virtual double compute(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const = 0;
+    virtual double compute(const Eigen::Tensor<double, 4> &predictions,
+                           const Eigen::Tensor<int, 2> &targets) const = 0;
 
     /**
      * @brief Compute the derivative of the loss function with respect to the predictions.
@@ -39,7 +40,8 @@ public:
      * @param targets The true target values.
      * @return Eigen::Tensor<double, 4> The gradient of the loss with respect to the predictions.
      */
-    virtual Eigen::Tensor<double, 4> derivative(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const = 0;
+    virtual Eigen::Tensor<double, 4> derivative(const Eigen::Tensor<double, 4> &predictions,
+                                                const Eigen::Tensor<int, 2> &targets) const = 0;
 
     /**
      * @brief Virtual destructor for the LossFunction class.
@@ -60,7 +62,8 @@ public:
      * @param targets The true target values.
      * @return double The computed binary cross entropy loss.
      */
-    double compute(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const override;
+    double compute(const Eigen::Tensor<double, 4> &predictions,
+                   const Eigen::Tensor<int, 2> &targets) const override;
 
     /**
      * @brief Compute the derivative of the binary cross entropy loss.
@@ -69,7 +72,8 @@ public:
      * @param targets The true target values.
      * @return Eigen::Tensor<double, 4> The gradient of the loss with respect to the predictions.
      */
-    Eigen::Tensor<double, 4> derivative(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const override;
+    Eigen::Tensor<double, 4> derivative(const Eigen::Tensor<double, 4> &predictions,
+                                        const Eigen::Tensor<int, 2> &targets) const override;
 };
 
 /**
@@ -85,7 +89,8 @@ public:
      * @param targets The true target values.
      * @return double The computed mean squared error loss.
      */
-    double compute(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const override;
+    double compute(const Eigen::Tensor<double, 4> &predictions,
+                   const Eigen::Tensor<int, 2> &targets) const override;
 
     /**
      * @brief Compute the derivative of the mean squared error loss.
@@ -94,7 +99,8 @@ public:
      * @param targets The true target values.
      * @return Eigen::Tensor<double, 4> The gradient of the loss with respect to the predictions.
      */
-    Eigen::Tensor<double, 4> derivative(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const override;
+    Eigen::Tensor<double, 4> derivative(const Eigen::Tensor<double, 4> &predictions,
+                                        const Eigen::Tensor<int, 2> &targets) const override;
 };
 
 /**
@@ -110,7 +116,8 @@ public:
      * @param targets The true target values.
      * @return double The computed categorical cross entropy loss.
      */
-    double compute(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const override;
+    double compute(const Eigen::Tensor<double, 4> &predictions,
+                   const Eigen::Tensor<int, 2> &targets) const override;
 
     /**
      * @brief Compute the derivative of the categorical cross entropy loss.
@@ -119,7 +126,8 @@ public:
      * @param targets The true target values.
      * @return Eigen::Tensor<double, 4> The gradient of the loss with respect to the predictions.
      */
-    Eigen::Tensor<double, 4> derivative(const Eigen::Tensor<double, 4> &predictions, const Eigen::Tensor<int, 2> &targets) const override;
+    Eigen::Tensor<double, 4> derivative(const Eigen::Tensor<double, 4> &predictions,
+                                        const Eigen::Tensor<int, 2> &targets) const override;
 };
 
 #endif // LOSSFUNCTION_HPP

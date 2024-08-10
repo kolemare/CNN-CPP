@@ -9,23 +9,26 @@ ImageAugmentor::ImageAugmentor(float zoomFactor,
                                int gaussianBlurKernelSize,
                                int targetWidth,
                                int targetHeight)
-    : zoomFactor(zoomFactor),
-      horizontalFlipFlag(horizontalFlipFlag),
-      verticalFlipFlag(verticalFlipFlag),
-      shearRange(shearRange),
-      gaussianNoiseStdDev(gaussianNoiseStdDev),
-      gaussianBlurKernelSize(gaussianBlurKernelSize),
-      targetWidth(targetWidth),
-      targetHeight(targetHeight),
-      zoomChance(0.3f),
-      horizontalFlipChance(0.3f),
-      verticalFlipChance(0.3f),
-      gaussianNoiseChance(0.3f),
-      gaussianBlurChance(0.3f),
-      shearChance(0.3f),
-      distribution(0.0f, 1.0f) {}
+{
+    this->zoomFactor = zoomFactor;
+    this->horizontalFlipFlag = horizontalFlipFlag;
+    this->verticalFlipFlag = verticalFlipFlag;
+    this->shearRange = shearRange;
+    this->gaussianNoiseStdDev = gaussianNoiseStdDev;
+    this->gaussianBlurKernelSize = gaussianBlurKernelSize;
+    this->targetWidth = targetWidth;
+    this->targetHeight = targetHeight;
+    this->zoomChance = 0.3f;
+    this->horizontalFlipChance = 0.3f;
+    this->verticalFlipChance = 0.3f;
+    this->gaussianNoiseChance = 0.3f;
+    this->gaussianBlurChance = 0.3f;
+    this->shearChance = 0.3f;
+    this->distribution = std::uniform_real_distribution<float>(0.0f, 1.0f);
+}
 
-void ImageAugmentor::augmentImages(ImageContainer &container, const AugmentTarget &augmentTarget)
+void ImageAugmentor::augmentImages(ImageContainer &container,
+                                   const AugmentTarget &augmentTarget)
 {
 
     auto &trainingImages = container.getTrainingImages();
@@ -125,12 +128,35 @@ void ImageAugmentor::augmentImages(ImageContainer &container, const AugmentTarge
     std::cout << std::endl;
 }
 
-void ImageAugmentor::setZoomChance(float chance) { zoomChance = chance; }
-void ImageAugmentor::setHorizontalFlipChance(float chance) { horizontalFlipChance = chance; }
-void ImageAugmentor::setVerticalFlipChance(float chance) { verticalFlipChance = chance; }
-void ImageAugmentor::setGaussianNoiseChance(float chance) { gaussianNoiseChance = chance; }
-void ImageAugmentor::setGaussianBlurChance(float chance) { gaussianBlurChance = chance; }
-void ImageAugmentor::setShearChance(float chance) { shearChance = chance; }
+void ImageAugmentor::setZoomChance(float chance)
+{
+    zoomChance = chance;
+}
+
+void ImageAugmentor::setHorizontalFlipChance(float chance)
+{
+    horizontalFlipChance = chance;
+}
+
+void ImageAugmentor::setVerticalFlipChance(float chance)
+{
+    verticalFlipChance = chance;
+}
+
+void ImageAugmentor::setGaussianNoiseChance(float chance)
+{
+    gaussianNoiseChance = chance;
+}
+
+void ImageAugmentor::setGaussianBlurChance(float chance)
+{
+    gaussianBlurChance = chance;
+}
+
+void ImageAugmentor::setShearChance(float chance)
+{
+    shearChance = chance;
+}
 
 cv::Mat ImageAugmentor::rescale(const cv::Mat &image)
 {

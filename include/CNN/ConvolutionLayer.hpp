@@ -37,11 +37,6 @@ public:
                      ConvBiasInitialization bias_init = ConvBiasInitialization::ZERO);
 
     /**
-     * @brief Destructor to clean up resources used by the ConvolutionLayer.
-     */
-    ~ConvolutionLayer();
-
-    /**
      * @brief Sets the input depth, reinitializing kernels as needed.
      *
      * @param depth The depth of the input data.

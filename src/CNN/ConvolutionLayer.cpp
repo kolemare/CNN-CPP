@@ -11,6 +11,8 @@ ConvolutionLayer::ConvolutionLayer(int filters,
                                    int padding,
                                    ConvKernelInitialization kernel_init,
                                    ConvBiasInitialization bias_init)
+    : forwardThreadPool(ThreadPool(std::thread::hardware_concurrency())),
+      backwardThreadPool(ThreadPool(std::thread::hardware_concurrency()))
 {
     this->filters = filters;
     this->kernel_size = kernel_size;
@@ -20,18 +22,8 @@ ConvolutionLayer::ConvolutionLayer(int filters,
     this->kernel_init = kernel_init;
     this->bias_init = bias_init;
 
-    new (&forwardThreadPool) ThreadPool(std::thread::hardware_concurrency());
-    new (&backwardThreadPool) ThreadPool(std::thread::hardware_concurrency());
-
     initializeKernels(kernel_init);
     initializeBiases(bias_init);
-}
-
-ConvolutionLayer::~ConvolutionLayer()
-{
-    // Call the destructors explicitly
-    forwardThreadPool.~ThreadPool();
-    backwardThreadPool.~ThreadPool();
 }
 
 bool ConvolutionLayer::needsOptimizer() const
