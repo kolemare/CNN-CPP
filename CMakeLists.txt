@@ -5,6 +5,13 @@ project(CNN_CPP)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Set compiler-specific flags to suppress warnings
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    add_compile_options(-w) # Suppress all warnings for GCC/Clang
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    add_compile_options(/W0) # Suppress all warnings for MSVC
+endif()
+
 # Include Eigen
 add_subdirectory(external/eigen)
 include_directories(external/eigen)
@@ -18,7 +25,7 @@ include_directories(include/CNN)
 include_directories(include/Common)
 include_directories(include/Image)
 include_directories(include/ThreadPool)
-include_directories(src/WModels)
+include_directories(wmodels)
 
 # Build OpenCV as a submodule
 include(ExternalProject)

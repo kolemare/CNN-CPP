@@ -25,16 +25,19 @@ void NeuralNetwork::setImageSize(const int targetWidth,
 {
     inputHeight = targetHeight;
     inputWidth = targetWidth;
+    this->hardReset();
 }
 
 void NeuralNetwork::setLogLevel(LogLevel level)
 {
     logLevel = level;
+    this->hardReset();
 }
 
 void NeuralNetwork::setProgressLevel(ProgressLevel level)
 {
     progressLevel = level;
+    this->hardReset();
 }
 
 void NeuralNetwork::addConvolutionLayer(int filters,
@@ -49,6 +52,7 @@ void NeuralNetwork::addConvolutionLayer(int filters,
     {
         std::cout << "Added Convolution Layer with " << filters << " filters, kernel size " << kernel_size << ", stride " << stride << ", padding " << padding << std::endl;
     }
+    this->hardReset();
 }
 
 void NeuralNetwork::addMaxPoolingLayer(int pool_size,
@@ -59,6 +63,7 @@ void NeuralNetwork::addMaxPoolingLayer(int pool_size,
     {
         std::cout << "Added Max Pooling Layer with pool size " << pool_size << ", stride " << stride << std::endl;
     }
+    this->hardReset();
 }
 
 void NeuralNetwork::addAveragePoolingLayer(int pool_size,
@@ -69,6 +74,7 @@ void NeuralNetwork::addAveragePoolingLayer(int pool_size,
     {
         std::cout << "Added Average Pooling Layer with pool size " << pool_size << ", stride " << stride << std::endl;
     }
+    this->hardReset();
 }
 
 void NeuralNetwork::addFlattenLayer()
@@ -86,6 +92,7 @@ void NeuralNetwork::addFlattenLayer()
     {
         std::cerr << "Flatten layer already added." << std::endl;
     }
+    this->hardReset();
 }
 
 void NeuralNetwork::addFullyConnectedLayer(int output_size,
@@ -97,6 +104,7 @@ void NeuralNetwork::addFullyConnectedLayer(int output_size,
     {
         std::cout << "Added Fully Connected Layer with output size " << output_size << std::endl;
     }
+    this->hardReset();
 }
 
 void NeuralNetwork::addActivationLayer(ActivationType type)
@@ -106,6 +114,7 @@ void NeuralNetwork::addActivationLayer(ActivationType type)
     {
         std::cout << "Added Activation Layer of type " << static_cast<int>(type) << std::endl;
     }
+    this->hardReset();
 }
 
 void NeuralNetwork::addBatchNormalizationLayer(double epsilon,
@@ -116,6 +125,7 @@ void NeuralNetwork::addBatchNormalizationLayer(double epsilon,
     {
         std::cout << "Added Batch Normalization Layer" << std::endl;
     }
+    this->hardReset();
 }
 
 void NeuralNetwork::setLossFunction(LossType type)
@@ -125,6 +135,7 @@ void NeuralNetwork::setLossFunction(LossType type)
     {
         std::cout << "Set Loss Function of type " << static_cast<int>(type) << std::endl;
     }
+    this->hardReset();
 }
 
 void NeuralNetwork::compile(OptimizerType optimizerType,
@@ -161,6 +172,12 @@ void NeuralNetwork::compile(OptimizerType optimizerType,
     int height = inputHeight;
     int width = inputWidth;
     int input_size = -1;
+
+    if (!lossFunction)
+    {
+        // Loss function must be set before compilation
+        throw std::runtime_error("Loss function must be set before compiling.");
+    }
 
     if (!clippingSet)
     {
@@ -673,6 +690,7 @@ void NeuralNetwork::enableGradientClipping(double value,
     {
         std::cout << "|Gradient Clipping Disabled|" << std::endl;
     }
+    this->hardReset();
 }
 
 void NeuralNetwork::enableELRALES(double learning_rate_coef,
@@ -712,6 +730,7 @@ void NeuralNetwork::enableELRALES(double learning_rate_coef,
         throw std::runtime_error("Unknown ELRALES mode.");
     }
     elralesStateMachineTimeLine.push_back(static_cast<ELRALES_StateMachine>(elralesStateMachine));
+    this->hardReset();
 }
 
 void NeuralNetwork::enableLearningDecay(LearningDecayType decayType,
@@ -725,4 +744,13 @@ void NeuralNetwork::enableLearningDecay(LearningDecayType decayType,
     learningDecayMode = decayType;
     learningDecay = std::make_unique<LearningDecay>(decayType, params);
     std::cout << "|Learning Decay Enabled with Type: " << toString(decayType) << "|" << std::endl;
+    this->hardReset();
+}
+
+void NeuralNetwork::hardReset()
+{
+    this->compiled = false;
+    this->trained = false;
+    this->currentDepth = 3;
+    this->batchSize = 0;
 }

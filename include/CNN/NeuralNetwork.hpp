@@ -262,6 +262,16 @@ private:
     int maxEpochFailures;                       ///< Max total epoch failures for ELRALES.
     double tolerance;                           ///< Tolerance for ELRALES.
     std::unique_ptr<ELRALES> elrales = nullptr; ///< ELRALES instance for adaptive learning and early stopping.
+
+    /**
+     * @brief Resets the members when making changes to network to their initial state.
+     *
+     * This method sets compiled, trained, currentDepth and batchSize to initial values.
+     * hardReset assures that no further changes are allowed to network after method compile.
+     * It is possible to call compile multiple times, but there is no necessity for that.
+     *
+     */
+    void hardReset();
 };
 
 #endif // NEURALNETWORK_HPP
