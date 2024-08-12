@@ -8,6 +8,7 @@
 #include "Optimizer.hpp"
 #include "ConvolutionLayer.hpp"
 #include "FullyConnectedLayer.hpp"
+#include "BatchNormalizationLayer.hpp"
 
 /**
  * @class ELRALES
@@ -114,14 +115,25 @@ private:
         OptimizerState optimizer_state;   ///< Optimizer state for fully connected layer.
     };
 
-    std::vector<ConvolutionLayerState> savedConvLayerStates;  ///< Saved states for convolutional layers.
-    std::vector<FullyConnectedLayerState> savedFCLayerStates; ///< Saved states for fully connected layers.
+    /**
+     * @struct BatchNormalizationLayerState
+     * @brief Stores state of batch normalization layers including gamma and beta parameters.
+     */
+    struct BatchNormalizationLayerState
+    {
+        Eigen::Tensor<double, 1> gamma; ///< Gamma (scale) for batch normalization layer.
+        Eigen::Tensor<double, 1> beta;  ///< Beta (shift) for batch normalization layer.
+    };
+
+    std::vector<ConvolutionLayerState> savedConvLayerStates;        ///< Saved states for convolutional layers.
+    std::vector<FullyConnectedLayerState> savedFCLayerStates;       ///< Saved states for fully connected layers.
+    std::vector<BatchNormalizationLayerState> savedBatchNormStates; ///< Saved states for batch normalization layers.
 
     /**
      * @brief Saves the state of the layers for potential restoration.
      *
-     * Captures the current state of the convolutional and fully connected layers, including their
-     * weights, biases, and optimizer states, to allow restoring them if necessary.
+     * Captures the current state of the convolutional, fully connected, and batch normalization layers,
+     * including their weights, biases, gamma, beta, and optimizer states, to allow restoring them if necessary.
      *
      * @param layers The layers of the neural network to save.
      */
@@ -130,8 +142,8 @@ private:
     /**
      * @brief Restores the state of the layers to a previously saved state.
      *
-     * Restores the weights, biases, and optimizer states of the convolutional
-     * and fully connected layers to a previously saved best state.
+     * Restores the weights, biases, gamma, beta, and optimizer states of the convolutional,
+     * fully connected, and batch normalization layers to a previously saved best state.
      *
      * @param layers The layers of the neural network to restore.
      */

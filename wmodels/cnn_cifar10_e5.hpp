@@ -2,16 +2,16 @@
 #include "ImageAugmentor.hpp"
 #include "NeuralNetwork.hpp"
 
-void cnn_sanity_5_shapes()
+void cnn_cifar10_e5()
 {
-    std::string datasetPath = "datasets/sanity_5_shapes";
+    std::string datasetPath = "datasets/cifar10";
 
     ImageLoader loader;
     ImageContainer container;
     loader.loadImagesFromDirectory(datasetPath, container);
 
-    int targetWidth = 16;
-    int targetHeight = 16;
+    int targetWidth = 32;
+    int targetHeight = 32;
 
     ImageAugmentor augmentor(targetWidth, targetHeight);
 
@@ -30,24 +30,24 @@ void cnn_sanity_5_shapes()
     cnn.addActivationLayer(ActivationType::RELU);
     cnn.addMaxPoolingLayer(2, 2);
     cnn.addConvolutionLayer(64, 3);
+    cnn.addActivationLayer(ActivationType::RELU);
     cnn.addFlattenLayer();
+    cnn.addFullyConnectedLayer(128);
+    cnn.addActivationLayer(ActivationType::RELU);
     cnn.addFullyConnectedLayer(128);
     cnn.addActivationLayer(ActivationType::RELU);
     cnn.addFullyConnectedLayer(64);
     cnn.addActivationLayer(ActivationType::RELU);
-    cnn.addFullyConnectedLayer(64);
-    cnn.addActivationLayer(ActivationType::RELU);
-    cnn.addFullyConnectedLayer(32);
-    cnn.addActivationLayer(ActivationType::RELU);
-    cnn.addFullyConnectedLayer(5);
+    cnn.addFullyConnectedLayer(10);
     cnn.addActivationLayer(ActivationType::SOFTMAX);
+
     cnn.setLossFunction(LossType::CATEGORICAL_CROSS_ENTROPY);
     cnn.enableGradientClipping();
-
     cnn.compile(OptimizerType::Adam);
 
-    int epochs = 10;
-    int batch_size = 10;
-    cnn.train(container, epochs, batch_size);
+    int epochs = 5;
+    int batch_size = 50;
+    double learning_rate = 0.0001;
+    cnn.train(container, epochs, batch_size, learning_rate);
     cnn.makeSinglePredictions(container);
 }

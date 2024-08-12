@@ -62,6 +62,34 @@ public:
      */
     std::shared_ptr<Optimizer> getOptimizer() override;
 
+    /**
+     * @brief Get the gamma parameter (scale factor).
+     *
+     * @return A copy of the gamma tensor.
+     */
+    Eigen::Tensor<double, 1> getGamma() const;
+
+    /**
+     * @brief Set the gamma parameter (scale factor).
+     *
+     * @param gamma A tensor to copy values from.
+     */
+    void setGamma(const Eigen::Tensor<double, 1> &gamma);
+
+    /**
+     * @brief Get the beta parameter (shift factor).
+     *
+     * @return A copy of the beta tensor.
+     */
+    Eigen::Tensor<double, 1> getBeta() const;
+
+    /**
+     * @brief Set the beta parameter (shift factor).
+     *
+     * @param beta A tensor to copy values from.
+     */
+    void setBeta(const Eigen::Tensor<double, 1> &beta);
+
 private:
     /**
      * @brief Initialize parameters for batch normalization.

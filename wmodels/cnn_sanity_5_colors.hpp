@@ -35,9 +35,9 @@ void cnn_sanity_5_colors()
     cnn.addActivationLayer(ActivationType::RELU);
     cnn.addFullyConnectedLayer(64);
     cnn.addActivationLayer(ActivationType::RELU);
-    cnn.addFullyConnectedLayer(32);
+    cnn.addFullyConnectedLayer(64);
     cnn.addActivationLayer(ActivationType::RELU);
-    cnn.addFullyConnectedLayer(16);
+    cnn.addFullyConnectedLayer(32);
     cnn.addActivationLayer(ActivationType::RELU);
     cnn.addFullyConnectedLayer(5);
     cnn.addActivationLayer(ActivationType::SOFTMAX);

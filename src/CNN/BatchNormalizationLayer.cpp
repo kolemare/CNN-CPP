@@ -270,3 +270,23 @@ void BatchNormalizationLayer::updateParameters(double learning_rate)
         beta(i) -= learning_rate * dbeta(i);
     }
 }
+
+Eigen::Tensor<double, 1> BatchNormalizationLayer::getGamma() const
+{
+    return gamma;
+}
+
+void BatchNormalizationLayer::setGamma(const Eigen::Tensor<double, 1> &gamma)
+{
+    this->gamma = gamma;
+}
+
+Eigen::Tensor<double, 1> BatchNormalizationLayer::getBeta() const
+{
+    return beta;
+}
+
+void BatchNormalizationLayer::setBeta(const Eigen::Tensor<double, 1> &beta)
+{
+    this->beta = beta;
+}

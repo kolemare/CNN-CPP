@@ -2,7 +2,7 @@
 #include "ImageAugmentor.hpp"
 #include "NeuralNetwork.hpp"
 
-void cnn_ld_bn_cd_e25()
+void cnn_cd_ld_bn_e25()
 {
     std::string datasetPath = "datasets/catsdogs";
 

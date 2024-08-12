@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 #include "cnn_cd_e50.hpp"
-#include "cnn_elrales_cd_e25.hpp"
-#include "cnn_ld_bn_cd_e25.hpp"
+#include "cnn_cd_elrales_e25.hpp"
+#include "cnn_cd_ld_bn_e25.hpp"
+#include "cnn_cifar10_bn_e5.hpp"
+#include "cnn_cifar10_e5.hpp"
 #include "cnn_sanity_2_colors.hpp"
 #include "cnn_sanity_2_shapes.hpp"
 #include "cnn_sanity_5_colors.hpp"
@@ -22,8 +24,10 @@ int main(int argc, char **argv)
         try
         {
             // cnn_cd_e50();
-            // cnn_elrales_cd_e25();
-            // cnn_ld_bn_cd_e25();
+            // cnn_cd_elrales_e25();
+            // cnn_cd_ld_bn_e25();
+            // cnn_cifar10_bn_e5();
+            // cnn_cifar10_e5();
             // cnn_sanity_2_colors();
             // cnn_sanity_2_shapes();
             // cnn_sanity_5_colors();

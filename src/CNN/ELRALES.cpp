@@ -108,6 +108,7 @@ void ELRALES::saveState(const std::vector<std::shared_ptr<Layer>> &layers)
 {
     savedConvLayerStates.clear();
     savedFCLayerStates.clear();
+    savedBatchNormStates.clear();
 
     for (const auto &layer : layers)
     {
@@ -187,6 +188,13 @@ void ELRALES::saveState(const std::vector<std::shared_ptr<Layer>> &layers)
 
             savedFCLayerStates.push_back(state);
         }
+        else if (auto batch_norm_layer = std::dynamic_pointer_cast<BatchNormalizationLayer>(layer))
+        {
+            BatchNormalizationLayerState state;
+            state.gamma = batch_norm_layer->getGamma();
+            state.beta = batch_norm_layer->getBeta();
+            savedBatchNormStates.push_back(state);
+        }
     }
 }
 
@@ -194,6 +202,7 @@ void ELRALES::restoreState(std::vector<std::shared_ptr<Layer>> &layers)
 {
     size_t conv_index = 0;
     size_t fc_index = 0;
+    size_t batch_norm_index = 0;
 
     for (const auto &layer : layers)
     {
@@ -268,6 +277,12 @@ void ELRALES::restoreState(std::vector<std::shared_ptr<Layer>> &layers)
                     rmsprop->setSBiases4D(state.optimizer_state.s_biases_4d);
                 }
             }
+        }
+        else if (auto batch_norm_layer = std::dynamic_pointer_cast<BatchNormalizationLayer>(layer))
+        {
+            const auto &state = savedBatchNormStates[batch_norm_index++];
+            batch_norm_layer->setGamma(state.gamma);
+            batch_norm_layer->setBeta(state.beta);
         }
     }
 }
