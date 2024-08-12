@@ -6,6 +6,8 @@
 #include <vector>
 #include <chrono>
 #include <fstream>
+#include <stdexcept>
+#include <filesystem>
 #include "Common.hpp"
 
 /**

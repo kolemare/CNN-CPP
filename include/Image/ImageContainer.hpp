@@ -6,7 +6,6 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
-#include "Common.hpp"
 
 /**
  * @brief A class to manage and organize images and their associated labels.
@@ -21,6 +20,7 @@ public:
      * @brief Add an image to the container with a specific category and label.
      *
      * @param image A shared pointer to the image (cv::Mat) to be added.
+     * @param imageName The name of the image file (including extension).
      * @param category The category of the image.
      * @param label The label associated with the image.
      */
@@ -42,7 +42,7 @@ public:
      *
      * @param uniqueLabels A vector of unique label strings.
      */
-    const void setUniqueLabels(std::vector<std::string> uniqueLabels);
+    void setUniqueLabels(const std::vector<std::string> &uniqueLabels);
 
     /**
      * @brief Get the list of unique labels.
@@ -103,9 +103,17 @@ public:
     /**
      * @brief Get images used for single prediction.
      *
-     * @return A constant reference to a vector of shared pointers to images for single prediction (cv::Mat).
+     * @return A constant reference to a map of image names to shared pointers to images for single prediction (cv::Mat).
      */
-    const std::vector<std::shared_ptr<cv::Mat>> &getSinglePredictionImages() const;
+    const std::unordered_map<std::string, std::shared_ptr<cv::Mat>> &getSinglePredictionImages() const;
+
+    /**
+     * @brief Add a single prediction image.
+     *
+     * @param image A shared pointer to the image (cv::Mat) to be added.
+     * @param imageName The name of the image file (including extension).
+     */
+    void addSinglePredictionImage(const std::shared_ptr<cv::Mat> &image, const std::string &imageName);
 
     /**
      * @brief Get training images by category.
@@ -129,11 +137,11 @@ private:
     std::vector<std::string> labels;                           ///< All labels
     std::unordered_map<std::string, std::string> labelMapping; ///< Mapping of labels
 
-    std::vector<std::shared_ptr<cv::Mat>> trainingImages;         ///< Training images
-    std::vector<std::shared_ptr<cv::Mat>> testImages;             ///< Test images
-    std::vector<std::shared_ptr<cv::Mat>> singlePredictionImages; ///< Images for single prediction
-    std::vector<std::string> trainingLabels;                      ///< Training labels
-    std::vector<std::string> testLabels;                          ///< Test labels
+    std::vector<std::shared_ptr<cv::Mat>> trainingImages;                             ///< Training images
+    std::vector<std::shared_ptr<cv::Mat>> testImages;                                 ///< Test images
+    std::unordered_map<std::string, std::shared_ptr<cv::Mat>> singlePredictionImages; ///< Map of image names to images for single prediction
+    std::vector<std::string> trainingLabels;                                          ///< Training labels
+    std::vector<std::string> testLabels;                                              ///< Test labels
 };
 
 #endif // IMAGECONTAINER_HPP

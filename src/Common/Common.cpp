@@ -257,6 +257,8 @@ std::string toString(AugmentTarget value)
         return "TEST_DATASET";
     case AugmentTarget::WHOLE_DATASET:
         return "WHOLE_DATASET";
+    case AugmentTarget::SINGLE_PREDICTION:
+        return "SINGLE_PREDICTION";
     case AugmentTarget::NONE:
         return "NONE";
     default:

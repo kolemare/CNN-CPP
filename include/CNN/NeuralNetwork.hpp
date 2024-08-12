@@ -183,6 +183,17 @@ public:
     std::tuple<double, double> evaluate(const ImageContainer &imageContainer);
 
     /**
+     * @brief Makes predictions on single images and outputs the results.
+     *
+     * This method retrieves a batch of images intended for single prediction,
+     * performs forward propagation, and outputs the predicted category and confidence
+     * for each image.
+     *
+     * @param imageContainer The container holding the images to predict.
+     */
+    void makeSinglePredictions(const ImageContainer &imageContainer);
+
+    /**
      * @brief Sets the input image size for the neural network.
      *
      * @param targetWidth The target width of the input images.
@@ -223,11 +234,14 @@ private:
     bool flattenAdded; ///< Flag indicating if a flatten layer has been added.
     bool clippingSet;  ///< Flag indicating if gradient clipping has been set.
     bool elralesSet;   ///< Flag indicating if ELRALES has been set.
+    bool compiled;     ///< Flag indicating if the network has been compiled.
+    bool trained;      ///< Flag indicating if the network has been trained.
 
     int currentDepth; ///< Current depth of the input as it passes through layers.
     int inputSize;    ///< Input size for fully connected layers.
     int inputHeight;  ///< Input image height.
     int inputWidth;   ///< Input image width.
+    int batchSize;    ///< Size of the batch used for predictions.
 
     LogLevel logLevel;           ///< Logging level for the network.
     ProgressLevel progressLevel; ///< Progress level for training output.

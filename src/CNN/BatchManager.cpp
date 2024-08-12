@@ -20,6 +20,12 @@ BatchManager::BatchManager(const ImageContainer &imageContainer,
     // Get unique categories from the image container
     categories = imageContainer.getUniqueLabels();
 
+    // Map categories to indices
+    for (size_t i = 0; i < categories.size(); ++i)
+    {
+        categoryToIndex[categories[i]] = i;
+    }
+
     // Initialize batches
     initializeBatches();
 }
@@ -172,7 +178,7 @@ void BatchManager::saveBatchImages(const Eigen::Tensor<double, 4> &batchImages,
         }
 
         // Convert the image to 8-bit format and save to disk
-        image.convertTo(image, CV_32F, 255.0);
+        image.convertTo(image, CV_8UC3, 255.0);
         std::string imagePath = categoryDir + "/image" + std::to_string(i) + ".jpg";
         cv::imwrite(imagePath, image);
     }
@@ -237,8 +243,9 @@ bool BatchManager::getNextBatch(Eigen::Tensor<double, 4> &batchImages,
                 }
             }
 
-            // One-hot encode the label
-            int labelIndex = std::distance(categories.begin(), std::find(categories.begin(), categories.end(), labels[i]));
+            // One-hot encode the label using categoryToIndex
+            int labelIndex = categoryToIndex[labels[i]];
+
             batchLabels(batchIndex, labelIndex) = 1;
             batchIndex++;
         }
@@ -277,8 +284,8 @@ bool BatchManager::getNextBatch(Eigen::Tensor<double, 4> &batchImages,
             }
         }
 
-        // One-hot encode the label
-        int labelIndex = std::distance(categories.begin(), std::find(categories.begin(), categories.end(), allLabels[randomIndex]));
+        // One-hot encode the label using categoryToIndex
+        int labelIndex = categoryToIndex[allLabels[randomIndex]];
         batchLabels(batchIndex, labelIndex) = 1;
         batchIndex++;
     }
@@ -294,6 +301,85 @@ bool BatchManager::getNextBatch(Eigen::Tensor<double, 4> &batchImages,
     // Increment the current batch index
     currentBatchIndex++;
     return true;
+}
+
+void BatchManager::loadSinglePredictionBatch()
+{
+    this->singlePredictionImages = imageContainer.getSinglePredictionImages(); // Initialize singlePredictionImages
+}
+
+std::vector<std::string> BatchManager::getSinglePredictionBatch(Eigen::Tensor<double, 4> &batchImages,
+                                                                Eigen::Tensor<int, 2> &batchLabels)
+{
+    // Check if there are any images to process
+    if (singlePredictionImages.empty())
+    {
+        return {};
+    }
+
+    // Determine image dimensions based on the first available image
+    int imageHeight = singlePredictionImages.begin()->second->rows;
+    int imageWidth = singlePredictionImages.begin()->second->cols;
+    int imageChannels = singlePredictionImages.begin()->second->channels();
+
+    // Resize batch tensors
+    batchImages.resize(batchSize, imageChannels, imageHeight, imageWidth);
+    batchLabels.resize(batchSize, categories.size());
+    batchLabels.setZero(); // Initialize labels to zero for one-hot encoding
+
+    int batchIndex = 0;
+    std::vector<std::string> imageNames; // Store image names in the batch
+
+    // Fill the batch with images from single prediction set
+    for (auto it = singlePredictionImages.begin(); it != singlePredictionImages.end();)
+    {
+        if (batchIndex >= batchSize)
+        {
+            break; // Break if batch is filled
+        }
+
+        const std::string &imageName = it->first;
+        cv::Mat &image = *(it->second);
+        for (int h = 0; h < imageHeight; ++h)
+        {
+            for (int w = 0; w < imageWidth; ++w)
+            {
+                for (int c = 0; c < imageChannels; ++c)
+                {
+                    batchImages(batchIndex, c, h, w) = image.at<cv::Vec3f>(h, w)[c];
+                }
+            }
+        }
+
+        imageNames.push_back(imageName); // Store the image name
+        batchIndex++;
+
+        // Remove the image after processing
+        it = singlePredictionImages.erase(it);
+    }
+
+    // Fill remaining slots with zeroes if necessary
+    while (batchIndex < batchSize)
+    {
+        batchImages.chip(batchIndex, 0).setZero();
+        batchLabels.chip(batchIndex, 0).setZero();
+        batchIndex++;
+    }
+
+    return imageNames; // Return the image names filled in the batch
+}
+
+std::string BatchManager::getCategoryName(int index) const
+{
+    // Ensure the index is within bounds
+    if (index >= 0 && index < categories.size())
+    {
+        return categories[index];
+    }
+    else
+    {
+        throw std::out_of_range("Index out of range for categories.");
+    }
 }
 
 size_t BatchManager::getTotalBatches() const

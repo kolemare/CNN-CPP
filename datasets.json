@@ -5,8 +5,24 @@
             "url": "https://github.com/kolemare/datasets/releases/download/v1.0.0/catsdogs.zip"
         },
         {
-            "name": "bluered",
-            "url": "https://github.com/kolemare/datasets/releases/download/v1.0.0/bluered.zip"
+            "name": "cifar10",
+            "url": "https://github.com/kolemare/datasets/releases/download/v1.0.0/cifar10.zip"
+        },
+        {
+            "name": "sanity_2_colors",
+            "url": "https://github.com/kolemare/datasets/releases/download/v1.0.0/sanity_2_colors.zip"
+        },
+        {
+            "name": "sanity_5_colors",
+            "url": "https://github.com/kolemare/datasets/releases/download/v1.0.0/sanity_5_colors.zip"
+        },
+        {
+            "name": "sanity_2_shapes",
+            "url": "https://github.com/kolemare/datasets/releases/download/v1.0.0/sanity_2_shapes.zip"
+        },
+        {
+            "name": "sanity_5_shapes",
+            "url": "https://github.com/kolemare/datasets/releases/download/v1.0.0/sanity_5_shapes.zip"
         }
     ]
 }

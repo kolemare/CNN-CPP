@@ -117,8 +117,12 @@ double CategoricalCrossEntropy::compute(const Eigen::Tensor<double, 4> &predicti
             double pred = std::max(std::min(predictions(i, 0, 0, j), 1.0 - 1e-7), 1e-7); // Clipping
             int target = targets(i, j);
 
-            // Calculate the loss using the categorical cross-entropy formula
-            loss += -target * std::log(pred);
+            // Only accumulate loss if the target is 1 for the corresponding class
+            if (target == 1)
+            {
+                // Calculate the loss using the categorical cross-entropy formula
+                loss += -std::log(pred);
+            }
         }
     }
 
@@ -141,7 +145,8 @@ Eigen::Tensor<double, 4> CategoricalCrossEntropy::derivative(const Eigen::Tensor
             int target = targets(i, j);
 
             // Calculate the gradient of the loss function
-            d_output(i, 0, 0, j) = -target / pred;
+            // Assuming `targets` are one-hot encoded
+            d_output(i, 0, 0, j) = pred - target;
         }
     }
 

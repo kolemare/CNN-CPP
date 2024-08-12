@@ -251,7 +251,20 @@ void NNLogger::printProgress(int epoch,
 
 void NNLogger::initializeCSV(const std::string &filename)
 {
-    std::ofstream csvFile(filename, std::ios::out);
+    // Create the logs directory if it doesn't exist
+    std::filesystem::create_directory("logs");
+
+    // Construct the full path to the CSV file
+    std::string fullPath = "logs/" + filename;
+
+    // Check if cnn.csv already exists and remove it
+    if (std::filesystem::exists(fullPath))
+    {
+        std::filesystem::remove(fullPath);
+    }
+
+    // Open the CSV file for writing
+    std::ofstream csvFile(fullPath, std::ios::out);
     if (!csvFile.is_open())
     {
         throw std::runtime_error("Unable to open file for CSV initialization.");

@@ -12,6 +12,9 @@ NeuralNetwork::NeuralNetwork()
     this->flattenAdded = false;
     this->clippingSet = false;
     this->elralesSet = false;
+    this->compiled = false;
+    this->trained = false;
+    this->batchSize = 0;
     this->currentDepth = 3;
     this->logLevel = LogLevel::None;
     this->progressLevel = ProgressLevel::None;
@@ -211,6 +214,7 @@ void NeuralNetwork::compile(OptimizerType optimizerType,
             input_size = height * width * currentDepth;
         }
     }
+    compiled = true;
 }
 
 Eigen::Tensor<double, 4> NeuralNetwork::forward(const Eigen::Tensor<double, 4> &input)
@@ -342,10 +346,16 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
                           int batch_size,
                           double learning_rate)
 {
+    if (!compiled)
+    {
+        throw std::runtime_error("Network must be compiled before training.");
+    }
     if (!lossFunction)
     {
         throw std::runtime_error("Loss function must be set before training.");
     }
+
+    this->batchSize = batch_size;
 
     NNLogger::initializeCSV("cnn.csv");
 
@@ -448,7 +458,7 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
                 std::cout << "Testing Accuracy: " << std::get<0>(evaluation) << std::endl;
                 std::cout << "Testing Loss: " << std::get<1>(evaluation) << std::endl;
                 std::cout << "ELRALES: " << elralesState << std::endl;
-                NNLogger::appendToCSV("cnn.csv", epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), elralesState);
+                NNLogger::appendToCSV("logs/cnn.csv", epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), elralesState);
             }
             else if (ELRALES_Retval::WASTED_EPOCH == elralesEvaluation)
             {
@@ -458,7 +468,7 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
                 std::cout << "Wasted Testing Accuracy: " << std::get<0>(evaluation) << std::endl;
                 std::cout << "Wasted Testing Loss: " << std::get<1>(evaluation) << std::endl;
                 std::cout << "ELRALES: " << elralesState << std::endl;
-                NNLogger::appendToCSV("cnn.csv", epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), elralesState);
+                NNLogger::appendToCSV("logs/cnn.csv", epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), elralesState);
                 ++epochs; // This ensures the number of successful epochs remains constant
             }
             else if (ELRALES_Retval::END_LEARNING == elralesEvaluation)
@@ -469,7 +479,7 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
                 std::cout << "EarlyStopping Testing Accuracy: " << std::get<0>(evaluation) << std::endl;
                 std::cout << "EarlyStopping Testing Loss: " << std::get<1>(evaluation) << std::endl;
                 std::cout << "ELRALES: " << elralesState << std::endl;
-                NNLogger::appendToCSV("cnn.csv", epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), elralesState);
+                NNLogger::appendToCSV("logs/cnn.csv", epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), elralesState);
                 break;
             }
             elralesStateMachineTimeLine.push_back(static_cast<ELRALES_StateMachine>(elralesStateMachine));
@@ -482,20 +492,23 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
             std::cout << "Testing Accuracy: " << std::get<0>(evaluation) << std::endl;
             std::cout << "Testing Loss: " << std::get<1>(evaluation) << std::endl;
             std::cout << "ELRALES: OFF" << std::endl;
-            NNLogger::appendToCSV("cnn.csv", epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), "OFF");
+            NNLogger::appendToCSV("logs/cnn.csv", epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), "OFF");
         }
     }
 
     // After the training loop
-    std::cout << "Final Evaluation" << std::endl;
-    std::tuple<double, double> finalEvaluation = evaluate(imageContainer);
-    std::cout << "Final Testing Accuracy: " << std::get<0>(finalEvaluation) << std::endl;
-    std::cout << "Final Testing Loss: " << std::get<1>(finalEvaluation) << std::endl;
+    std::cout << std::endl;
     std::cout << "Training ended!" << std::endl;
+    std::cout << std::endl;
+    trained = true;
 }
 
 std::tuple<double, double> NeuralNetwork::evaluate(const ImageContainer &imageContainer)
 {
+    if (!compiled)
+    {
+        throw std::runtime_error("Network must be compiled before evaluation.");
+    }
     if (!lossFunction)
     {
         throw std::runtime_error("Loss function must be set before evaluation.");
@@ -564,6 +577,86 @@ std::tuple<double, double> NeuralNetwork::evaluate(const ImageContainer &imageCo
     double accuracy = static_cast<double>(correct_predictions) / num_samples;
 
     return std::make_tuple(accuracy, average_loss);
+}
+
+void NeuralNetwork::makeSinglePredictions(const ImageContainer &imageContainer)
+{
+    if (!compiled)
+    {
+        throw std::runtime_error("Network must be compiled before making single predictions.");
+    }
+    if (!trained)
+    {
+        throw std::runtime_error("Network must be trained before making single predictions.");
+    }
+    if (0 == batchSize)
+    {
+        throw std::runtime_error("Bad batch size, unknown error.");
+    }
+
+    // Create a batch manager for single prediction
+    BatchManager batchManager(imageContainer, batchSize, BatchType::Testing);
+    batchManager.loadSinglePredictionBatch();
+
+    // Process each batch of single prediction images
+    while (true)
+    {
+        Eigen::Tensor<double, 4> batchImages;
+        Eigen::Tensor<int, 2> batchLabels;
+
+        // Get a batch of single prediction images and their names
+        std::vector<std::string> imageNames = batchManager.getSinglePredictionBatch(batchImages, batchLabels);
+
+        if (imageNames.empty())
+        {
+            break; // No more images to process
+        }
+
+        // Perform forward pass to get predictions
+        Eigen::Tensor<double, 4> predictions = forward(batchImages);
+
+        for (int i = 0; i < imageNames.size(); ++i)
+        {
+            const std::string &imageName = imageNames[i];
+
+            if (imageName.empty())
+            {
+                continue; // Skip empty slots
+            }
+
+            std::string predictedCategory;
+            double confidence = 0.0;
+
+            if (predictions.dimension(3) == 1) // Binary classification
+            {
+                double score = predictions(i, 0, 0, 0);
+
+                // Interpret the prediction
+                predictedCategory = score >= 0.5 ? batchManager.getCategoryName(0) : batchManager.getCategoryName(1);
+                confidence = score >= 0.5 ? score * 100.0 : (1 - score) * 100.0;
+            }
+            else // Multi-class classification
+            {
+                int predictedLabel = 0;
+                double maxConfidence = predictions(i, 0, 0, 0);
+
+                for (int j = 1; j < predictions.dimension(3); ++j)
+                {
+                    if (predictions(i, 0, 0, j) > maxConfidence)
+                    {
+                        maxConfidence = predictions(i, 0, 0, j);
+                        predictedLabel = j;
+                    }
+                }
+
+                predictedCategory = batchManager.getCategoryName(predictedLabel);
+                confidence = maxConfidence * 100.0;
+            }
+
+            std::cout << "Prediction for \"" << imageName << "\" is \"" << predictedCategory
+                      << "\" with confidence " << confidence << "%." << std::endl;
+        }
+    }
 }
 
 void NeuralNetwork::enableGradientClipping(double value,

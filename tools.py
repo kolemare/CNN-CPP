@@ -2,6 +2,7 @@ import os
 import requests
 import shutil
 import csv
+import subprocess
 import matplotlib.pyplot as plt
 
 # Function to download and unzip a dataset
@@ -13,7 +14,7 @@ def download_and_unzip(url, target_dir):
             for chunk in r.iter_content(chunk_size=8192):
                 f.write(chunk)
     # Unzip the file
-    os.system(f'unzip {local_filename} -d {target_dir}')
+    shutil.unpack_archive(local_filename, target_dir)
     # Remove the zip file
     os.remove(local_filename)
 
@@ -58,6 +59,15 @@ def delete_pngs_and_csvs():
                 if item.endswith('.png') or item.endswith('.csv'):
                     os.remove(os.path.join(directory, item))
     print("PNG and CSV files deletion completed.")
+
+def delete_vscode_folder():
+    print("Deleting .vscode folder if it exists...")
+    vscode_folder = '.vscode'
+    if os.path.exists(vscode_folder):
+        shutil.rmtree(vscode_folder)
+        print(".vscode folder deleted.")
+    else:
+        print(".vscode folder does not exist.")
 
 # Function to parse the CSV file and extract relevant data
 def parse_csv_file(csv_path):
@@ -144,3 +154,28 @@ def generate_plots(epoch_data, output_dir, base_filename, mode='elrales'):
     plt.title(f'Training and Testing Loss over Epochs ({mode})')
     plt.legend()
     plt.savefig(f"{output_dir}/{base_filename}_combined_loss_{mode}.png")
+
+def build_project(jobs):
+    print("Building the project...")
+    os.makedirs('build', exist_ok=True)
+    os.chdir('build')
+    cmake_command = f'cmake -DBUILD_opencv_python2=OFF -DBUILD_opencv_python3=OFF ..'
+    subprocess.run(cmake_command, shell=True, check=True)
+    make_command = f'make -j{jobs}'
+    subprocess.run(make_command, shell=True, check=True)
+    os.chdir('..')
+    print("Build completed.")
+
+def run_tests():
+    print("Running tests...")
+    if not os.path.exists('build'):
+        print("Build directory does not exist. Please build the project first.")
+        return
+    os.chdir('build')
+    if os.path.isfile('./CNN_CPP'):
+        test_command = './CNN_CPP --tests'
+        subprocess.run(test_command, shell=True, check=True)
+    else:
+        print("Test executable not found. Please build the project first.")
+    os.chdir('..')
+    print("Tests run completed.")

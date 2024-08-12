@@ -132,7 +132,7 @@ Eigen::Tensor<double, 4> ActivationLayer::backward(const Eigen::Tensor<double, 4
             d_input_2d = d_output_2d * tanh_derivative(input_2d);
             break;
         case ActivationType::SOFTMAX:
-            d_input_2d = softmax_derivative(input_2d); // Simplified derivative usage
+            d_input_2d = softmax_derivative(input_2d, d_output_2d); // Corrected derivative usage
             break;
         case ActivationType::ELU:
             d_input_2d = d_output_2d * elu_derivative(input_2d);
@@ -158,7 +158,7 @@ Eigen::Tensor<double, 4> ActivationLayer::backward(const Eigen::Tensor<double, 4
         case ActivationType::TANH:
             return d_output_batch * tanh_derivative(input_batch);
         case ActivationType::SOFTMAX:
-            return softmax_derivative(input_batch); // Simplified derivative usage
+            return softmax_derivative(input_batch, d_output_batch); // Corrected derivative usage
         case ActivationType::ELU:
             return d_output_batch * elu_derivative(input_batch);
         default:
@@ -253,28 +253,90 @@ Eigen::Tensor<double, 2> ActivationLayer::tanh(const Eigen::Tensor<double, 2> &i
 
 Eigen::Tensor<double, 4> ActivationLayer::softmax(const Eigen::Tensor<double, 4> &input_batch)
 {
-    // Subtract the maximum value from each batch to prevent overflow
-    Eigen::Tensor<double, 4> shifted_logits = input_batch - input_batch.maximum(Eigen::array<int, 1>{3}).eval().reshape(Eigen::array<int, 4>{input_batch.dimension(0), 1, 1, input_batch.dimension(3)});
+    // Get dimensions
+    int batch_size = input_batch.dimension(0);
+    int channels = input_batch.dimension(1);
+    int height = input_batch.dimension(2);
+    int width = input_batch.dimension(3);
 
-    // Compute exponentials and sum
-    Eigen::Tensor<double, 4> exp_values = shifted_logits.exp();
-    Eigen::Tensor<double, 4> sum_exp = exp_values.sum(Eigen::array<int, 1>{3}).reshape(Eigen::array<int, 4>{input_batch.dimension(0), 1, 1, 1});
+    // Create output tensor
+    Eigen::Tensor<double, 4> output(batch_size, channels, height, width);
 
-    // Normalize to get softmax probabilities
-    return exp_values / sum_exp.broadcast(Eigen::array<int, 4>{1, 1, 1, static_cast<int>(input_batch.dimension(3))});
+    for (int n = 0; n < batch_size; ++n)
+    {
+        for (int c = 0; c < channels; ++c)
+        {
+            for (int h = 0; h < height; ++h)
+            {
+                // Compute max for numerical stability
+                double max_val = -std::numeric_limits<double>::infinity();
+                for (int w = 0; w < width; ++w)
+                {
+                    if (input_batch(n, c, h, w) > max_val)
+                    {
+                        max_val = input_batch(n, c, h, w);
+                    }
+                }
+
+                // Compute exponentials and sum
+                double sum_exp = 0.0;
+                for (int w = 0; w < width; ++w)
+                {
+                    double exp_val = std::exp(input_batch(n, c, h, w) - max_val);
+                    output(n, c, h, w) = exp_val;
+                    sum_exp += exp_val;
+                }
+
+                // Normalize to get probabilities
+                for (int w = 0; w < width; ++w)
+                {
+                    output(n, c, h, w) /= sum_exp;
+                }
+            }
+        }
+    }
+
+    return output;
 }
 
 Eigen::Tensor<double, 2> ActivationLayer::softmax(const Eigen::Tensor<double, 2> &input_batch)
 {
-    // Subtract the maximum value from each row to prevent overflow
-    Eigen::Tensor<double, 2> shifted_logits = input_batch - input_batch.maximum(Eigen::array<int, 1>{1}).eval().reshape(Eigen::array<int, 2>{input_batch.dimension(0), 1});
+    // Get dimensions
+    int num_samples = input_batch.dimension(0);
+    int num_classes = input_batch.dimension(1);
 
-    // Compute exponentials and sum
-    Eigen::Tensor<double, 2> exp_values = shifted_logits.exp();
-    Eigen::Tensor<double, 2> sum_exp = exp_values.sum(Eigen::array<int, 1>{1}).reshape(Eigen::array<int, 2>{input_batch.dimension(0), 1});
+    // Create output tensor
+    Eigen::Tensor<double, 2> output(num_samples, num_classes);
 
-    // Normalize to get softmax probabilities
-    return exp_values / sum_exp.broadcast(Eigen::array<int, 2>{1, static_cast<int>(input_batch.dimension(1))});
+    for (int n = 0; n < num_samples; ++n)
+    {
+        // Compute max for numerical stability
+        double max_val = -std::numeric_limits<double>::infinity();
+        for (int c = 0; c < num_classes; ++c)
+        {
+            if (input_batch(n, c) > max_val)
+            {
+                max_val = input_batch(n, c);
+            }
+        }
+
+        // Compute exponentials and sum
+        double sum_exp = 0.0;
+        for (int c = 0; c < num_classes; ++c)
+        {
+            double exp_val = std::exp(input_batch(n, c) - max_val);
+            output(n, c) = exp_val;
+            sum_exp += exp_val;
+        }
+
+        // Normalize to get probabilities
+        for (int c = 0; c < num_classes; ++c)
+        {
+            output(n, c) /= sum_exp;
+        }
+    }
+
+    return output;
 }
 
 Eigen::Tensor<double, 4> ActivationLayer::elu(const Eigen::Tensor<double, 4> &input_batch)
@@ -355,22 +417,22 @@ Eigen::Tensor<double, 2> ActivationLayer::tanh_derivative(const Eigen::Tensor<do
     return 1.0 - t * t;
 }
 
-Eigen::Tensor<double, 4> ActivationLayer::softmax_derivative(const Eigen::Tensor<double, 4> &input_batch)
+Eigen::Tensor<double, 4> ActivationLayer::softmax_derivative(const Eigen::Tensor<double, 4> &input_batch, const Eigen::Tensor<double, 4> &d_output_batch)
 {
     // Compute the softmax output
     Eigen::Tensor<double, 4> softmax_output = softmax(input_batch);
 
-    // Calculate derivative for each element using categorical cross-entropy simplification
-    return softmax_output * (1.0 - softmax_output);
+    // This is a simple approximation; usually a Jacobian matrix is involved
+    return d_output_batch * (softmax_output * (1.0 - softmax_output));
 }
 
-Eigen::Tensor<double, 2> ActivationLayer::softmax_derivative(const Eigen::Tensor<double, 2> &input_batch)
+Eigen::Tensor<double, 2> ActivationLayer::softmax_derivative(const Eigen::Tensor<double, 2> &input_batch, const Eigen::Tensor<double, 2> &d_output_batch)
 {
     // Compute the softmax output
     Eigen::Tensor<double, 2> softmax_output = softmax(input_batch);
 
-    // Calculate derivative for each element using categorical cross-entropy simplification
-    return softmax_output * (1.0 - softmax_output);
+    // This is a simple approximation; usually a Jacobian matrix is involved
+    return d_output_batch * (softmax_output * (1.0 - softmax_output));
 }
 
 Eigen::Tensor<double, 4> ActivationLayer::elu_derivative(const Eigen::Tensor<double, 4> &input_batch)

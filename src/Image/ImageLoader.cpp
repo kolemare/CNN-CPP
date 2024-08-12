@@ -11,9 +11,11 @@ void ImageLoader::loadImagesFromDirectory(const std::string &datasetPath,
 {
     int totalImages = 0;
     std::vector<std::string> uniqueLabels;
+
+    // Process main directories (e.g., training and test)
     for (const auto &category : fs::directory_iterator(datasetPath))
     {
-        if (category.is_directory())
+        if (category.is_directory() && category.path().filename() != "single_prediction")
         {
             for (const auto &subCategory : fs::directory_iterator(category.path()))
             {
@@ -22,13 +24,12 @@ void ImageLoader::loadImagesFromDirectory(const std::string &datasetPath,
                     std::string subCategoryName = subCategory.path().filename().string();
                     container.addLabelMapping(subCategoryName, subCategoryName);
 
-                    // Add subCategoryName to uniqueLabels if it's not already present
                     if (std::find(uniqueLabels.begin(), uniqueLabels.end(), subCategoryName) == uniqueLabels.end())
                     {
                         uniqueLabels.push_back(subCategoryName);
                     }
 
-                    totalImages += std::distance(fs::recursive_directory_iterator(subCategory.path()), fs::recursive_directory_iterator());
+                    totalImages += std::distance(fs::directory_iterator(subCategory.path()), fs::directory_iterator());
                 }
             }
         }
@@ -37,7 +38,7 @@ void ImageLoader::loadImagesFromDirectory(const std::string &datasetPath,
     int processedImages = 0;
     for (const auto &category : fs::directory_iterator(datasetPath))
     {
-        if (category.is_directory())
+        if (category.is_directory() && category.path().filename() != "single_prediction")
         {
             for (const auto &subCategory : fs::directory_iterator(category.path()))
             {
@@ -61,6 +62,10 @@ void ImageLoader::loadImagesFromDirectory(const std::string &datasetPath,
             }
         }
     }
+
+    // Load images from single_prediction directory
+    loadSinglePredictionImages(datasetPath, container);
+
     container.setUniqueLabels(uniqueLabels);
     std::cout << "\nLoaded " << container.getImages().size() << " images successfully!" << std::endl;
     std::cout << "Training set size: " << container.getTrainingImages().size() << std::endl;
@@ -70,7 +75,7 @@ void ImageLoader::loadImagesFromDirectory(const std::string &datasetPath,
 std::vector<std::string> ImageLoader::getImagesInDirectory(const std::string &directoryPath)
 {
     std::vector<std::string> images;
-    for (const auto &entry : fs::recursive_directory_iterator(directoryPath))
+    for (const auto &entry : fs::directory_iterator(directoryPath))
     {
         if (entry.is_regular_file() && (entry.path().extension() == ".jpg" || entry.path().extension() == ".png"))
         {
@@ -109,5 +114,35 @@ void ImageLoader::loadImage(const std::string &imagePath,
     catch (const std::exception &e)
     {
         std::cerr << "Error processing image " << imagePath << ": " << e.what() << std::endl;
+    }
+}
+
+void ImageLoader::loadSinglePredictionImages(const std::string &datasetPath, ImageContainer &container)
+{
+    fs::path predictionPath = fs::path(datasetPath) / "single_prediction";
+
+    if (!fs::exists(predictionPath) || !fs::is_directory(predictionPath))
+    {
+        std::cerr << "No single prediction directory found at: " << predictionPath << std::endl;
+        return;
+    }
+
+    for (const auto &entry : fs::directory_iterator(predictionPath))
+    {
+        if (entry.is_regular_file() && (entry.path().extension() == ".jpg" || entry.path().extension() == ".png"))
+        {
+            std::string imagePath = entry.path().string();
+            std::string imageName = entry.path().filename().string();
+
+            cv::Mat image = cv::imread(imagePath, cv::IMREAD_COLOR);
+            if (image.empty())
+            {
+                std::cerr << "Could not read the image: " << imagePath << std::endl;
+                continue;
+            }
+
+            auto sharedImage = std::make_shared<cv::Mat>(image);
+            container.addSinglePredictionImage(sharedImage, imageName);
+        }
     }
 }

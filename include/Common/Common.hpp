@@ -194,10 +194,11 @@ enum class ProgressLevel
  */
 enum class AugmentTarget
 {
-    TRAIN_DATASET, /**< Augment training dataset */
-    TEST_DATASET,  /**< Augment testing dataset */
-    WHOLE_DATASET, /**< Augment whole dataset */
-    NONE           /**< No augmentation */
+    TRAIN_DATASET,     /**< Augment training dataset */
+    TEST_DATASET,      /**< Augment testing dataset */
+    SINGLE_PREDICTION, /**< Augment single prediction images */
+    WHOLE_DATASET,     /**< Augment whole dataset */
+    NONE               /**< No augmentation */
 };
 
 /**

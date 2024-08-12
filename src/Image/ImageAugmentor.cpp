@@ -1,30 +1,22 @@
 #include "ImageAugmentor.hpp"
 #include <iostream>
 
-ImageAugmentor::ImageAugmentor(float zoomFactor,
-                               bool horizontalFlipFlag,
-                               bool verticalFlipFlag,
-                               float shearRange,
-                               float gaussianNoiseStdDev,
-                               int gaussianBlurKernelSize,
-                               int targetWidth,
-                               int targetHeight)
+ImageAugmentor::ImageAugmentor(int targetWidth, int targetHeight)
+    : targetWidth(targetWidth), targetHeight(targetHeight), distribution(0.0f, 1.0f)
 {
-    this->zoomFactor = zoomFactor;
-    this->horizontalFlipFlag = horizontalFlipFlag;
-    this->verticalFlipFlag = verticalFlipFlag;
-    this->shearRange = shearRange;
-    this->gaussianNoiseStdDev = gaussianNoiseStdDev;
-    this->gaussianBlurKernelSize = gaussianBlurKernelSize;
-    this->targetWidth = targetWidth;
-    this->targetHeight = targetHeight;
-    this->zoomChance = 0.3f;
-    this->horizontalFlipChance = 0.3f;
-    this->verticalFlipChance = 0.3f;
-    this->gaussianNoiseChance = 0.3f;
-    this->gaussianBlurChance = 0.3f;
-    this->shearChance = 0.3f;
-    this->distribution = std::uniform_real_distribution<float>(0.0f, 1.0f);
+    // Set default values
+    zoomFactor = 1.2f;
+    horizontalFlipFlag = true;
+    verticalFlipFlag = true;
+    shearRange = 0.2f;
+    gaussianNoiseStdDev = 10.0f;
+    gaussianBlurKernelSize = 5;
+    zoomChance = 0.0f;
+    horizontalFlipChance = 0.0f;
+    verticalFlipChance = 0.0f;
+    gaussianNoiseChance = 0.0f;
+    gaussianBlurChance = 0.0f;
+    shearChance = 0.0f;
 }
 
 void ImageAugmentor::augmentImages(ImageContainer &container,
@@ -77,8 +69,6 @@ void ImageAugmentor::augmentImages(ImageContainer &container,
         normalizeImage(*image);
     }
 
-    std::cout << std::endl;
-
     auto &testImages = container.getTestImages();
 
 #ifdef AUGMENT_PROGRESS
@@ -125,7 +115,81 @@ void ImageAugmentor::augmentImages(ImageContainer &container,
         normalizeImage(*image);
     }
 
-    std::cout << std::endl;
+    auto &singlePredictionImages = container.getSinglePredictionImages();
+
+#ifdef AUGMENT_PROGRESS
+    int singlePredictionImagesCount = singlePredictionImages.size();
+    int processedSinglePredictionImages = 0;
+#endif
+
+    for (auto &[imageName, image] : singlePredictionImages)
+    {
+        *image = rescale(*image);
+        if (AugmentTarget::WHOLE_DATASET == augmentTarget || AugmentTarget::SINGLE_PREDICTION == augmentTarget)
+        {
+            if (distribution(generator) < zoomChance)
+            {
+                *image = zoom(*image);
+            }
+            if (distribution(generator) < horizontalFlipChance)
+            {
+                *image = horizontalFlip(*image);
+            }
+            if (distribution(generator) < verticalFlipChance)
+            {
+                *image = verticalFlip(*image);
+            }
+            if (distribution(generator) < gaussianNoiseChance)
+            {
+                *image = addGaussianNoise(*image);
+            }
+            if (distribution(generator) < gaussianBlurChance)
+            {
+                *image = applyGaussianBlur(*image);
+            }
+            if (distribution(generator) < shearChance)
+            {
+                *image = shear(*image);
+            }
+
+#ifdef AUGMENT_PROGRESS
+            processedSinglePredictionImages++;
+            int progress = (processedSinglePredictionImages * 100) / singlePredictionImagesCount;
+            std::cout << "\rAugmenting single prediction images... " << progress << "%" << std::flush;
+#endif
+        }
+        normalizeImage(*image);
+    }
+}
+
+void ImageAugmentor::setZoomFactor(float factor)
+{
+    zoomFactor = factor;
+}
+
+void ImageAugmentor::setHorizontalFlip(bool enable)
+{
+    horizontalFlipFlag = enable;
+}
+
+void ImageAugmentor::setVerticalFlip(bool enable)
+{
+    verticalFlipFlag = enable;
+}
+
+void ImageAugmentor::setShearRange(float range)
+{
+    shearRange = range;
+}
+
+void ImageAugmentor::setGaussianNoiseStdDev(float stddev)
+{
+    gaussianNoiseStdDev = stddev;
+}
+
+void ImageAugmentor::setGaussianBlurKernelSize(int size)
+{
+    gaussianBlurKernelSize = size;
 }
 
 void ImageAugmentor::setZoomChance(float chance)

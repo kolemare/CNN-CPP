@@ -3,6 +3,7 @@
 
 #include <opencv2/opencv.hpp>
 #include "ImageContainer.hpp"
+#include "Common.hpp"
 #include <random>
 
 /**
@@ -16,34 +17,64 @@ class ImageAugmentor
 {
 public:
     /**
-     * @brief Constructor to initialize the ImageAugmentor with augmentation parameters.
+     * @brief Constructor to initialize the ImageAugmentor with target dimensions.
      *
-     * @param zoomFactor Factor by which to zoom the image.
-     * @param horizontalFlipFlag Flag to enable or disable horizontal flipping.
-     * @param verticalFlipFlag Flag to enable or disable vertical flipping.
-     * @param shearRange Range for shearing transformation.
-     * @param gaussianNoiseStdDev Standard deviation for Gaussian noise.
-     * @param gaussianBlurKernelSize Kernel size for Gaussian blur.
      * @param targetWidth Target width for rescaling images.
      * @param targetHeight Target height for rescaling images.
      */
-    ImageAugmentor(float zoomFactor,
-                   bool horizontalFlipFlag,
-                   bool verticalFlipFlag,
-                   float shearRange,
-                   float gaussianNoiseStdDev,
-                   int gaussianBlurKernelSize,
-                   int targetWidth,
+    ImageAugmentor(int targetWidth,
                    int targetHeight);
 
     /**
      * @brief Augment images in the specified image container.
      *
      * @param container The ImageContainer holding images to be augmented.
-     * @param augmentTarget Specifies the target for augmentation (e.g., training, testing).
+     * @param augmentTarget Specifies the target for augmentation (e.g., training, testing, single prediction).
      */
     void augmentImages(ImageContainer &container,
                        const AugmentTarget &augmentTarget);
+
+    /**
+     * @brief Set the zoom factor for augmentation.
+     *
+     * @param factor Zoom factor.
+     */
+    void setZoomFactor(float factor);
+
+    /**
+     * @brief Enable or disable horizontal flipping.
+     *
+     * @param enable True to enable, false to disable.
+     */
+    void setHorizontalFlip(bool enable);
+
+    /**
+     * @brief Enable or disable vertical flipping.
+     *
+     * @param enable True to enable, false to disable.
+     */
+    void setVerticalFlip(bool enable);
+
+    /**
+     * @brief Set the shear range for augmentation.
+     *
+     * @param range Shear range.
+     */
+    void setShearRange(float range);
+
+    /**
+     * @brief Set the standard deviation for Gaussian noise.
+     *
+     * @param stddev Standard deviation.
+     */
+    void setGaussianNoiseStdDev(float stddev);
+
+    /**
+     * @brief Set the kernel size for Gaussian blur.
+     *
+     * @param size Kernel size.
+     */
+    void setGaussianBlurKernelSize(int size);
 
     /**
      * @brief Set the probability of applying zoom augmentation.

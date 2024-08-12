@@ -18,6 +18,7 @@ include_directories(include/CNN)
 include_directories(include/Common)
 include_directories(include/Image)
 include_directories(include/ThreadPool)
+include_directories(src/WModels)
 
 # Build OpenCV as a submodule
 include(ExternalProject)

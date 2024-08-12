@@ -109,14 +109,14 @@ private:
     Eigen::Tensor<double, 4> leakyRelu_derivative(const Eigen::Tensor<double, 4> &input_batch);
     Eigen::Tensor<double, 4> sigmoid_derivative(const Eigen::Tensor<double, 4> &input_batch);
     Eigen::Tensor<double, 4> tanh_derivative(const Eigen::Tensor<double, 4> &input_batch);
-    Eigen::Tensor<double, 4> softmax_derivative(const Eigen::Tensor<double, 4> &input_batch);
+    Eigen::Tensor<double, 4> softmax_derivative(const Eigen::Tensor<double, 4> &input_batch, const Eigen::Tensor<double, 4> &d_output_batch);
     Eigen::Tensor<double, 4> elu_derivative(const Eigen::Tensor<double, 4> &input_batch);
 
     Eigen::Tensor<double, 2> relu_derivative(const Eigen::Tensor<double, 2> &input_batch);
     Eigen::Tensor<double, 2> leakyRelu_derivative(const Eigen::Tensor<double, 2> &input_batch);
     Eigen::Tensor<double, 2> sigmoid_derivative(const Eigen::Tensor<double, 2> &input_batch);
     Eigen::Tensor<double, 2> tanh_derivative(const Eigen::Tensor<double, 2> &input_batch);
-    Eigen::Tensor<double, 2> softmax_derivative(const Eigen::Tensor<double, 2> &input_batch);
+    Eigen::Tensor<double, 2> softmax_derivative(const Eigen::Tensor<double, 2> &input_batch, const Eigen::Tensor<double, 2> &d_output_batch);
     Eigen::Tensor<double, 2> elu_derivative(const Eigen::Tensor<double, 2> &input_batch);
 };
 

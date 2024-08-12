@@ -1,11 +1,11 @@
 import os
 import json
-import requests
 import shutil
-import re
 import csv
-import matplotlib.pyplot as plt
+import requests
+import subprocess
 from invoke import task
+import matplotlib.pyplot as plt
 from tools import (
     clean_build,
     clean_datasets,
@@ -14,7 +14,10 @@ from tools import (
     parse_csv_file,
     save_to_csv,
     generate_plots,
-    download_and_unzip
+    download_and_unzip,
+    build_project,
+    run_tests,
+    delete_vscode_folder
 )
 
 @task
@@ -37,6 +40,7 @@ def clean(ctx, build=False, datasets=False, all=False):
             clean_datasets()
     delete_txts()
     delete_pngs_and_csvs()
+    delete_vscode_folder()  # Delete the .vscode folder
 
 @task
 def build(ctx, clean=False, jobs=1):
@@ -47,11 +51,9 @@ def build(ctx, clean=False, jobs=1):
     :param clean: If True, clean the build directories before building.
     :param jobs: Number of jobs to run simultaneously (default is 1).
     """
-    cmd = "./build.sh"
     if clean:
-        cmd += " --clean"
-    cmd += f" -j{jobs}"
-    ctx.run(cmd, pty=True)
+        clean_build()
+    build_project(jobs)
 
 @task
 def install(ctx):
@@ -69,7 +71,7 @@ def test(ctx):
 
     :param ctx: Context instance (automatically passed by Invoke).
     """
-    ctx.run("./run_tests.sh", pty=True)
+    run_tests()
 
 @task
 def run(ctx):
@@ -160,3 +162,4 @@ def default_clean(ctx):
     """
     delete_txts()
     delete_pngs_and_csvs()
+    delete_vscode_folder()

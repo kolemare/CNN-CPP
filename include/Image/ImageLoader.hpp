@@ -58,6 +58,18 @@ private:
                    ImageContainer &container,
                    int totalImages,
                    int &processedImages);
+
+    /**
+     * @brief Load single prediction images from a specified directory.
+     *
+     * This function reads images from the single_prediction directory within `datasetPath`
+     * and stores them in the provided `container`.
+     *
+     * @param datasetPath The path to the directory containing the dataset images.
+     * @param container The ImageContainer to store the loaded images.
+     */
+    void loadSinglePredictionImages(const std::string &datasetPath,
+                                    ImageContainer &container);
 };
 
 #endif // IMAGELOADER_HPP

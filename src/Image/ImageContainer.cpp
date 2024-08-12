@@ -17,10 +17,11 @@ void ImageContainer::addImage(const std::shared_ptr<cv::Mat> &image,
         testImages.push_back(image);
         testLabels.push_back(category);
     }
-    else if (label == "single_prediction")
-    {
-        singlePredictionImages.push_back(image);
-    }
+}
+
+void ImageContainer::addSinglePredictionImage(const std::shared_ptr<cv::Mat> &image, const std::string &imageName)
+{
+    singlePredictionImages[imageName] = image;
 }
 
 void ImageContainer::addLabelMapping(const std::string &label,
@@ -49,14 +50,14 @@ const std::vector<std::shared_ptr<cv::Mat>> &ImageContainer::getTrainingImages()
     return trainingImages;
 }
 
-const std::vector<std::shared_ptr<cv::Mat>> &ImageContainer::getTestImages() const
-{
-    return testImages;
-}
-
 const std::vector<std::string> &ImageContainer::getTrainingLabels() const
 {
     return trainingLabels;
+}
+
+const std::vector<std::shared_ptr<cv::Mat>> &ImageContainer::getTestImages() const
+{
+    return testImages;
 }
 
 const std::vector<std::string> &ImageContainer::getTestLabels() const
@@ -64,7 +65,7 @@ const std::vector<std::string> &ImageContainer::getTestLabels() const
     return testLabels;
 }
 
-const std::vector<std::shared_ptr<cv::Mat>> &ImageContainer::getSinglePredictionImages() const
+const std::unordered_map<std::string, std::shared_ptr<cv::Mat>> &ImageContainer::getSinglePredictionImages() const
 {
     return singlePredictionImages;
 }
@@ -95,7 +96,7 @@ std::vector<std::shared_ptr<cv::Mat>> ImageContainer::getTestImagesByCategory(co
     return categoryImages;
 }
 
-const void ImageContainer::setUniqueLabels(std::vector<std::string> uniqueLabels)
+void ImageContainer::setUniqueLabels(const std::vector<std::string> &uniqueLabels)
 {
     this->uniqueLabels = uniqueLabels;
 }
