@@ -28,7 +28,15 @@ Thumbs.db
 
 # Ignore the dataset directory
 /datasets/*
-!/datasets/.gitkeep
+!/datasets/catsdogs_part.zip.aa
+!/datasets/catsdogs_part.zip.ab
+!/datasets/catsdogs_part.zip.ac
+!/datasets/cifar10_part.zip.aa
+!/datasets/cifar10_part.zip.ab
+!/datasets/sanity_2_colors.zip
+!/datasets/sanity_2_shapes.zip
+!/datasets/sanity_5_colors.zip
+!/datasets/sanity_5_shapes.zip
 
 # Ignore the logs directory
 /logs/*

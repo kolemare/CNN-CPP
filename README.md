@@ -29,9 +29,9 @@ users with similar capabilities to define, train, and deploy neural network mode
 
 ```plaintext
 CNN-CPP/
-├── datasets/                   # Placeholder for storing datasets
+├── datasets/                   # Versioned Datasets
 ├── external/                   # External dependencies for the project
-│   ├── eigen/                  # Eigen library for numerical operations
+│   ├── eigen/                  # Eigen library for tensor operations
 │   ├── googletest/             # GoogleTest for unit testing
 │   └── opencv/                 # OpenCV for image processing
 ├── include/                    # Header files for the project
@@ -50,9 +50,7 @@ CNN-CPP/
 ├── tests/                      # Unit tests for the project
 ├── wmodels/                    # Already created models, used in Results
 ├── .gitignore                  # Specifies untracked files to ignore
-├── .gitmodules                 # Defines the path of the mounted submodules
 ├── CMakeLists.txt              # CMake configuration file
-├── datasets.json               # Datasets download links
 ├── Dockerfile                  # Docker configuration for setting up the environment
 ├── install.sh                  # Script for installing the Linux dependencies
 ├── README.md                   # Project overview and setup instructions
