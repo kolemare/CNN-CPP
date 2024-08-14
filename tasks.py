@@ -15,7 +15,7 @@ from tools import (
 )
 
 @task
-def clean(ctx, build=False, datasets=False):
+def clean(ctx, build=False, datasets=False, all=False):
     """
     Clean the project.
 
@@ -27,6 +27,10 @@ def clean(ctx, build=False, datasets=False):
         clean_build()
 
     if datasets:
+        clean_datasets()
+
+    if all:
+        clean_build()
         clean_datasets()
 
     delete_txts()

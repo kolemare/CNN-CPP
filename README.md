@@ -60,36 +60,90 @@ CNN-CPP/
 
 ## Framework Components & Capabilities
 
+### Neural Network
+
+The NeuralNetwork class is the central component for building, configuring, and training deep learning models. It
+provides various functionalities to manage the architecture, training process, and evaluation of neural networks.
+
+- <code style="color: teal;">Layer Management</code> The NeuralNetwork allows for the addition of different types of
+  layers, including Convolutional Layers, Pooling Layers, Flatten Layers, Fully Connected Layers, Activation Layers, and
+  Batch Normalization Layers. Each layer can be customized with parameters such as the number of filters, kernel size,
+  stride, padding, pool size, number of neurons, activation functions, epsilon, momentum and initialization methods for
+  weights, kernels and biases.
+
+- <code style="color: teal;">Loss Function Configuration</code> The network supports the setting of different loss
+  functions, including Mean Squared Error, Binary Cross-Entropy and Categorical Cross-Entropy which are essential for
+  guiding the optimization process during training
+
+- <code style="color: teal;">Optimizer Configuration</code> The NeuralNetwork allows for the selection and configuration
+  of various optimizers, including SGD, Adam, RMSprop, and SGD with Momentum. Optimizer parameters can be customized
+  according to the needs of the training process, or leave it to the Network to use default parameters for optimizers.
+
+- <code style="color: teal;">Forward Propagation</code> The class provides functionality to perform a forward pass
+  through the network, processing input data through each layer to produce predictions.
+
+- <code style="color: teal;">Backward Propagation</code> It supports the backward pass through the network, calculating
+  gradients and updating kernels, weights, biases, gamma and betta based on the computed loss, essential for training
+  the model.
+
+- <code style="color: teal;">Training Management</code> The NeuralNetwork supports training on a dataset with multiple
+  epochs, managing batch sizes, learning rates, and the overall training loop. It also integrates with advanced features
+  like gradient clipping and ELRALES.
+
+- <code style="color: teal;">Evaluation and Prediction</code> The network can be evaluated on a "unseen" test dataset to
+  determine its performance, providing metrics such as accuracy and loss. Additionally, the class supports making
+  predictions on individual images or batches of images.
+
+- <code style="color: teal;">Gradient Clipping</code> The NeuralNetwork includes support for gradient clipping, which
+  prevents the exploding gradient problem by limiting the magnitude of gradients during backpropagation.
+
+- <code style="color: teal;">ELRALES Integration</code> The class can enable ELRALES (Epoch Loss Recovery Adaptive
+  Learning Early Stopping), a mechanism that adaptively adjusts the learning rate, restores the best model state, and
+  implements early stopping based on the loss trends during training.
+
+- <code style="color: teal;">Logging and Progress Reporting</code> The NeuralNetwork offers configurable logging levels
+  to control the verbosity of output during training and evaluation. It also provides configurable progress reporting to
+  track the training process.
+
+- <code style="color: teal;">Learning Rate Decay</code> The network can be configured with learning rate decay,
+  gradually reducing the learning rate during training to improve convergence.
+
+- <code style="color: teal;">Compilation and Resetting</code> The class supports compiling the network, preparing it for
+  training by setting up layers and optimizers. It also provides a hard reset function to reinitialize the network’s
+  state, useful for reconfiguring the model.
+
+---
+
 ### Batch Manager
 
 The BatchManager class serves as the input layer to the neural network by managing the batching of images and labels. It
 facilitates efficient data feeding during training and testing by handling the following tasks:
 
-- <code style="color: teal;">Batch Initialization:</code> The BatchManager initializes batches based on the input data,
+- <code style="color: teal;">Batch Initialization</code> The BatchManager initializes batches based on the input data,
   categorizing images and labels for training or testing.
 
-- <code style="color: teal;">Data Shuffling:</code> It implements dataset shuffling to ensure that the batches are
+- <code style="color: teal;">Data Shuffling</code> It implements dataset shuffling to ensure that the batches are
   randomized for each epoch, which helps in achieving better generalization in the model.
 
-- <code style="color: teal;">Batch Retrieval:</code> The class provides functionality to retrieve the next batch of
+- <code style="color: teal;">Batch Retrieval</code> The class provides functionality to retrieve the next batch of
   images and labels for processing. This includes one-hot encoding of labels and maintaining batch balance across
   categories.
 
-- <code style="color: teal;">Single Prediction Support:</code> It supports loading batches specifically for single
+- <code style="color: teal;">Single Prediction Support</code> It supports loading batches specifically for single
   prediction tasks, allowing for inference on individual images.
 
-- <code style="color: teal;">Batch Indexing and Balancing:</code> The manager keeps track of the current batch index and
-  ensures that batches are balanced in terms of category distribution. If last batch is not full, it fills the remaining
-  slots with random images from the original dataset to maintain batch size consistency.
+- <code style="color: teal;">Batch Indexing and Balancing</code> The manager keeps track of the current batch index and
+  ensures that batches are balanced in terms of category distribution. If last batch is not full in epoch, it fills the
+  remaining slots with random images from the original dataset to maintain batch size consistency.
 
-- <code style="color: teal;">Batch Saving:</code> Optionally, batches can be saved to disk for debugging or analysis,
+- <code style="color: teal;">Batch Saving</code> Optionally, batches can be saved to disk for debugging or analysis,
   with each batch organized by category.
 
-- <code style="color: teal;">Support for Different Batch Types:</code> The BatchManager can handle different batch
-  types, including training and testing batches, by selectively retrieving images and labels according to the batch type
+- <code style="color: teal;">Support for Different Batch Types</code> The BatchManager can handle different batch types,
+  including training and testing batches, by selectively retrieving images and labels according to the batch type
   specified.
 
-- <code style="color: teal;">Category Management:</code> It manages category information, allowing retrieval of category
+- <code style="color: teal;">Category Management</code> It manages category information, allowing retrieval of category
   names and ensuring that all operations are consistent with the dataset's categorical structure.
 
 ---
@@ -198,12 +252,15 @@ features from input images. This layer supports several key functionalities:
 
   <h3 style="display: inline-block;">$$\text{Output H/W} = \left\lfloor \frac{\text{Input H/W} - \text{Kernel Size} + 2 \times \text{Padding}}{\text{Stride}} \right\rfloor + 1$$</h3>
 
+- <code style="color: teal;">Optimizer Requirement</code> This layer requires an optimizer to update weights (kernels)
+  and biases during training, as it contains trainable parameters.
+
 - <code style="color: teal;">Thread Pool</code> It utilizes thread pools for both forward and backward passes,
   distributing computation across available CPU cores (hardware threads) to optimize processing speed.
 
 - <code style="color: teal;">Parameter Management</code> The class provides methods for setting and retrieving kernels
   and biases, allowing external manipulation and inspection. It ensures that these parameters can be loaded during
-  training (ELRALES).
+  training (`ELRALES`).
 
 - <code style="color: teal;">Error Handling</code> It provides error detection mechanism:
 
@@ -238,7 +295,7 @@ leading to a more efficient and less complex network.
 
 - <code style="color: teal;">Backward Pass</code> During backpropagation, the backward method uses the stored indices to
   propagate gradients back to the input layer. It ensures that only the positions corresponding to the maximum values
-  from the forward pass receive non-zero gradients, which helps in updating weights effectively.
+  from the forward pass receive non-zero gradients, which helps in updating weights (kernels) effectively.
 
   <h3 style="display: inline-block;">$$\text{Gradient}(i, j) = \text{dOutput}(i, j) \text{ if } (i, j) \text{ is the max index, otherwise } 0$$</h3>
 
@@ -309,40 +366,41 @@ which are essential for both the forward and backward passes of the network. The
 
   - <code style="color: SteelBlue;">ReLU</code>
 
-  <h3 style="display: inline-block;">$$\text{ReLU}(x) = \max(0, x)$$</h3>
+    <h3 style="display: inline-block;">$$\text{ReLU}(x) = \max(0, x)$$</h3>
 
-  <h3 style="display: inline-block;">$$\text{ReLU}'(x) = \text{if } x > 0 \text{ then } 1 \text{ otherwise } 0$$</h3>
+    <h3 style="display: inline-block;">$$\text{ReLU}'(x) = \text{if } x > 0 \text{ then } 1 \text{ otherwise } 0$$</h3>
 
-- <code style="color: SteelBlue;">Leaky ReLU</code>
+  - <code style="color: SteelBlue;">Leaky ReLU</code>
 
-  <h3 style="display: inline-block;">$$\text{Leaky ReLU}(x) = \text{if } x \geq 0 \text{ then } x \text{ else } \alpha x$$</h3>
+    <h3 style="display: inline-block;">$$\text{Leaky ReLU}(x) = \text{if } x \geq 0 \text{ then } x \text{ else } \alpha x$$</h3>
 
-  <h3 style="display: inline-block;">$$\text{Leaky ReLU}'(x) = \text{if } x \geq 0 \text{ then } 1 \text{ else } \alpha$$</h3>
+    <h3 style="display: inline-block;">$$\text{Leaky ReLU}'(x) = \text{if } x \geq 0 \text{ then } 1 \text{ else } \alpha$$</h3>
 
-- <code style="color: SteelBlue;">ELU</code>
+  - <code style="color: SteelBlue;">ELU</code>
 
-  <h3 style="display: inline-block;">$$\text{ELU}(x) = \text{if } x \geq 0 \text{ then } x \text{ else } \alpha (\exp(x) - 1)$$</h3>
+    <h3 style="display: inline-block;">$$\text{ELU}(x) = \text{if } x \geq 0 \text{ then } x \text{ else } \alpha (\exp(x) - 1)$$</h3>
 
-  <h3 style="display: inline-block;">$$\text{ELU}'(x) = \text{if } x \geq 0 \text{ then } 1 \text{ else } \alpha e^x$$</h3>
+    <h3 style="display: inline-block;">$$\text{ELU}'(x) = \text{if } x \geq 0 \text{ then } 1 \text{ else } \alpha e^x$$</h3>
 
-- <code style="color: SteelBlue;">Sigmoid</code>
+  - <code style="color: SteelBlue;">Sigmoid</code>
 
-  <h3 style="display: inline-block;">$$\text{Sigmoid}(x) = \frac{1}{1 + \exp(-x)}$$</h3>
+    <h3 style="display: inline-block;">$$\text{Sigmoid}(x) = \frac{1}{1 + \exp(-x)}$$</h3>
 
-  <h3 style="display: inline-block;">$$\text{Sigmoid}'(x) = \text{Sigmoid}(x) \cdot (1 - \text{Sigmoid}(x))$$</h3>
+    <h3 style="display: inline-block;">$$\text{Sigmoid}'(x) = \text{Sigmoid}(x) \cdot (1 - \text{Sigmoid}(x))$$</h3>
 
-- <code style="color: SteelBlue;">Softmax</code>
+  - <code style="color: SteelBlue;">Softmax</code>
 
-  <h3 style="display: inline-block;">$$\text{Softmax}(x_i) = \frac{\exp(x_i)}{\sum_{j=1}^{N} \exp(x_j)}$$</h3>
+    <h3 style="display: inline-block;">$$\text{Softmax}(x_i) = \frac{\exp(x_i)}{\sum_{j=1}^{N} \exp(x_j)}$$</h3>
 
-  <h3 style="display: inline-block;">$$\text{Loss} = -\sum_{i=1}^{N} y_i \log(\hat{y}_i)$$</h3>
+    <h3 style="display: inline-block;">$$\text{Loss} = -\sum_{i=1}^{N} y_i \log(\hat{y}_i)$$</h3>
 
-  <h3 style="display: inline-block;">$$\frac{\partial \text{Loss}}{\partial x_i} = \hat{y}_i - y_i$$</h3>
+    <h3 style="display: inline-block;">$$\frac{\partial \text{Loss}}{\partial x_i} = \hat{y}_i - y_i$$</h3>
 
-- <code style="color: SteelBlue;">TanH</code>
-  <h3 style="display: inline-block;">$$\text{Tanh}(x) = \frac{\exp(x) - \exp(-x)}{\exp(x) + \exp(-x)}$$</h3>
+  - <code style="color: SteelBlue;">TanH</code>
 
-  <h3 style="display: inline-block;">$$\text{Tanh}'(x) = 1 - \text{Tanh}^2(x)$$</h3>
+    <h3 style="display: inline-block;">$$\text{Tanh}(x) = \frac{\exp(x) - \exp(-x)}{\exp(x) + \exp(-x)}$$</h3>
+
+    <h3 style="display: inline-block;">$$\text{Tanh}'(x) = 1 - \text{Tanh}^2(x)$$</h3>
 
 - <code style="color: teal;">Forward Pass</code> The forward method applies the chosen activation function to each
   element of the input tensor, allowing for both 2D and 4D input structures by wrapping and unwrapping tensors as
@@ -361,8 +419,8 @@ which are essential for both the forward and backward passes of the network. The
 The FlattenLayer class is designed to transform multi-dimensional input tensors into flat vectors, making it essential
 for connecting convolutional layers to fully connected layers in a neural network. Here are its key functionalities:
 
-- <code style="color: teal;">Forward Pass</code> The FlattenLayer reshapes the input tensor from (batch\*size, depth,
-  height, width) to a 2D tensor with shape (batch\*size, flattened\*size), where flattened_size is the product of depth,
+- <code style="color: teal;">Forward Pass</code> The Flatten Layer reshapes the input tensor from (batch_size, depth,
+  height, width) to a 2D tensor with shape (batch_size, flattened_size), where flattened_size is the product of depth,
   height, and width. The output is returned as a 4D tensor with shape (batch_size, 1, 1, flattened_size).
 
   <h3 style="display: inline-block;">$$X\_{\text{out}} = \text{reshape}(X, (N, 1, 1, C \times H \times W))$$</h3>
@@ -372,9 +430,9 @@ for connecting convolutional layers to fully connected layers in a neural networ
     the height, and $W$ is the width.
   - $\text{reshape}$: The operation used to flatten the input tensor $X$ into the desired output shape.
 
-  - This formula represents the flattening operation performed in the `FlattenLayer` of the C++ code. The input tensor
-    is reshaped from a 4D tensor to a flattened 2D tensor and then reshaped back to a 4D tensor with the flattened size
-    in the last dimension.
+  - This formula represents the flattening operation performed in the Flatten Layer. The input tensor is reshaped from a
+    4D tensor to a flattened 2D tensor and then reshaped back to a 4D tensor with the flattened size in the last
+    dimension.
 
 - <code style="color: teal;">Backward Pass</code> It reshapes the gradient from the output tensor back to the original
   shape of the input tensor, allowing gradients to propagate correctly through the network.
@@ -382,11 +440,11 @@ for connecting convolutional layers to fully connected layers in a neural networ
   <h3 style="display: inline-block;">$$\text{dInput} = \text{reshape}(\text{dOutput}, (N, C, H, W))$$</h3>
 
   - $\text{dInput}$: The gradient with respect to the input, reshaped back to its original dimensions.
-  - $\text{dOutput}$: The gradient of the loss with respect to the output of the flatten layer, typically a 4D tensor
+  - $\text{dOutput}$: The gradient of the loss with respect to the output of the Flatten Layer, typically a 4D tensor
     with shape $(N, 1, 1, C \times H \times W)$.
   - $\text{reshape}$: The operation used to convert the flattened gradient back to the original input shape.
 
-This formula represents the backward pass in the `FlattenLayer`. The gradient $\text{dOutput}$ is reshaped back to match
+This formula represents the backward pass in the Flatten Layer. The gradient $\text{dOutput}$ is reshaped back to match
 the original dimensions of the input tensor $(N, C, H, W)$, effectively reversing the flattening operation performed
 during the forward pass.
 
@@ -401,8 +459,8 @@ during the forward pass.
 ### Fully Connected Layer
 
 The FullyConnectedLayer class represents a dense layer in a neural network, where each neuron is connected to every
-neuron in the previous layer. It is responsible for learning linear combinations of the input features, which are then
-used for predictions or further transformations.
+neuron in the previous layer or input from flatten layer. It is responsible for learning linear combinations of the
+input features, which are then used for predictions or further transformations.
 
 - <code style="color: teal;">Initialization:</code>
 
@@ -429,9 +487,6 @@ used for predictions or further transformations.
     - <code style="color: SkyBlue;">Random Normal</code>
 
       <h2 style="display: inline-block;">$$\text{Bias} \sim \mathcal{N}(0, 1)$$</h2>
-
-- <code style="color: teal;">Optimizer Requirement</code> This layer requires an optimizer to update weights and biases
-  during training, as it contains trainable parameters.
 
 - <code style="color: teal;">Forward Pass</code> The forward method takes an input batch of 4D tensors, flattens it to a
   2D tensor, and performs matrix multiplication with the weights, followed by the addition of biases. The result is
@@ -497,9 +552,12 @@ used for predictions or further transformations.
      index $o$ for the $b$-th example in the batch.
    - $\text{weights}(o, i)$: weight connecting input feature $i$ to output neuron $o$.
 
+- <code style="color: teal;">Optimizer Requirement</code> This layer requires an optimizer to update weights and biases
+  during training, as it contains trainable parameters.
+
 - <code style="color: teal;">Parameter Management</code> TThe class provides methods for setting and retrieving weights
   and biases, allowing external manipulation and inspection. It ensures that these parameters can be loaded during
-  training (ELRALES).
+  training (`ELRALES`).
 
 - <code style="color: teal;">Error Handling</code> The layer validates input and output dimensions during both forward
   and backward passes, throwing exceptions for any inconsistencies in the expected and actual dimensions. It ensures
@@ -580,7 +638,10 @@ performance of the network by maintaining mean and variance at stable levels. It
 
 - <code style="color: teal;">Parameter Management</code> The class provides methods for setting and retrieving gamma and
   beta, allowing external manipulation and inspection. It ensures that these parameters can be loaded during training
-  (ELRALES).
+  (`ELRALES`).
+- <code style="color: teal;">Tensor Dimension Support:</code> This layer supports both 2D and 4D tensors, allowing it to
+  be seamlessly integrated after convolutional layers, fully connected layers, or any other layer in the network where
+  needed.
 - <code style="color: teal;">Error Handling</code> The layer includes checks to ensure that the initialization state is
   set correctly before performing forward or backward passes, preventing errors due to uninitialized parameters.
 
@@ -641,8 +702,8 @@ difference between predicted outputs and true targets. The key functionalities o
   <h3 style="display: inline-block;">$$\text{doutput}(i, j) = \hat{y}_{i,j} - y_{i,j}$$</h3>
 
   - **$\text{Loss}$**: The Categorical Cross Entropy loss function measures the difference between the predicted
-    probability distribution ($\hat{y}_{i,j}$) and the actual one-hot encoded target distribution ($y_{i,j}$) over a
-    batch of size $N$ with $C$ classes.
+    probability distribution (**$\hat{y}_{i,j}$**) and the actual one-hot encoded target distribution (**$$y_{i,j}$$**)
+    over a batch of size $N$ with $C$ classes.
 
   - **$\hat{y}_{i,j}$**: This represents the predicted probability for the $j$-th class of the $i$-th example in the
     batch, clipped to avoid taking the log of zero.
@@ -765,6 +826,21 @@ follows:
 
 ---
 
+### Tensor Operations
+
+- <code style="color: teal;">Optimizer Integration</code> The TensorOperations class is designed to support the weight
+  and bias updates used by optimizers like Adam, RMSProp, SGD, and SGD with Momentum. It ensures seamless integration of
+  these optimizers by handling tensor updates efficiently.
+
+- <code style="color: teal;">Flexible Dimension Support</code> The class provides functions to apply updates to tensors
+  of various dimensions, including 1D (for biases), 2D (for Fully Connected Layers), and 4D (for Convolutional Layers).
+  This flexibility allows the class to cater to different layer types within the neural network.
+
+- <code style="color: teal;">Update Scaling</code> Each update operation applies a scaling factor to the updates,
+  enabling precise control over the magnitude of weight and bias adjustments during training.
+
+---
+
 ### Learning Decay
 
 The `LearningDecay` class implements various learning rate decay strategies used to adjust the learning rate during
@@ -784,7 +860,7 @@ on the specified `LearningDecayType` and associated parameters:
   <h3 style="display: inline-block;">$$\text{learningRate} = \text{initialLearningRate} \times \text{decayFactor}^{\left(\frac{\text{epoch}}{\text{stepSize}}\right)}$$</h3>
 
 - <code style="color: teal;">Polynomial Decay</code> Reduces the learning rate following a polynomial function of the
-  epoch, reaching a specified `end_learning_rate` after a certain number of `decay_steps`. The formula used is:
+  epoch, reaching a specified endLearningRate after a certain number of decaySteps. The formula used is:
   <h3 style="display: inline-block;">$$\text{learningRate} = (\text{initialLearningRate} - \text{endLearningRate}) \times \left(1 - \frac{\text{epoch}}{\text{decaySteps}}\right)^{\text{power}} + \text{endLearningRate}$$</h3>
 
 - <code style="color: teal;">Inverse Time Decay</code> Applies decay so that the learning rate decreases proportionally
@@ -797,6 +873,128 @@ on the specified `LearningDecayType` and associated parameters:
 
 - <code style="color: teal;">None</code> If no decay is specified, the learning rate remains constant throughout the
   training process.
+
+By default `Learning Decay` is disabled, it can be enabled with single line of code, example:  
+ `wmodels/cnn_cd_ld_bn_e25`
+
+> **Note:**  
+> Enabling Learning Decay is mutually exclusive with enabling ELRALES.  
+> Only one mechanism can be activated during training.  
+> Exceptions are thrown during compiling the model if this is not respected.
+
+---
+
+### ELRALES: Epoch Loss Recovery Adaptive Learning Early Stopping
+
+The `ELRALES` mechanism, which stands for **Epoch Loss Recovery Adaptive Learning Early Stopping**, is a sophisticated
+technique designed to enhance the training process of neural networks. It combines the concepts of adaptive learning
+rate adjustment, early stopping, and recovery mechanisms to ensure efficient and effective model training. `ELRALES`
+operates by closely monitoring the loss during training epochs. It introduces a strategy that not only adjusts the
+learning rate based on the training progress but also includes mechanisms to save model state, recover from bad epochs
+and halt training if no significant improvement is observed. The key idea is to avoid overfitting, encourage faster
+convergence, and ensure that the model achieves optimal performance without unnecessary training. The process can be
+broken down into the following steps:
+
+- <code style="color: teal;">Initialization:</code>
+
+  - <code style="color: SteelBlue;">Learning Rate Coefficient</code>  
+    This parameter determines the factor by which the learning rate is reduced when the model fails to improve. Current
+    learning rate is multiplied by this coefficient. Coefficient must be set between `[0,1]`, otherwise CNN-CPP
+    Framework will purposefully throw runtime error.
+
+  - <code style="color: SteelBlue;">Maximum Successive Epoch Failures</code>  
+    This parameter defines the number of consecutive epochs that are allowed to fail (i.e., have a loss higher than the
+    previous best) without breaking the tolerance before the `ELRALES` proclaims early stopping. Once model makes better
+    training loss than the previous best, counting is reseted.
+
+  - <code style="color: SteelBlue;">Maximum Total Epoch Failures</code>  
+    This parameter sets the maximum number of epoch failures permitted throughout the entire training process. If the
+    total number of failures exceeds this value, the training is stopped. This ensures that the model does not waste
+    time training when it's not making meaningful progress.
+
+  - <code style="color: SteelBlue;">Tolerance</code>  
+    The tolerance parameter allows some flexibility by defining an acceptable range within which the loss can increase
+    without being considered a failure. A tolerance of `0.0` means that any increase in loss is unacceptable, while a
+    small positive tolerance allows minor increases without triggering recovery mechanisms. Tolerance value must be set
+    between `[0,1]` representing the difference in percentage of best loss and current loss.
+
+- <code style="color: teal;">Monitoring Epoch Loss</code>
+
+  - During training, the loss for each epoch is evaluated against the best loss observed so far.
+  - If a new lower loss is achieved, it becomes the new best loss, and the model’s state is saved. This includes saving
+    the kernels and biases from Convolutional Layers, the weights and biases from Dense Layers, the gamma and beta
+    parameters from Batch Normalization Layers, as well as the associated optimizer parameters.
+  - This will allow model to recover to this epoch if `ELRALES` makes decision to do so.
+
+- <code style="color: teal;">Adaptive Learning and Recovery</code>
+
+  - If the current epoch's loss fails to improve or deteriorates slightly (within the tolerance range), the number of
+    successive and total epoch failures is incremented.
+  - The learning rate is reduced by a factor specified by the `Learning Rate Coefficient` if the model breaks the
+    tolerance, triggering a recovery mechanism that restores the model to its best state.
+  - If the model continues to fail (exceeding the maximum allowed failures), `ELRALES` halts the training process (early
+    stopping).
+
+- <code style="color: teal;">Early Stopping</code>
+
+  - When the total number of epoch failures exceeds the predefined limit, training is stopped to prevent overfitting and
+    wasted computation. This ensures that the model does not continue to train when there is little to no benefit.
+
+  By default `ELRALES` is disabled, it can be enabled with single line of code, example:  
+  `wmodels/cnn_cd_elrales_e25`
+
+  > **Note:**  
+  > Enabling ELRALES is mutually exclusive with enabling Learning Decay.  
+  > Only one mechanism can be activated during training.  
+  > Exceptions are thrown during compiling the model if this is not respected.
+
+---
+
+### Gradient Clipping
+
+The `GradientClipping` class is a utility that ensures the stability of the training process by limiting the magnitude
+of gradients. This helps prevent the exploding gradient problem during backpropagation, especially in deep neural
+networks.
+
+- <code style="color: teal;">Gradient Clipping</code> The class provides functionality to clip the gradients of tensors
+  to a specified range. This is done by constraining each element in the gradient tensor to lie within the range
+  [-clip_value, clip_value].
+
+- <code style="color: teal;">Support for Multiple Dimensions</code> The GradientClipping class supports both 4D tensors
+  (commonly used in Convolutional Layers) and 2D tensors (used in Fully Connected Layers), ensuring flexibility across
+  different types of layers in the neural network.
+
+- <code style="color: teal;">Training Stability</code> By clipping gradients, this class helps to maintain training
+  stability and ensures that the model can continue learning without being disrupted by large gradient values.
+
+By default `Gradient Clipping` is disabled, it can be enabled with single line of code, example:  
+ `wmodels/example`
+
+---
+
+### NNLogger
+
+The `NNLogger` class provides various logging functionalities for tracking and analyzing the neural network’s
+performance during training and evaluation. It offers detailed output options for tensor data, progress reporting, and
+CSV logging to help in debugging and understanding the network's behavior.
+
+- <code style="color: teal;">Full Tensor Printing</code> The NNLogger can print the entire contents of 2D and 4D tensors
+  for each layer during forward and backward passes, clearly labeled with the layer name and propagation type. However,
+  as the saying goes, “With great power comes great responsibility”—printing full tensors is not recommended unless
+  absolutely necessary. Use it wisely, or be prepared for an ocean of numbers!
+
+- <code style="color: teal;">Tensor Summary Statistics</code> The class provides summary statistics for tensor data on a
+  per-layer per-propagation basis, including mean, standard deviation, minimum and maximum values, the percentage of
+  zeros, and the count of positive and negative values. This offers a more concise and practical alternative to printing
+  full tensors.
+
+- <code style="color: teal;">Training Progress Reporting</code> The NNLogger tracks and displays training progress,
+  including the completion percentage for the current epoch and overall training, elapsed training time, estimated time
+  remaining (ETA), and average loss. This comprehensive progress report helps monitor the training process effectively.
+
+- <code style="color: teal;">CSV Logging</code> The class allows the initialization and updating of CSV files to record
+  training and testing metrics such as accuracy, loss, and `ELRALES` state machine (if used). This data can be used for
+  further analysis or visualization.
 
 ## Getting Started
 
