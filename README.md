@@ -996,6 +996,87 @@ CSV logging to help in debugging and understanding the network's behavior.
   training and testing metrics such as accuracy, loss, and `ELRALES` state machine (if used). This data can be used for
   further analysis or visualization.
 
+---
+
+### Image Loader
+
+The `ImageLoader` class handles the loading of images from a dataset directory into an ImageContainer. It processes
+images for training, testing, and single prediction purposes.
+
+- <code style="color: teal;">Directory Image Loading</code> The ImageLoader loads images from specified directories,
+  categorizing them based on their folder structure into training, testing, and single prediction sets. It supports
+  common image formats such as .jpg and .png.
+
+- <code style="color: teal;">Category and Label Management</code> The class maps images to categories and labels as
+  defined by the directory structure, ensuring that the ImageContainer is organized according to the dataset's layout.
+
+- <code style="color: teal;">Loading Progress Reporting</code> The class optionally reports loading progress, showing
+  the percentage of images loaded as a visual indicator of progress.
+
+- <code style="color: teal;">Error Handling</code> The class includes error handling mechanisms to manage issues such as
+  unreadable images, ensuring robustness during the image loading process.
+
+---
+
+### Image Container
+
+The `ImageContainer` class manages the storage and organization of images and labels for training, testing, and single
+prediction tasks within a neural network.
+
+- <code style="color: teal;">Image and Label Management</code> The ImageContainer class stores images and their
+  associated labels, categorizing them into training, testing, and single prediction sets based on the provided label.
+  It supports adding images, retrieving images by category, and managing label mappings.
+
+- <code style="color: teal;">Single Prediction Support</code> The class allows for the addition and retrieval of images
+  intended for single predictions, organizing them by image name for easy access.
+
+- <code style="color: teal;">Label Mapping</code> It supports label mapping functionality, enabling the assignment of
+  mapped labels to the original labels, which can be retrieved as needed.
+
+- <code style="color: teal;">Category-Specific Retrieval</code> The class provides methods to retrieve training and test
+  images by specific categories, facilitating operations on subsets of the dataset.
+
+- <code style="color: teal;">Unique Labels Management</code> The class supports the storage and retrieval of unique
+  labels within the dataset, aiding in tasks that require knowledge of all possible categories.
+
+---
+
+### Image Augmentor
+
+The `ImageAugmentor` class is designed to apply a variety of image augmentation techniques to datasets, enhancing the
+diversity and generalization of the training data. Additionally, it handles image normalization and resizing, ensuring
+consistency across the dataset.
+
+- <code style="color: teal;">Image Resizing and Normalization</code> The ImageAugmentor ensures that each image is
+  resized to the target dimensions and normalized to a specified scale. These operations are performed only once per
+  image, regardless of how many times the augmentation process is invoked.
+
+- <code style="color: teal;">Zoom Augmentation</code> This class allows the application of random zoom transformations
+  on images. The zoom factor and the probability (chance) of zooming can be configured, allowing control over how often
+  this augmentation is applied.
+
+- <code style="color: teal;">Flipping Augmentation</code> The class supports both horizontal and vertical flipping of
+  images. Each type of flip can be enabled or disabled, and the probability of flipping can be configured, making it
+  possible to determine how frequently flipping occurs during augmentation.
+
+- <code style="color: teal;">Shearing Augmentation</code> Images can undergo shear transformations to introduce slanting
+  effects. The shear range and the probability of shearing can be adjusted, providing control over how often and how
+  much shearing is applied.
+
+- <code style="color: teal;">Gaussian Noise Augmentation</code> The ImageAugmentor can add Gaussian noise to images,
+  simulating natural variations in image quality. Both the intensity of the noise (standard deviation) and the
+  probability of noise being added can be configured to simulate different noise levels.
+
+- <code style="color: teal;">Gaussian Blur Augmentation</code> The class allows for the application of Gaussian blur to
+  images, which can simulate different focus levels. The strength of the blur (kernel size) and the probability of
+  applying the blur are adjustable, enabling selective application of this effect.
+
+- <code style="color: teal;">Testing & Single Prediction Image Support</code> The ImageAugmentor can also apply
+  augmentation operations to images designated for testing or single predictions, depending on configuration ensuring
+  consistency in preprocessing across different types of images.
+
+---
+
 ## Getting Started
 
 ### Step 1: Clone the Repository
@@ -1045,11 +1126,10 @@ every Docker command. If not already configured, you can add your user to the do
 sudo usermod -aG docker $USER
 ```
 
-**Windows:** Ensure that the Docker Desktop application is running before executing any Docker commands. This
-application manages Docker engine and allows container management on Windows.
+**Windows:** Ensure that the Docker Desktop application is running before executing any Docker commands.
 
-**Mac OS:** Docker on Mac behaves similarly to Linux. Ensure Docker Desktop is running as it provides the necessary
-Docker engine to manage containers. You do not need to start a separate Docker service as with Windows.
+**Mac OS:** Docker on Mac behaves similarly to Linux. You do not need to start a separate Docker service as with
+Windows.
 
 First, ensure you are positioned at the root of the repository. The Docker image needs to be built only once. To build
 the Docker image, use the following command:
@@ -1085,16 +1165,71 @@ Building the Docker image is a one-time requirement unless it is deleted.
 This ensures that all necessary components are properly set up for your development environment.  
 Size of Docker image for CNN-CPP is approximately: **1.85GB**
 
-### Dataset Structure
+## Using the Framework
 
-### Graphs
+### Python Invoke
 
-### Image
+Once docker container is started in interactive mode or native Linux setup is done, you can proceed to python invokes.
 
-- Loading
-- Augmenting
-- Resizing
+- <code style="color: teal;">invoke extract</code> The extract task extracts all .zip files in the datasets folder,
+  including handling split .zip files (some datasets are already available in datasets folder).
 
-## Model Example
+- <code style="color: teal;">invoke build</code> The build task compiles the project.
+
+  - --jobs: Specifies the number of jobs to run simultaneously during the build (default is 1), recommended jobs is 4
+    (i.e. invoke build --jobs 4).
+
+  - --clean: Cleans the build directories before compiling.
+
+    > **Note:**  
+    > First build might take a while, since it builds OpenCV first.
+
+- <code style="color: teal;">invoke run</code> The run task executes the compiled project located in the build
+  directory.
+
+- <code style="color: teal;">invoke clean</code> The clean task removes generated files and directories.
+
+  - --build: Cleans build directories (removes compiled files and binaries).
+  - --datasets: Cleans the datasets folder, keeping only .zip files.
+  - --all: Performs a full cleanup, combining build and datasets.  
+    By default all invocations to clean are deleting unversioned `.txt`, `.png`, `.csv` files.
+
+- <code style="color: teal;">invoke install</code> The install task installs the project by running the `install.sh`
+  script (no need for this when using docker, or in case `install.sh` is already run with native Linux setup). Script is
+  idempotent so multiple runs won't cause harm.
+
+- <code style="color: teal;">invoke test</code> The test task executes all GoogleTest unit tests.
+
+- <code style="color: teal;">invoke plot</code> The plot task parses a CSV file and generates plots for training and
+  testing metrics.
+
+  - --csv: Specifies the path to the CSV file (default is logs/cnn.csv). This is also the default location of Neural
+    Network csv output. So if not specified during model creation skip this flag.
+  - --output_dir: Specifies the directory where plots will be saved (default is plots).
+
+    > **Note:**  
+    > To summarize invoke plot => If no relative path to the output `csv` is specified during model creation just use
+    > `invoke plot` without arguments. Best time to use this is when model finishes learning, although it can be invoked
+    > in separate terminal after epochs or during epochs, if early plots are necessary.
+
+### Creating a Model
+
+Instead of providing a detailed step-by-step guide on how to create a model from scratch, this framework offers a
+collection of 10 pre-built models located in the `wmodels` directory. Among these, the model named `example` serves as a
+comprehensive guide, containing annotated steps that illustrate the process of building a model using this framework.
+
+This approach allows you to explore practical examples directly, making it easier to understand the intricacies of model
+creation. For those looking to see these models in action, some of them are utilized in the Results section. Feel free
+to train them yourself or experiment with new models.
+
+Also not to forget, you can rewrite existing models with your own desired architecture, or even create a new `.hpp` file
+containing a new model in `wmodels`. If new `.hpp` model is created, just include it in `main.cpp` and call the newly
+created function in main, commenting calls to other model functions.
+
+### Custom Datasets
 
 ## Results
+
+## Doxygen
+
+## Further Plans
