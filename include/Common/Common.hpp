@@ -178,8 +178,8 @@ enum class ELRALES_Retval
 enum class LogLevel
 {
     None,         /**< No logging */
-    LayerOutputs, /**< Log layer outputs */
-    All           /**< Log all details */
+    LayerSummary, /**< Log layer forward and backward summary */
+    FullTensor    /**< Log full tensors */
 };
 
 /**

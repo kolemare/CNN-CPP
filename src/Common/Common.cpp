@@ -219,10 +219,10 @@ std::string toString(LogLevel value)
     {
     case LogLevel::None:
         return "None";
-    case LogLevel::LayerOutputs:
-        return "LayerOutputs";
-    case LogLevel::All:
-        return "All";
+    case LogLevel::LayerSummary:
+        return "LayerSummary";
+    case LogLevel::FullTensor:
+        return "FullTensor";
     default:
         return "UNKNOWN";
     }

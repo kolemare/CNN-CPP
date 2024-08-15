@@ -202,6 +202,13 @@ public:
     void setImageSize(const int targetWidth, const int targetHeight);
 
     /**
+     * @brief Sets the path to csv that will be created for training and testing metrics.
+     *
+     * @param outputCSV Relative path to csv that will be created for training and testing metrics.
+     */
+    void setCSVPath(std::string outputCSV);
+
+    /**
      * @brief Enables the ELRALES algorithm for adaptive learning and early stopping.
      *
      * @param learning_rate_coef Coefficient for adjusting the learning rate (default is 0.5).
@@ -262,6 +269,7 @@ private:
     int maxEpochFailures;                       ///< Max total epoch failures for ELRALES.
     double tolerance;                           ///< Tolerance for ELRALES.
     std::unique_ptr<ELRALES> elrales = nullptr; ///< ELRALES instance for adaptive learning and early stopping.
+    std::string outputCSV;                      ///< Relative path to the output csv of training and testing metrics
 
     /**
      * @brief Resets the members when making changes to network to their initial state.

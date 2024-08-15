@@ -18,6 +18,7 @@ NeuralNetwork::NeuralNetwork()
     this->currentDepth = 3;
     this->logLevel = LogLevel::None;
     this->progressLevel = ProgressLevel::None;
+    outputCSV = "logs/cnn.csv";
 }
 
 void NeuralNetwork::setImageSize(const int targetWidth,
@@ -26,6 +27,12 @@ void NeuralNetwork::setImageSize(const int targetWidth,
     inputHeight = targetHeight;
     inputWidth = targetWidth;
     this->hardReset();
+}
+
+void NeuralNetwork::setCSVPath(std::string outputCSV)
+{
+    this->outputCSV = outputCSV;
+    std::cout << "Output CSV relative path => " << outputCSV << std::endl;
 }
 
 void NeuralNetwork::setLogLevel(LogLevel level)
@@ -48,7 +55,7 @@ void NeuralNetwork::addConvolutionLayer(int filters,
                                         ConvBiasInitialization bias_init)
 {
     layers.push_back(std::make_shared<ConvolutionLayer>(filters, kernel_size, stride, padding, kernel_init, bias_init));
-    if (logLevel == LogLevel::All)
+    if (LogLevel::LayerSummary == logLevel)
     {
         std::cout << "Added Convolution Layer with " << filters << " filters, kernel size " << kernel_size << ", stride " << stride << ", padding " << padding << std::endl;
     }
@@ -59,7 +66,7 @@ void NeuralNetwork::addMaxPoolingLayer(int pool_size,
                                        int stride)
 {
     layers.push_back(std::make_shared<MaxPoolingLayer>(pool_size, stride));
-    if (logLevel == LogLevel::All)
+    if (LogLevel::LayerSummary == logLevel)
     {
         std::cout << "Added Max Pooling Layer with pool size " << pool_size << ", stride " << stride << std::endl;
     }
@@ -70,7 +77,7 @@ void NeuralNetwork::addAveragePoolingLayer(int pool_size,
                                            int stride)
 {
     layers.push_back(std::make_shared<AveragePoolingLayer>(pool_size, stride));
-    if (logLevel == LogLevel::All)
+    if (LogLevel::LayerSummary == logLevel)
     {
         std::cout << "Added Average Pooling Layer with pool size " << pool_size << ", stride " << stride << std::endl;
     }
@@ -83,7 +90,7 @@ void NeuralNetwork::addFlattenLayer()
     {
         layers.push_back(std::make_shared<FlattenLayer>());
         flattenAdded = true;
-        if (logLevel == LogLevel::All)
+        if (LogLevel::LayerSummary == logLevel)
         {
             std::cout << "Added Flatten Layer" << std::endl;
         }
@@ -100,7 +107,7 @@ void NeuralNetwork::addFullyConnectedLayer(int output_size,
                                            DenseBiasInitialization bias_init)
 {
     layers.push_back(std::make_shared<FullyConnectedLayer>(output_size, weight_init, bias_init));
-    if (logLevel == LogLevel::All)
+    if (LogLevel::LayerSummary == logLevel)
     {
         std::cout << "Added Fully Connected Layer with output size " << output_size << std::endl;
     }
@@ -110,7 +117,7 @@ void NeuralNetwork::addFullyConnectedLayer(int output_size,
 void NeuralNetwork::addActivationLayer(ActivationType type)
 {
     layers.push_back(std::make_shared<ActivationLayer>(type));
-    if (logLevel == LogLevel::All)
+    if (LogLevel::LayerSummary == logLevel)
     {
         std::cout << "Added Activation Layer of type " << static_cast<int>(type) << std::endl;
     }
@@ -121,7 +128,7 @@ void NeuralNetwork::addBatchNormalizationLayer(double epsilon,
                                                double momentum)
 {
     layers.push_back(std::make_shared<BatchNormalizationLayer>(epsilon, momentum));
-    if (logLevel == LogLevel::All)
+    if (LogLevel::LayerSummary == logLevel)
     {
         std::cout << "Added Batch Normalization Layer" << std::endl;
     }
@@ -131,7 +138,7 @@ void NeuralNetwork::addBatchNormalizationLayer(double epsilon,
 void NeuralNetwork::setLossFunction(LossType type)
 {
     lossFunction = LossFunction::create(type);
-    if (logLevel == LogLevel::All)
+    if (LogLevel::LayerSummary == logLevel)
     {
         std::cout << "Set Loss Function of type " << static_cast<int>(type) << std::endl;
     }
@@ -191,7 +198,7 @@ void NeuralNetwork::compile(OptimizerType optimizerType,
         this->enableELRALES(0.0, 0, 0, 0.0, ELRALES_Mode::DISABLED);
     }
 
-    if (elralesMode == ELRALES_Mode::ENABLED && learningDecayMode != LearningDecayType::NONE)
+    if (ELRALES_Mode::ENABLED == elralesMode && LearningDecayType::NONE != learningDecayMode)
     {
         throw std::runtime_error("Cannot use both ELRALES and LearningDecay simultaneously.");
     }
@@ -236,7 +243,7 @@ void NeuralNetwork::compile(OptimizerType optimizerType,
 
 Eigen::Tensor<double, 4> NeuralNetwork::forward(const Eigen::Tensor<double, 4> &input)
 {
-    if (logLevel == LogLevel::All || logLevel == LogLevel::LayerOutputs)
+    if (LogLevel::LayerSummary == logLevel)
     {
         NNLogger::printTensorSummary(input, "INPUT", PropagationType::FORWARD);
     }
@@ -249,7 +256,7 @@ Eigen::Tensor<double, 4> NeuralNetwork::forward(const Eigen::Tensor<double, 4> &
         layerInputs.push_back(output);
         output = layers[i]->forward(output);
 
-        if (logLevel == LogLevel::All || logLevel == LogLevel::LayerOutputs)
+        if (LogLevel::LayerSummary == logLevel)
         {
             std::string layerType;
             if (dynamic_cast<ConvolutionLayer *>(layers[i].get()))
@@ -281,11 +288,11 @@ Eigen::Tensor<double, 4> NeuralNetwork::forward(const Eigen::Tensor<double, 4> &
                 layerType = "Batch Normalization Layer";
             }
 
-            if (logLevel == LogLevel::All)
+            if (LogLevel::FullTensor == logLevel)
             {
                 NNLogger::printFullTensor(output, layerType, PropagationType::FORWARD);
             }
-            else
+            else if (LogLevel::LayerSummary == logLevel)
             {
                 NNLogger::printTensorSummary(output, layerType, PropagationType::FORWARD);
             }
@@ -298,7 +305,7 @@ Eigen::Tensor<double, 4> NeuralNetwork::forward(const Eigen::Tensor<double, 4> &
 void NeuralNetwork::backward(const Eigen::Tensor<double, 4> &d_output,
                              double learning_rate)
 {
-    if (logLevel == LogLevel::All || logLevel == LogLevel::LayerOutputs)
+    if (LogLevel::LayerSummary == logLevel)
     {
         NNLogger::printTensorSummary(d_output, "OUTPUT", PropagationType::BACK);
     }
@@ -344,16 +351,13 @@ void NeuralNetwork::backward(const Eigen::Tensor<double, 4> &d_output,
             GradientClipping::clipGradients(d_input, clipValue);
         }
 
-        if (logLevel == LogLevel::All || logLevel == LogLevel::LayerOutputs)
+        if (LogLevel::FullTensor == logLevel)
         {
-            if (logLevel == LogLevel::All)
-            {
-                NNLogger::printFullTensor(d_input, layerType, PropagationType::BACK);
-            }
-            else
-            {
-                NNLogger::printTensorSummary(d_input, layerType, PropagationType::BACK);
-            }
+            NNLogger::printFullTensor(d_input, layerType, PropagationType::BACK);
+        }
+        else if (LogLevel::LayerSummary == logLevel)
+        {
+            NNLogger::printTensorSummary(d_input, layerType, PropagationType::BACK);
         }
     }
 }
@@ -374,7 +378,7 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
 
     this->batchSize = batch_size;
 
-    NNLogger::initializeCSV("cnn.csv");
+    NNLogger::initializeCSV(outputCSV);
 
     BatchManager batchManager(imageContainer, batch_size, BatchType::Training);
     std::cout << "Training started..." << std::endl;
@@ -475,7 +479,7 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
                 std::cout << "Testing Accuracy: " << std::get<0>(evaluation) << std::endl;
                 std::cout << "Testing Loss: " << std::get<1>(evaluation) << std::endl;
                 std::cout << "ELRALES: " << elralesState << std::endl;
-                NNLogger::appendToCSV("logs/cnn.csv", epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), elralesState);
+                NNLogger::appendToCSV(outputCSV, epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), elralesState);
             }
             else if (ELRALES_Retval::WASTED_EPOCH == elralesEvaluation)
             {
@@ -485,7 +489,7 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
                 std::cout << "Wasted Testing Accuracy: " << std::get<0>(evaluation) << std::endl;
                 std::cout << "Wasted Testing Loss: " << std::get<1>(evaluation) << std::endl;
                 std::cout << "ELRALES: " << elralesState << std::endl;
-                NNLogger::appendToCSV("logs/cnn.csv", epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), elralesState);
+                NNLogger::appendToCSV(outputCSV, epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), elralesState);
                 ++epochs; // This ensures the number of successful epochs remains constant
             }
             else if (ELRALES_Retval::END_LEARNING == elralesEvaluation)
@@ -496,7 +500,7 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
                 std::cout << "EarlyStopping Testing Accuracy: " << std::get<0>(evaluation) << std::endl;
                 std::cout << "EarlyStopping Testing Loss: " << std::get<1>(evaluation) << std::endl;
                 std::cout << "ELRALES: " << elralesState << std::endl;
-                NNLogger::appendToCSV("logs/cnn.csv", epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), elralesState);
+                NNLogger::appendToCSV(outputCSV, epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), elralesState);
                 break;
             }
             elralesStateMachineTimeLine.push_back(static_cast<ELRALES_StateMachine>(elralesStateMachine));
@@ -509,7 +513,7 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
             std::cout << "Testing Accuracy: " << std::get<0>(evaluation) << std::endl;
             std::cout << "Testing Loss: " << std::get<1>(evaluation) << std::endl;
             std::cout << "ELRALES: OFF" << std::endl;
-            NNLogger::appendToCSV("logs/cnn.csv", epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), "OFF");
+            NNLogger::appendToCSV(outputCSV, epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), "OFF");
         }
     }
 
@@ -721,11 +725,7 @@ void NeuralNetwork::enableELRALES(double learning_rate_coef,
                   << ", TOL: " << tolerance
                   << "|" << std::endl;
     }
-    else if (ELRALES_Mode::DISABLED == mode)
-    {
-        std::cout << "|Epoch Loss Recovery Adaptive Learning Early Stopping Disabled|" << std::endl;
-    }
-    else
+    if (ELRALES_Mode::ENABLED != mode && ELRALES_Mode::DISABLED != mode)
     {
         throw std::runtime_error("Unknown ELRALES mode.");
     }

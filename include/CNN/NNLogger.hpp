@@ -86,10 +86,10 @@ public:
     /**
      * @brief Initializes a CSV file for logging training metrics.
      *
-     * @param filename The name of the CSV file to initialize.
+     * @param filePath The path to csv file for initialization.
      * @throw std::runtime_error If the file cannot be opened.
      */
-    static void initializeCSV(const std::string &filename);
+    static void initializeCSV(const std::string &filePath);
 
     /**
      * @brief Appends training metrics for a specific epoch to the CSV file.

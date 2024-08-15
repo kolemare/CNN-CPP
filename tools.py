@@ -11,32 +11,29 @@ def clean_build():
         shutil.rmtree('build')
 
 def delete_txts():
-    print("Deleting all .txt files...")
+    print("Cleaning all .txt files...")
     for item in os.listdir('.'):
         if item.endswith('.txt') and item != 'CMakeLists.txt':
             os.remove(item)
-    print("TXT files deletion completed.")
 
 def delete_pngs_and_csvs():
-    print("Deleting all .png and .csv files in logs and plots directories...")
+    print("Cleaning all .png and .csv files in logs and plots directories...")
     for directory in ['logs', 'plots']:
         if os.path.exists(directory):
             for item in os.listdir(directory):
                 if item.endswith('.png') or item.endswith('.csv'):
                     os.remove(os.path.join(directory, item))
-    print("PNG and CSV files deletion completed.")
 
 def delete_vscode_folder():
-    print("Deleting .vscode folder if it exists...")
     vscode_folder = '.vscode'
     if os.path.exists(vscode_folder):
         shutil.rmtree(vscode_folder)
-        print(".vscode folder deleted.")
 
 def clean_datasets():
     """
-    Clean the datasets folder, keeping only .zip files and files that contain '.zip.' in their names.
+    Clean the datasets folder.
     """
+    print("Cleaning datasets directory...")
     datasets_dir = 'datasets'
     if os.path.exists(datasets_dir):
         for item in os.listdir(datasets_dir):
@@ -46,9 +43,6 @@ def clean_datasets():
                     os.remove(item_path)
                 elif os.path.isdir(item_path):
                     shutil.rmtree(item_path)
-        print("Datasets directory cleaned, only .zip files and files containing '.zip.' kept.")
-    else:
-        print("Datasets directory does not exist. Skipping.")
 
 def extract_datasets(directory):
     """
