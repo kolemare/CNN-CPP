@@ -1176,8 +1176,8 @@ Once docker container is started in interactive mode or native Linux setup is do
 
 - <code style="color: teal;">invoke build</code> The build task compiles the project.
 
-  - --jobs: Specifies the number of jobs to run simultaneously during the build (default is 1), recommended jobs is 4
-    (i.e. invoke build --jobs 4).
+  - --jobs: Specifies the number of jobs to run simultaneously during the build (default is 1), recommendation is to use
+    4 jobs (`invoke build --jobs 4`) for faster build of the framework.
 
   - --clean: Cleans the build directories before compiling.
 
@@ -1226,7 +1226,28 @@ Also not to forget, you can rewrite existing models with your own desired archit
 containing a new model in `wmodels`. If new `.hpp` model is created, just include it in `main.cpp` and call the newly
 created function in main, commenting calls to other model functions.
 
-### Custom Datasets
+### Datasets
+
+To work seamlessly with this framework, datasets must follow a specific directory structure. This structure ensures that
+the framework can automatically detect categories and handle one-hot encoding internally, simplifying the setup process.
+
+- <code style="color: teal;">Dataset Directory Structure</code> The dataset directory must contain the following three
+  folders:
+  - training_set
+  - test_set
+  - single_predictions
+- <code style="color: teal;">Training and Test Sets</code> Within both training_set and test_set, there should be
+  subfolders named after specific categories (e.g. car, boat, plane). Each subfolder contains images representing that
+  category. The names of the images are irrelevant, the structure ensures correct categorization.
+
+- <code style="color: teal;">Single Predictions</code> The single_predictions folder holds images for single prediction
+  tasks. As with the other sets, image names are not important only the content and directory structure matter.
+
+- <code style="color: teal;">Automatic Category Detection and Encoding</code> By following this structure, the model
+  automatically detects categories and performs one-hot encoding under the hood, eliminating the need for manual
+  preprocessing.
+
+Already existing datasets can be used as an example after extraction.
 
 ## Results
 
