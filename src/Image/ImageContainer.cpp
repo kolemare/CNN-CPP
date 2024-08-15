@@ -105,3 +105,13 @@ const std::vector<std::string> &ImageContainer::getUniqueLabels() const
 {
     return this->uniqueLabels;
 }
+
+void ImageContainer::setNormalizationScale(float scale)
+{
+    normalizationScale = scale;
+}
+
+float ImageContainer::getNormalizationScale() const
+{
+    return normalizationScale;
+}

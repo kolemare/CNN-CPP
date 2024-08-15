@@ -178,7 +178,7 @@ void BatchManager::saveBatchImages(const Eigen::Tensor<double, 4> &batchImages,
         }
 
         // Convert the image to 8-bit format and save to disk
-        image.convertTo(image, CV_8UC3, 255.0);
+        image.convertTo(image, CV_8UC3, 255.0 / imageContainer.getNormalizationScale());
         std::string imagePath = categoryDir + "/image" + std::to_string(i) + ".jpg";
         cv::imwrite(imagePath, image);
     }

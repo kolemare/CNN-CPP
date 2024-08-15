@@ -18,6 +18,12 @@
  */
 #define AUGMENT_PROGRESS
 
+/**
+ * @def SAVE_BATCHES
+ * @brief Macro to enable baching saves to disk.
+ */
+// #define SAVE_BATCHES
+
 // Enum class declarations
 
 /**

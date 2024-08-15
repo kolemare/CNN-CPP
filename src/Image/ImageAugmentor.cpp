@@ -11,6 +11,7 @@ ImageAugmentor::ImageAugmentor(int targetWidth, int targetHeight)
     shearRange = 0.2f;
     gaussianNoiseStdDev = 10.0f;
     gaussianBlurKernelSize = 5;
+    normalizationScale = 1.0f;
     zoomChance = 0.0f;
     horizontalFlipChance = 0.0f;
     verticalFlipChance = 0.0f;
@@ -22,8 +23,8 @@ ImageAugmentor::ImageAugmentor(int targetWidth, int targetHeight)
 void ImageAugmentor::augmentImages(ImageContainer &container,
                                    const AugmentTarget &augmentTarget)
 {
-
     auto &trainingImages = container.getTrainingImages();
+    container.setNormalizationScale(normalizationScale);
 
 #ifdef AUGMENT_PROGRESS
     int trainingImagesCount = trainingImages.size();
@@ -32,7 +33,12 @@ void ImageAugmentor::augmentImages(ImageContainer &container,
 
     for (auto &image : trainingImages)
     {
-        *image = rescale(*image);
+        if (markProcessed(*image, processedImages))
+        {
+            *image = rescale(*image);
+            normalizeImage(*image);
+        }
+
         if (AugmentTarget::WHOLE_DATASET == augmentTarget || AugmentTarget::TRAIN_DATASET == augmentTarget)
         {
             if (distribution(generator) < zoomChance)
@@ -66,7 +72,6 @@ void ImageAugmentor::augmentImages(ImageContainer &container,
             std::cout << "\rAugmenting training images... " << progress << "%" << std::flush;
 #endif
         }
-        normalizeImage(*image);
     }
 
     auto &testImages = container.getTestImages();
@@ -78,7 +83,12 @@ void ImageAugmentor::augmentImages(ImageContainer &container,
 
     for (auto &image : testImages)
     {
-        *image = rescale(*image);
+        if (markProcessed(*image, processedImages))
+        {
+            *image = rescale(*image);
+            normalizeImage(*image);
+        }
+
         if (AugmentTarget::WHOLE_DATASET == augmentTarget || AugmentTarget::TEST_DATASET == augmentTarget)
         {
             if (distribution(generator) < zoomChance)
@@ -112,7 +122,6 @@ void ImageAugmentor::augmentImages(ImageContainer &container,
             std::cout << "\rAugmenting test images... " << progress << "%" << std::flush;
 #endif
         }
-        normalizeImage(*image);
     }
 
     auto &singlePredictionImages = container.getSinglePredictionImages();
@@ -124,7 +133,12 @@ void ImageAugmentor::augmentImages(ImageContainer &container,
 
     for (auto &[imageName, image] : singlePredictionImages)
     {
-        *image = rescale(*image);
+        if (markProcessed(*image, processedImages))
+        {
+            *image = rescale(*image);
+            normalizeImage(*image);
+        }
+
         if (AugmentTarget::WHOLE_DATASET == augmentTarget || AugmentTarget::SINGLE_PREDICTION == augmentTarget)
         {
             if (distribution(generator) < zoomChance)
@@ -158,7 +172,6 @@ void ImageAugmentor::augmentImages(ImageContainer &container,
             std::cout << "\rAugmenting single prediction images... " << progress << "%" << std::flush;
 #endif
         }
-        normalizeImage(*image);
     }
 }
 
@@ -220,6 +233,16 @@ void ImageAugmentor::setGaussianBlurChance(float chance)
 void ImageAugmentor::setShearChance(float chance)
 {
     shearChance = chance;
+}
+
+void ImageAugmentor::setNormalizationScale(float scale)
+{
+    normalizationScale = scale;
+}
+
+float ImageAugmentor::getNormalizationScale() const
+{
+    return normalizationScale;
 }
 
 cv::Mat ImageAugmentor::rescale(const cv::Mat &image)
@@ -330,6 +353,17 @@ cv::Mat ImageAugmentor::shear(const cv::Mat &image)
 
 void ImageAugmentor::normalizeImage(cv::Mat &image)
 {
-    // Normalize image to range [0, 1]
-    image.convertTo(image, CV_32F, 1.0 / 255.0);
+    // Normalize image to range [0, normalizationScale]
+    image.convertTo(image, CV_32F, normalizationScale / 255.0);
+}
+
+bool ImageAugmentor::markProcessed(cv::Mat &image, std::unordered_set<cv::Mat *> &processedImages)
+{
+    if (processedImages.find(&image) != processedImages.end())
+    {
+        return false;
+    }
+
+    processedImages.insert(&image);
+    return true;
 }

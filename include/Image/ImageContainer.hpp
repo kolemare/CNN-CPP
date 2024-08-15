@@ -131,6 +131,20 @@ public:
      */
     std::vector<std::shared_ptr<cv::Mat>> getTestImagesByCategory(const std::string &category) const;
 
+    /**
+     * @brief Set the normalization scale for the images.
+     *
+     * @param scale Normalization scale (e.g., 1.0 for range [0, 1]).
+     */
+    void setNormalizationScale(float scale);
+
+    /**
+     * @brief Get the current normalization scale.
+     *
+     * @return float The normalization scale.
+     */
+    float getNormalizationScale() const;
+
 private:
     std::vector<std::string> uniqueLabels;                     ///< Unique labels in the dataset
     std::vector<std::shared_ptr<cv::Mat>> images;              ///< All images
@@ -142,6 +156,7 @@ private:
     std::unordered_map<std::string, std::shared_ptr<cv::Mat>> singlePredictionImages; ///< Map of image names to images for single prediction
     std::vector<std::string> trainingLabels;                                          ///< Training labels
     std::vector<std::string> testLabels;                                              ///< Test labels
+    float normalizationScale;                                                         ///< Normalization scale
 };
 
 #endif // IMAGECONTAINER_HPP

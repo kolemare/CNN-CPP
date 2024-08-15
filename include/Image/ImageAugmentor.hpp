@@ -5,13 +5,14 @@
 #include "ImageContainer.hpp"
 #include "Common.hpp"
 #include <random>
+#include <unordered_set>
 
 /**
  * @brief A class to perform image augmentation operations.
  *
  * The ImageAugmentor class provides various image transformation operations
  * such as zoom, flip, noise addition, blur, and shear to augment image datasets.
- * ImageAugmentor is also responsible for normalization of image and resizing.
+ * ImageAugmentor is also responsible for normalization and resizing of images.
  */
 class ImageAugmentor
 {
@@ -118,6 +119,20 @@ public:
      */
     void setShearChance(float chance);
 
+    /**
+     * @brief Set the normalization scale for the images.
+     *
+     * @param scale Normalization scale (e.g., 1.0 for range [0, 1]).
+     */
+    void setNormalizationScale(float scale);
+
+    /**
+     * @brief Get the current normalization scale.
+     *
+     * @return float The normalization scale.
+     */
+    float getNormalizationScale() const;
+
 private:
     /**
      * @brief Rescale the image to the target width and height.
@@ -176,11 +191,20 @@ private:
     cv::Mat shear(const cv::Mat &image);
 
     /**
-     * @brief Normalize the image's pixel values.
+     * @brief Normalize the image's pixel values to the specified scale.
      *
      * @param image The image to normalize.
      */
     void normalizeImage(cv::Mat &image);
+
+    /**
+     * @brief Check and mark if an image has been processed for normalization and resizing.
+     *
+     * @param image The image to check.
+     * @param processedImages Set to track processed images.
+     * @return bool True if the image was processed, otherwise false.
+     */
+    bool markProcessed(cv::Mat &image, std::unordered_set<cv::Mat *> &processedImages);
 
     float zoomFactor;           ///< Zoom factor for augmentation
     bool horizontalFlipFlag;    ///< Flag for horizontal flip
@@ -198,8 +222,11 @@ private:
     float shearChance;          ///< Probability of shearing
     float shearRange;           ///< Range for shear transformation
 
+    float normalizationScale; ///< Normalization scale factor
+
     std::default_random_engine generator;               ///< Random number generator
     std::uniform_real_distribution<float> distribution; ///< Uniform distribution for randomness
+    std::unordered_set<cv::Mat *> processedImages;      ///< Set to track processed images
 };
 
 #endif // IMAGE_AUGMENTOR_HPP
