@@ -1,12 +1,9 @@
 #ifndef CONVOLUTIONLAYER_HPP
 #define CONVOLUTIONLAYER_HPP
 
-#include <vector>
-#include <random>
-#include <unsupported/Eigen/CXX11/Tensor>
+
 #include "Layer.hpp"
 #include "ThreadPool.hpp"
-#include "Optimizer.hpp"
 
 /**
  * @class ConvolutionLayer

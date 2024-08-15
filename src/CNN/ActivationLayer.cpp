@@ -1,7 +1,4 @@
 #include "ActivationLayer.hpp"
-#include <cmath>
-#include <stdexcept>
-#include <iostream>
 
 ActivationLayer::ActivationLayer(ActivationType type)
 {

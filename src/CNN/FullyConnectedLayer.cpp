@@ -1,6 +1,4 @@
 #include "FullyConnectedLayer.hpp"
-#include <stdexcept>
-#include <iostream>
 
 FullyConnectedLayer::FullyConnectedLayer(int output_size,
                                          DenseWeightInitialization weight_init,

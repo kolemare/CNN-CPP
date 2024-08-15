@@ -1,6 +1,4 @@
 #include "GradientClipping.hpp"
-#include <algorithm>
-#include <cmath>
 
 void GradientClipping::clipGradients(Eigen::Tensor<double, 4> &gradients,
                                      double clip_value)

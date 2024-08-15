@@ -30,30 +30,30 @@ users with similar capabilities to define, train, and deploy neural network mode
 ```plaintext
 CNN-CPP/
 ├── datasets/                   # Versioned Datasets
-├── external/                   # External dependencies for the project
+├── external/                   # External dependencies for the framework
 │   ├── eigen/                  # Eigen library for tensor operations
 │   ├── googletest/             # GoogleTest for unit testing
 │   └── opencv/                 # OpenCV for image processing
-├── include/                    # Header files for the project
+├── include/                    # Header files for the framework
 │   ├── CNN/                    # Definitions for Convolutional Neural Network
 │   ├── Common/                 # Common utilities and helper functions
 │   ├── Image/                  # Definitions for image processing
 │   └── ThreadPool/             # Thread pool for parallel execution
 ├── logs/                       # Placeholder directory for log files
 ├── plots/                      # Placeholder directory for storing plots and graphs
-├── src/                        # Source files for the project
+├── src/                        # Source files for the framework
 │   ├── CNN/                    # Source files for Convolutional Neural Network
 │   ├── Common/                 # Source files for common utilities
 │   ├── Image/                  # Source files for image processing
 │   ├── ThreadPool/             # Source files for thread pool implementation
 │   └── main.cpp                # Main program file
-├── tests/                      # Unit tests for the project
+├── tests/                      # Unit tests for the framework
 ├── wmodels/                    # Already created models, used in Results
 ├── .gitignore                  # Specifies untracked files to ignore
 ├── CMakeLists.txt              # CMake configuration file
 ├── Dockerfile                  # Docker configuration for setting up the environment
 ├── install.sh                  # Script for installing the Linux dependencies
-├── README.md                   # Project overview and setup instructions
+├── README.md                   # Framework overview and setup instructions
 ├── tasks.py                    # Script for automating common tasks
 └── tools.py                    # Utilities and helper tools for tasks
 ```
@@ -83,8 +83,8 @@ provides various functionalities to manage the architecture, training process, a
   through the network, processing input data through each layer to produce predictions.
 
 - <code style="color: teal;">Backward Propagation</code> It supports the backward pass through the network, calculating
-  gradients and updating kernels, weights, biases, gamma and betta based on the computed loss, essential for training
-  the model.
+  gradients and updating kernels, weights, biases, gamma and beta based on the computed loss, essential for training the
+  model.
 
 - <code style="color: teal;">Training Management</code> The NeuralNetwork supports training on a dataset with multiple
   epochs, managing batch sizes, learning rates, and the overall training loop. It also integrates with advanced features
@@ -555,7 +555,7 @@ input features, which are then used for predictions or further transformations.
 - <code style="color: teal;">Optimizer Requirement</code> This layer requires an optimizer to update weights and biases
   during training, as it contains trainable parameters.
 
-- <code style="color: teal;">Parameter Management</code> TThe class provides methods for setting and retrieving weights
+- <code style="color: teal;">Parameter Management</code> The class provides methods for setting and retrieving weights
   and biases, allowing external manipulation and inspection. It ensures that these parameters can be loaded during
   training (`ELRALES`).
 
@@ -845,11 +845,11 @@ follows:
 
 The `LearningDecay` class implements various learning rate decay strategies used to adjust the learning rate during
 training, improving convergence for neural network models. The class allows different decay methods to be applied based
-on the specified `LearningDecayType` and associated parameters:
+on the specified **LearningDecayType** and associated parameters:
 
-- <code style="color: teal;">Decay Type Initialization</code> The constructor accepts a `LearningDecayType` and a map of
-  parameters, setting default values if specific parameters are not provided. This ensures the decay method can operate
-  with sensible defaults.
+- <code style="color: teal;">Decay Type Initialization</code> The constructor accepts a **LearningDecayType** and a map
+  of parameters, setting default values if specific parameters are not provided. This ensures the decay method can
+  operate with sensible defaults.
 
 - <code style="color: teal;">Exponential Decay</code> Reduces the learning rate exponentially based on a specified decay
   rate. The learning rate decreases continuously over epochs, following the formula:
@@ -888,7 +888,7 @@ By default `Learning Decay` is disabled, it can be enabled with single line of c
 
 The `ELRALES` mechanism, which stands for **Epoch Loss Recovery Adaptive Learning Early Stopping**, is a sophisticated
 technique designed to enhance the training process of neural networks. It combines the concepts of adaptive learning
-rate adjustment, early stopping, and recovery mechanisms to ensure efficient and effective model training. `ELRALES`
+rate adjustment, early stopping, and recovery mechanisms to ensure efficient and effective model training. ELRALES
 operates by closely monitoring the loss during training epochs. It introduces a strategy that not only adjusts the
 learning rate based on the training progress but also includes mechanisms to save model state, recover from bad epochs
 and halt training if no significant improvement is observed. The key idea is to avoid overfitting, encourage faster
@@ -899,12 +899,12 @@ broken down into the following steps:
 
   - <code style="color: SteelBlue;">Learning Rate Coefficient</code>  
     This parameter determines the factor by which the learning rate is reduced when the model fails to improve. Current
-    learning rate is multiplied by this coefficient. Coefficient must be set between `[0,1]`, otherwise CNN-CPP
-    Framework will purposefully throw runtime error.
+    learning rate is multiplied by this coefficient. Coefficient must be set between **[0,1]**, otherwise framework will
+    purposefully throw runtime error.
 
   - <code style="color: SteelBlue;">Maximum Successive Epoch Failures</code>  
     This parameter defines the number of consecutive epochs that are allowed to fail (i.e., have a loss higher than the
-    previous best) without breaking the tolerance before the `ELRALES` proclaims early stopping. Once model makes better
+    previous best) without breaking the tolerance before the ELRALES proclaims early stopping. Once model makes better
     training loss than the previous best, counting is reseted.
 
   - <code style="color: SteelBlue;">Maximum Total Epoch Failures</code>  
@@ -914,9 +914,9 @@ broken down into the following steps:
 
   - <code style="color: SteelBlue;">Tolerance</code>  
     The tolerance parameter allows some flexibility by defining an acceptable range within which the loss can increase
-    without being considered a failure. A tolerance of `0.0` means that any increase in loss is unacceptable, while a
+    without being considered a failure. A tolerance of **0.0** means that any increase in loss is unacceptable, while a
     small positive tolerance allows minor increases without triggering recovery mechanisms. Tolerance value must be set
-    between `[0,1]` representing the difference in percentage of best loss and current loss.
+    between **[0,1]** representing the difference in percentage of best loss and current loss.
 
 - <code style="color: teal;">Monitoring Epoch Loss</code>
 
@@ -924,13 +924,13 @@ broken down into the following steps:
   - If a new lower loss is achieved, it becomes the new best loss, and the model’s state is saved. This includes saving
     the kernels and biases from Convolutional Layers, the weights and biases from Dense Layers, the gamma and beta
     parameters from Batch Normalization Layers, as well as the associated optimizer parameters.
-  - This will allow model to recover to this epoch if `ELRALES` makes decision to do so.
+  - This will allow model to recover to this epoch if ELRALES makes decision to do so.
 
 - <code style="color: teal;">Adaptive Learning and Recovery</code>
 
   - If the current epoch's loss fails to improve or deteriorates slightly (within the tolerance range), the number of
     successive and total epoch failures is incremented.
-  - The learning rate is reduced by a factor specified by the `Learning Rate Coefficient` if the model breaks the
+  - The learning rate is reduced by a factor specified by the **Learning Rate Coefficient** if the model breaks the
     tolerance, triggering a recovery mechanism that restores the model to its best state.
   - If the model continues to fail (exceeding the maximum allowed failures), `ELRALES` halts the training process (early
     stopping).
@@ -968,7 +968,7 @@ networks.
   stability and ensures that the model can continue learning without being disrupted by large gradient values.
 
 By default `Gradient Clipping` is disabled, it can be enabled with single line of code, example:  
- `wmodels/example`
+ `wmodels/cnn_example`
 
 ---
 
@@ -1077,11 +1077,15 @@ consistency across the dataset.
 
 ---
 
+## Framework Structure
+
+![Includes](wreadme/includes.jpg)
+
 ## Getting Started
 
 ### Step 1: Clone the Repository
 
-Begin by cloning the CNN-CPP project repository to your local machine. Use the following command in your terminal:
+Begin by cloning the CNN-CPP Framework repository to your local machine. Use the following command in your terminal:
 
 ```bash
 git clone https://github.com/kolemare/CNN-CPP.git
@@ -1141,7 +1145,7 @@ docker build -t cnn-cpp-image .
 To start the Docker container in interactive mode while mounting the repository directory, use:
 
 ```bash
-docker run -it -v $(pwd):/CNN_CPP cnn-cpp-image
+docker run -it -v .:/CNN_CPP cnn-cpp-image
 ```
 
 This command starts the Docker container in interactive mode and mounts the entire repository. This setup ensures that
@@ -1174,17 +1178,17 @@ Once docker container is started in interactive mode or native Linux setup is do
 - <code style="color: teal;">invoke extract</code> The extract task extracts all .zip files in the datasets folder,
   including handling split .zip files (some datasets are already available in datasets folder).
 
-- <code style="color: teal;">invoke build</code> The build task compiles the project.
+- <code style="color: teal;">invoke build</code> The build task compiles the framework.
 
   - --jobs: Specifies the number of jobs to run simultaneously during the build (default is 1), recommendation is to use
-    4 jobs (`invoke build --jobs 4`) for faster build of the framework.
+    4 jobs (**invoke build --jobs 4**) for faster build of the framework.
 
   - --clean: Cleans the build directories before compiling.
 
     > **Note:**  
     > First build might take a while, since it builds OpenCV first.
 
-- <code style="color: teal;">invoke run</code> The run task executes the compiled project located in the build
+- <code style="color: teal;">invoke run</code> The run task executes the compiled framework located in the build
   directory.
 
 - <code style="color: teal;">invoke clean</code> The clean task removes generated files and directories.
@@ -1192,11 +1196,11 @@ Once docker container is started in interactive mode or native Linux setup is do
   - --build: Cleans build directories (removes compiled files and binaries).
   - --datasets: Cleans the datasets folder, keeping only .zip files.
   - --all: Performs a full cleanup, combining build and datasets.  
-    By default all invocations to clean are deleting unversioned `.txt`, `.png`, `.csv` files.
+    By default all invocations to clean are deleting unversioned **.txt**, **.png**, **.csv** files.
 
-- <code style="color: teal;">invoke install</code> The install task installs the project by running the `install.sh`
-  script (no need for this when using docker, or in case `install.sh` is already run with native Linux setup). Script is
-  idempotent so multiple runs won't cause harm.
+- <code style="color: teal;">invoke install</code> The install task installs the dependencies by running the
+  **install.sh** script (no need for this when using docker, or in case **install.sh** is already run with native Linux
+  setup). Script is idempotent so multiple runs won't cause harm.
 
 - <code style="color: teal;">invoke test</code> The test task executes all GoogleTest unit tests.
 
@@ -1208,23 +1212,26 @@ Once docker container is started in interactive mode or native Linux setup is do
   - --output_dir: Specifies the directory where plots will be saved (default is plots).
 
     > **Note:**  
-    > To summarize invoke plot => If no relative path to the output `csv` is specified during model creation just use
-    > `invoke plot` without arguments. Best time to use this is when model finishes learning, although it can be invoked
-    > in separate terminal after epochs or during epochs, if early plots are necessary.
+    > To summarize invoke plot => If no relative path to the output **csv** is specified during model creation just use
+    > **invoke plot** without arguments. Best time to use this is when model finishes learning, although it can be
+    > invoked in separate terminal after epochs or during epochs, if early plots are necessary.
+
+- <code style="color: teal;">invoke doxygen</code> Generates the framework's documentation and compiles it into a PDF.
 
 ### Creating a Model
 
 Instead of providing a detailed step-by-step guide on how to create a model from scratch, this framework offers a
-collection of 10 pre-built models located in the `wmodels` directory. Among these, the model named `example` serves as a
-comprehensive guide, containing annotated steps that illustrate the process of building a model using this framework.
+collection of 10 pre-built models located in the **wmodels** directory. Among these, the model named `cnn_example`
+serves as a comprehensive guide, containing annotated steps that illustrate the process of building a model using this
+framework.
 
 This approach allows you to explore practical examples directly, making it easier to understand the intricacies of model
 creation. For those looking to see these models in action, some of them are utilized in the Results section. Feel free
 to train them yourself or experiment with new models.
 
-Also not to forget, you can rewrite existing models with your own desired architecture, or even create a new `.hpp` file
-containing a new model in `wmodels`. If new `.hpp` model is created, just include it in `main.cpp` and call the newly
-created function in main, commenting calls to other model functions.
+Also not to forget, you can rewrite existing models with your own desired architecture, or even create a new **.hpp**
+file containing a new model in **wmodels**. If new **.hpp** model is created, just include it in **main.cpp** and call
+the newly created function in main, commenting calls to other model functions.
 
 ### Datasets
 
@@ -1251,6 +1258,40 @@ Already existing datasets can be used as an example after extraction.
 
 ## Results
 
-## Doxygen
+## Doxygen Documentation
+
+CNN-CPP Framework employs **Doxygen** for the creation of documentation. All classes, methods, and significant code
+structures are annotated following Doxygen's conventions to support this process. Doxygen is adept at extracting these
+comments and assembling a comprehensive documentation set in a variety of output formats, such as **HTML** and **LaTeX**
+for PDF documents.
+
+### Detailed Documentation Coverage
+
+**Doxygen** annotations cover descriptions, parameter details, return values, and notable exceptions or special
+conditions. This extensive coverage ensures all code elements are well-documented, promoting maintainability and
+enhancing future framework scalability.
+
+### Generating Documentation
+
+To generate documentation navigate to framework's root directory and invoke **doxygen** with the framework's
+configuration file:
+
+```bash
+doxygen Doxyfile
+```
+
+This will generate the documentation in the outputs specified within the `Doxyfile`, including **HTML** and **LaTeX**.
+
+### Generating PDF Documentation
+
+After generating **LaTeX** files with **Doxygen**, compile them into a **PDF** with:
+
+```bash
+cd docs
+cd latex
+make
+```
+
+The result is a **PDF** document that can be viewed with any standard viewer.
 
 ## Further Plans

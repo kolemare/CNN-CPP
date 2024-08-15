@@ -1,6 +1,4 @@
 #include "LearningDecay.hpp"
-#include <cmath>
-#include <stdexcept>
 
 LearningDecay::LearningDecay(LearningDecayType decayType,
                              const std::unordered_map<std::string, double> &params)

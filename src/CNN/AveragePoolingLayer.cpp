@@ -1,7 +1,4 @@
 #include "AveragePoolingLayer.hpp"
-#include <cmath>
-#include <stdexcept>
-#include <iostream>
 
 AveragePoolingLayer::AveragePoolingLayer(int pool_size,
                                          int stride)

@@ -9,9 +9,10 @@ from tools import (
     generate_plots,
     build_project,
     run_tests,
-    delete_vscode_folder,
+    delete_docs_vscode,
     clean_datasets,
-    extract_datasets
+    extract_datasets,
+    generate_pdf
 )
 
 @task
@@ -35,7 +36,7 @@ def clean(ctx, build=False, datasets=False, all=False):
 
     delete_txts()
     delete_pngs_and_csvs()
-    delete_vscode_folder()
+    delete_docs_vscode()
 
 @task
 def build(ctx, clean=False, jobs=1):
@@ -103,3 +104,12 @@ def extract(ctx):
     :param ctx: Context instance (automatically passed by Invoke).
     """
     extract_datasets('datasets')
+
+@task
+def doxygen(ctx):
+    """
+    Generate documentation using Doxygen and compile it into a PDF.
+
+    :param ctx: Context instance (automatically passed by Invoke).
+    """
+    generate_pdf()

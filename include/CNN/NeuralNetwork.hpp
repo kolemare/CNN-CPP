@@ -1,10 +1,6 @@
 #ifndef NEURALNETWORK_HPP
 #define NEURALNETWORK_HPP
 
-#include <vector>
-#include <memory>
-#include <tuple>
-#include <unsupported/Eigen/CXX11/Tensor>
 #include "Layer.hpp"
 #include "LossFunction.hpp"
 #include "Optimizer.hpp"

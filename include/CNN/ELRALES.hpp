@@ -1,11 +1,6 @@
 #ifndef ELRALES_HPP
 #define ELRALES_HPP
 
-#include <vector>
-#include <memory>
-#include <unsupported/Eigen/CXX11/Tensor>
-#include "Layer.hpp"
-#include "Optimizer.hpp"
 #include "ConvolutionLayer.hpp"
 #include "FullyConnectedLayer.hpp"
 #include "BatchNormalizationLayer.hpp"

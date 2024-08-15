@@ -3,10 +3,6 @@
 
 #include "Common.hpp"
 #include "ImageContainer.hpp"
-#include <unsupported/Eigen/CXX11/Tensor>
-#include <vector>
-#include <string>
-#include <unordered_map>
 
 /**
  * @class BatchManager

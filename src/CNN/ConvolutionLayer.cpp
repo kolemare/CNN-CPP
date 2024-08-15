@@ -1,9 +1,4 @@
 #include "ConvolutionLayer.hpp"
-#include <iostream>
-#include <stdexcept>
-#include <cmath>
-#include <future>
-#include <mutex>
 
 ConvolutionLayer::ConvolutionLayer(int filters,
                                    int kernel_size,

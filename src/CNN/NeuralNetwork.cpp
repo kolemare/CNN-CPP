@@ -1,11 +1,4 @@
 #include "NeuralNetwork.hpp"
-#include <stdexcept>
-#include <iostream>
-#include <algorithm>
-#include <numeric>
-#include <random>
-#include <chrono>
-#include <filesystem>
 
 NeuralNetwork::NeuralNetwork()
 {

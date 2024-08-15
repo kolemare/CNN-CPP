@@ -1,8 +1,31 @@
 #ifndef COMMON_HPP
 #define COMMON_HPP
 
-#include <iostream>
+#include <cmath>
+#include <tuple>
+#include <mutex>
+#include <queue>
+#include <thread>
+#include <future>
+#include <chrono>
+#include <memory>
 #include <string>
+#include <vector>
+#include <random>
+#include <numeric>
+#include <fstream>
+#include <iomanip>
+#include <sstream>
+#include <iostream>
+#include <stdexcept>
+#include <algorithm>
+#include <filesystem>
+#include <functional>
+#include <unordered_map>
+#include <unordered_set>
+#include <opencv2/opencv.hpp>
+#include <condition_variable>
+#include <unsupported/Eigen/CXX11/Tensor>
 
 // Macro definitions
 

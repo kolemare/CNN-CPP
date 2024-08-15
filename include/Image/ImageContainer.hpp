@@ -1,11 +1,7 @@
 #ifndef IMAGECONTAINER_HPP
 #define IMAGECONTAINER_HPP
 
-#include <opencv2/opencv.hpp>
-#include <string>
-#include <vector>
-#include <memory>
-#include <unordered_map>
+#include "Common.hpp"
 
 /**
  * @brief A class to manage and organize images and their associated labels.

@@ -2,8 +2,6 @@
 #define FLATTENLAYER_HPP
 
 #include "Layer.hpp"
-#include <unsupported/Eigen/CXX11/Tensor>
-#include <vector>
 
 /**
  * @class FlattenLayer

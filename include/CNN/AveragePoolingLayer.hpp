@@ -2,7 +2,6 @@
 #define AVERAGE_POOLING_LAYER_HPP
 
 #include "Layer.hpp"
-#include <unsupported/Eigen/CXX11/Tensor>
 
 /**
  * @brief A class representing an Average Pooling Layer in a neural network.

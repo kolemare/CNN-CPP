@@ -1,9 +1,4 @@
 #include "NNLogger.hpp"
-#include <iostream>
-#include <numeric>
-#include <algorithm>
-#include <iomanip>
-#include <sstream>
 
 void NNLogger::printFullTensor(const Eigen::Tensor<double, 4> &tensor,
                                const std::string &layerType,

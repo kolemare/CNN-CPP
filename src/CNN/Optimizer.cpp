@@ -1,8 +1,5 @@
 #include "Optimizer.hpp"
 #include "TensorOperations.hpp"
-#include <stdexcept>
-#include <iostream>
-#include <cmath>
 
 // Factory method to create optimizers
 std::shared_ptr<Optimizer> Optimizer::create(OptimizerType type,

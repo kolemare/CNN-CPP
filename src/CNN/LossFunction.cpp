@@ -1,8 +1,4 @@
 #include "LossFunction.hpp"
-#include <cmath>
-#include <stdexcept>
-#include <algorithm>
-#include <unsupported/Eigen/CXX11/Tensor>
 
 // Factory method to create the appropriate loss function object
 std::unique_ptr<LossFunction> LossFunction::create(LossType type)

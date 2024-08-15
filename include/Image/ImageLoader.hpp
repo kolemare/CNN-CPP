@@ -1,11 +1,7 @@
 #ifndef IMAGELOADER_HPP
 #define IMAGELOADER_HPP
 
-#include <opencv2/opencv.hpp>
-#include <vector>
-#include <string>
-#include <unordered_map>
-#include <memory>
+#include "Common.hpp"
 #include "ImageContainer.hpp"
 
 /**

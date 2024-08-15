@@ -1,8 +1,6 @@
 #ifndef LAYER_HPP
 #define LAYER_HPP
 
-#include <unsupported/Eigen/CXX11/Tensor>
-#include <memory>
 #include "Common.hpp"
 #include "Optimizer.hpp"
 

@@ -24,10 +24,11 @@ def delete_pngs_and_csvs():
                 if item.endswith('.png') or item.endswith('.csv'):
                     os.remove(os.path.join(directory, item))
 
-def delete_vscode_folder():
-    vscode_folder = '.vscode'
-    if os.path.exists(vscode_folder):
-        shutil.rmtree(vscode_folder)
+def delete_docs_vscode():
+    print("Cleaning docs and IDE specifics...")
+    for directory in ['.vscode', 'docs']:
+        if os.path.exists(directory):
+            shutil.rmtree(directory)
 
 def clean_datasets():
     """
@@ -134,29 +135,61 @@ def generate_plots(epoch_data, output_dir, base_filename):
     testing_accuracy = [data['testing_accuracy'] for data in epoch_data]
     testing_loss = [data['testing_loss'] for data in epoch_data]
 
+    # Determine if ELRALES is used
+    elrales_states = {data['elrales'] for data in epoch_data}
+    elrales_enabled = len(elrales_states - {'NORMAL', 'OFF'}) > 0
+
     # Plot 1: CNN Accuracy
     plt.figure()
     for i in range(len(epochs) - 1):
         color = get_color(epoch_data[i]['elrales'])
         plt.plot(epochs[i:i+2], training_accuracy[i:i+2], color=color)
+    
+    if epoch_data[-1]['elrales'] == 'EARLY_STOPPING':
+        plt.plot(epochs[-1:], [training_accuracy[-1]], 'o', color='black')
+
     plt.plot(epochs, testing_accuracy, label='Testing Accuracy', color=(148/255, 0/255, 211/255))
+
+    # Add agenda
+    if elrales_enabled:
+        plt.plot([], [], label='Normal', color=get_color('NORMAL'))
+        plt.plot([], [], label='Recovery', color=get_color('RECOVERY'))
+        plt.plot([], [], label='Losing', color=get_color('LOSING'))
+        plt.scatter([], [], label='Early Stopping', color='black')  # Black ball in the legend
+    else:
+        plt.plot([], [], label='Training Accuracy', color=(82/255, 127/255, 199/255))
+    
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
-    plt.title('CNN Accuracy')
+    plt.title(f'{base_filename} Accuracy')
     plt.legend()
-    plt.savefig(f"{output_dir}/cnn_accuracy.png")
+    plt.savefig(f"{output_dir}/{base_filename}_accuracy.png")
 
     # Plot 2: CNN Loss
     plt.figure()
     for i in range(len(epochs) - 1):
         color = get_color(epoch_data[i]['elrales'])
         plt.plot(epochs[i:i+2], training_loss[i:i+2], color=color)
+    
+    if epoch_data[-1]['elrales'] == 'EARLY_STOPPING':
+        plt.plot(epochs[-1:], [training_loss[-1]], 'o', color='black')  # Plot a black ball for Early Stopping
+    
     plt.plot(epochs, testing_loss, label='Testing Loss', color=(148/255, 0/255, 211/255))
+
+    # Add agenda
+    if elrales_enabled:
+        plt.plot([], [], label='Normal', color=get_color('NORMAL'))
+        plt.plot([], [], label='Recovery', color=get_color('RECOVERY'))
+        plt.plot([], [], label='Losing', color=get_color('LOSING'))
+        plt.scatter([], [], label='Early Stopping', color='black')  # Black ball in the legend
+    else:
+        plt.plot([], [], label='Training Loss', color=(82/255, 127/255, 199/255))
+    
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
-    plt.title('CNN Loss')
+    plt.title(f'{base_filename} Loss')
     plt.legend()
-    plt.savefig(f"{output_dir}/cnn_loss.png")
+    plt.savefig(f"{output_dir}/{base_filename}_loss.png")
 
 def build_project(jobs):
     print("Building CNN-CPP...")
@@ -182,3 +215,25 @@ def run_tests():
         print("Test executable not found. Please build the project first.")
     os.chdir('..')
     print("Tests run completed.")
+
+def generate_pdf():
+    # Run Doxygen to generate LaTeX files
+    print("Running Doxygen...")
+    subprocess.run("doxygen Doxyfile", shell=True, check=True)
+
+    # Navigate to the LaTeX output directory
+    latex_dir = "docs/latex"
+    if not os.path.exists(latex_dir):
+        print("LaTeX directory does not exist. Make sure Doxygen generated the LaTeX files.")
+        return
+
+    # Compile the LaTeX files into a PDF
+    print("Compiling LaTeX files to PDF...")
+    subprocess.run(f"cd {latex_dir} && make pdf", shell=True, check=True)
+
+    # Inform the user where the PDF is located
+    pdf_path = os.path.join(latex_dir, "refman.pdf")
+    if os.path.exists(pdf_path):
+        print(f"PDF generated successfully and located at: {pdf_path}")
+    else:
+        print("Failed to generate the PDF. Please check for LaTeX errors.")

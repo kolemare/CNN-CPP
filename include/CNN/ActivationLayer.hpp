@@ -1,10 +1,7 @@
 #ifndef ACTIVATIONLAYER_HPP
 #define ACTIVATIONLAYER_HPP
 
-#include <unsupported/Eigen/CXX11/Tensor>
 #include "Layer.hpp"
-#include "Optimizer.hpp"
-#include <iostream>
 
 /**
  * @class ActivationLayer

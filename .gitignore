@@ -45,3 +45,6 @@ Thumbs.db
 # Ignore the plots directory
 /plots/*
 !/plots/.gitkeep
+
+# Ignore the docs directory
+docs/*

@@ -24,16 +24,14 @@ RUN apt-get update && apt-get install -y \
     libatlas-base-dev \
     gfortran \
     python3-pip \
+    doxygen \
+    texlive-full \
     && apt-get clean
 
-COPY install.sh /usr/local/bin/install.sh
-RUN chmod +x /usr/local/bin/install.sh
+RUN pip3 install --upgrade pip
+RUN pip3 install requests matplotlib invoke
 
 WORKDIR /CNN_CPP
-
-RUN /usr/local/bin/install.sh
-
-RUN pip3 install invoke
 
 VOLUME ["/CNN_CPP"]
 

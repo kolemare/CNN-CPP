@@ -1,11 +1,10 @@
 #ifndef IMAGE_AUGMENTOR_HPP
 #define IMAGE_AUGMENTOR_HPP
 
-#include <opencv2/opencv.hpp>
+
 #include "ImageContainer.hpp"
 #include "Common.hpp"
-#include <random>
-#include <unordered_set>
+
 
 /**
  * @brief A class to perform image augmentation operations.

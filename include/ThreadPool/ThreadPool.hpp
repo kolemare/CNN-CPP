@@ -1,14 +1,6 @@
 #ifndef THREADPOOL_HPP
 #define THREADPOOL_HPP
 
-#include <condition_variable>
-#include <functional>
-#include <iostream>
-#include <mutex>
-#include <queue>
-#include <thread>
-#include <vector>
-#include <future>
 #include "Common.hpp"
 
 /**

@@ -1,5 +1,4 @@
 #include "ImageAugmentor.hpp"
-#include <iostream>
 
 ImageAugmentor::ImageAugmentor(int targetWidth, int targetHeight)
     : targetWidth(targetWidth), targetHeight(targetHeight), distribution(0.0f, 1.0f)

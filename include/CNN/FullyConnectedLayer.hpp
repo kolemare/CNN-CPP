@@ -2,9 +2,6 @@
 #define FULLYCONNECTEDLAYER_HPP
 
 #include "Layer.hpp"
-#include <unsupported/Eigen/CXX11/Tensor>
-#include <memory>
-#include <random>
 
 /**
  * @brief Class representing a fully connected layer in a neural network.

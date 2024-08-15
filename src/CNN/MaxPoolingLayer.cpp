@@ -1,8 +1,4 @@
 #include "MaxPoolingLayer.hpp"
-#include <algorithm>
-#include <stdexcept>
-#include <iostream>
-#include <cmath>
 
 // Constructor to initialize the pooling layer with pool size and stride
 MaxPoolingLayer::MaxPoolingLayer(int pool_size,

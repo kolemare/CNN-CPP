@@ -1,13 +1,6 @@
 #ifndef NNLOGGER_HPP
 #define NNLOGGER_HPP
 
-#include <unsupported/Eigen/CXX11/Tensor>
-#include <string>
-#include <vector>
-#include <chrono>
-#include <fstream>
-#include <stdexcept>
-#include <filesystem>
 #include "Common.hpp"
 
 /**

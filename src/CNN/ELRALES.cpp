@@ -1,5 +1,4 @@
 #include "ELRALES.hpp"
-#include <iostream>
 
 ELRALES::ELRALES(double learning_rate_coef,
                  int maxSuccessiveEpochFailures,

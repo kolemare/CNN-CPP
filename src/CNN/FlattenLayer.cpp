@@ -1,6 +1,4 @@
 #include "FlattenLayer.hpp"
-#include <iostream>
-#include <stdexcept>
 
 bool FlattenLayer::needsOptimizer() const
 {

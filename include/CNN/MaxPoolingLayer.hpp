@@ -1,8 +1,6 @@
 #ifndef MAX_POOLING_LAYER_HPP
 #define MAX_POOLING_LAYER_HPP
 
-#include <unsupported/Eigen/CXX11/Tensor>
-#include <vector>
 #include "Layer.hpp"
 
 /**

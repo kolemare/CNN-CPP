@@ -1,6 +1,4 @@
 #include "BatchNormalizationLayer.hpp"
-#include <iostream>
-#include <cmath>
 
 BatchNormalizationLayer::BatchNormalizationLayer(double epsilon,
                                                  double momentum)

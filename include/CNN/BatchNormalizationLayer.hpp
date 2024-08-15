@@ -2,8 +2,6 @@
 #define BATCHNORMALIZATIONLAYER_HPP
 
 #include "Layer.hpp"
-#include <Eigen/Dense>
-#include <unsupported/Eigen/CXX11/Tensor>
 
 /**
  * @class BatchNormalizationLayer

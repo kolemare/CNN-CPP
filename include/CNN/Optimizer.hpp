@@ -1,10 +1,6 @@
 #ifndef OPTIMIZER_HPP
 #define OPTIMIZER_HPP
 
-#include <unsupported/Eigen/CXX11/Tensor>
-#include <memory>
-#include <unordered_map>
-#include <string>
 #include "Common.hpp"
 
 /**

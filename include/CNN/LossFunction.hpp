@@ -1,9 +1,7 @@
 #ifndef LOSSFUNCTION_HPP
 #define LOSSFUNCTION_HPP
 
-#include <unsupported/Eigen/CXX11/Tensor>
-#include <memory>
-#include <stdexcept>
+
 #include "Common.hpp"
 
 /**

@@ -1,10 +1,4 @@
 #include "BatchManager.hpp"
-#include <algorithm>
-#include <random>
-#include <iostream>
-#include <opencv2/core/eigen.hpp>
-#include <opencv2/opencv.hpp>
-#include <filesystem>
 
 namespace fs = std::filesystem;
 

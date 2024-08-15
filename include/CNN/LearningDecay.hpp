@@ -1,7 +1,6 @@
 #ifndef LEARNING_DECAY_HPP
 #define LEARNING_DECAY_HPP
 
-#include <unordered_map>
 #include "Common.hpp"
 
 /**
