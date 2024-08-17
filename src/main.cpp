@@ -41,11 +41,11 @@ int main(int argc, char **argv)
             // cnn_cd_ld_bn_e25();
             // cnn_cifar10_bn_e5();
             // cnn_cifar10_e5();
-            // cnn_sanity_2_colors();
-            // cnn_sanity_2_shapes();
-            // cnn_sanity_5_colors();
+            cnn_sanity_2_colors();
+            cnn_sanity_2_shapes();
+            cnn_sanity_5_colors();
             cnn_sanity_5_shapes();
-            // example();
+            // cnn_example();
         }
         catch (const std::exception &e)
         {

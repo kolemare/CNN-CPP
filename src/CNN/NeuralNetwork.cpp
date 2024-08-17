@@ -378,6 +378,9 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
     auto start = std::chrono::steady_clock::now();
     double current_learning_rate = learning_rate;
 
+    double cumulative_loss = 0.0;
+    int total_batches_completed = 0;
+
     for (int epoch = 0; epoch < epochs; ++epoch)
     {
         if (LearningDecayType::NONE != learningDecayMode && learningDecay)
@@ -449,7 +452,11 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
             Eigen::Tensor<double, 4> d_output = lossFunction->derivative(predictions, batch_label);
             backward(d_output, current_learning_rate);
 
-            NNLogger::printProgress(epoch, epochs, batchCounter, totalBatches, start, batch_loss, progressLevel);
+            if (ProgressLevel::None != progressLevel)
+            {
+                NNLogger::printProgress(epoch, epochs, batchCounter, totalBatches, start, batch_loss, progressLevel, cumulative_loss, total_batches_completed);
+            }
+
             batchCounter++;
         }
 

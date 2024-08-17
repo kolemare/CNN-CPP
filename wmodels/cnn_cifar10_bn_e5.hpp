@@ -38,9 +38,6 @@ void cnn_cifar10_bn_e5()
     cnn.addFullyConnectedLayer(128);
     cnn.addBatchNormalizationLayer();
     cnn.addActivationLayer(ActivationType::RELU);
-    cnn.addFullyConnectedLayer(128);
-    cnn.addBatchNormalizationLayer();
-    cnn.addActivationLayer(ActivationType::RELU);
     cnn.addFullyConnectedLayer(64);
     cnn.addBatchNormalizationLayer();
     cnn.addActivationLayer(ActivationType::RELU);

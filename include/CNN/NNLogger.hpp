@@ -67,6 +67,8 @@ public:
      * @param start The starting time point of the training process.
      * @param currentBatchLoss The loss for the current batch.
      * @param progressLevel The level of progress detail to display.
+     * @param cumulative_loss The accumulated loss over batches.
+     * @param total_batches_completed The number of batches completed.
      */
     static void printProgress(int epoch,
                               int epochs,
@@ -74,7 +76,9 @@ public:
                               int totalBatches,
                               std::chrono::steady_clock::time_point start,
                               double currentBatchLoss,
-                              ProgressLevel progressLevel);
+                              ProgressLevel progressLevel,
+                              double &cumulative_loss,       // Passed as reference
+                              int &total_batches_completed); // Passed as reference
 
     /**
      * @brief Initializes a CSV file for logging training metrics.

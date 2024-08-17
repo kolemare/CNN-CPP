@@ -47,7 +47,7 @@ void cnn_sanity_2_colors()
     cnn.enableGradientClipping();
     cnn.compile(OptimizerType::Adam);
 
-    int epochs = 10;
+    int epochs = 5;
     int batch_size = 10;
     cnn.train(container, epochs, batch_size);
     cnn.makeSinglePredictions(container);

@@ -47,6 +47,12 @@ void cnn_cd_ld_bn_e25()
     cnn.addFullyConnectedLayer(32);
     cnn.addBatchNormalizationLayer();
     cnn.addActivationLayer(ActivationType::RELU);
+    cnn.addFullyConnectedLayer(16);
+    cnn.addBatchNormalizationLayer();
+    cnn.addActivationLayer(ActivationType::RELU);
+    cnn.addFullyConnectedLayer(8);
+    cnn.addBatchNormalizationLayer();
+    cnn.addActivationLayer(ActivationType::RELU);
     cnn.addFullyConnectedLayer(1);
     cnn.addActivationLayer(ActivationType::SIGMOID);
     cnn.setLossFunction(LossType::BINARY_CROSS_ENTROPY);

@@ -42,6 +42,10 @@ void cnn_cd_elrales_e25()
     cnn.addActivationLayer(ActivationType::RELU);
     cnn.addFullyConnectedLayer(32);
     cnn.addActivationLayer(ActivationType::RELU);
+    cnn.addFullyConnectedLayer(16);
+    cnn.addActivationLayer(ActivationType::RELU);
+    cnn.addFullyConnectedLayer(8);
+    cnn.addActivationLayer(ActivationType::RELU);
     cnn.addFullyConnectedLayer(1);
     cnn.addActivationLayer(ActivationType::SIGMOID);
     cnn.setLossFunction(LossType::BINARY_CROSS_ENTROPY);

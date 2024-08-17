@@ -152,15 +152,14 @@ void NNLogger::printProgress(int epoch,
                              int totalBatches,
                              std::chrono::steady_clock::time_point start,
                              double currentBatchLoss,
-                             ProgressLevel progressLevel)
+                             ProgressLevel progressLevel,
+                             double &cumulative_loss,      // Passed as reference
+                             int &total_batches_completed) // Passed as reference
 {
     if (progressLevel == ProgressLevel::None)
     {
         return;
     }
-
-    static double cumulative_loss = 0.0;
-    static int total_batches_completed = 0;
 
     cumulative_loss += currentBatchLoss;
     total_batches_completed++;

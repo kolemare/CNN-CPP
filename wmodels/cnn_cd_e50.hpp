@@ -43,6 +43,10 @@ void cnn_cd_e50()
     cnn.addActivationLayer(ActivationType::RELU);
     cnn.addFullyConnectedLayer(32);
     cnn.addActivationLayer(ActivationType::RELU);
+    cnn.addFullyConnectedLayer(16);
+    cnn.addActivationLayer(ActivationType::RELU);
+    cnn.addFullyConnectedLayer(8);
+    cnn.addActivationLayer(ActivationType::RELU);
     cnn.addFullyConnectedLayer(1);
     cnn.addActivationLayer(ActivationType::SIGMOID);
 

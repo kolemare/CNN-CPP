@@ -34,8 +34,6 @@ void cnn_cifar10_e5()
     cnn.addFlattenLayer();
     cnn.addFullyConnectedLayer(128);
     cnn.addActivationLayer(ActivationType::RELU);
-    cnn.addFullyConnectedLayer(128);
-    cnn.addActivationLayer(ActivationType::RELU);
     cnn.addFullyConnectedLayer(64);
     cnn.addActivationLayer(ActivationType::RELU);
     cnn.addFullyConnectedLayer(10);

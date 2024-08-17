@@ -35,8 +35,6 @@ void cnn_sanity_5_shapes()
     cnn.addActivationLayer(ActivationType::RELU);
     cnn.addFullyConnectedLayer(64);
     cnn.addActivationLayer(ActivationType::RELU);
-    cnn.addFullyConnectedLayer(64);
-    cnn.addActivationLayer(ActivationType::RELU);
     cnn.addFullyConnectedLayer(32);
     cnn.addActivationLayer(ActivationType::RELU);
     cnn.addFullyConnectedLayer(5);
@@ -46,7 +44,7 @@ void cnn_sanity_5_shapes()
 
     cnn.compile(OptimizerType::Adam);
 
-    int epochs = 10;
+    int epochs = 5;
     int batch_size = 10;
     cnn.train(container, epochs, batch_size);
     cnn.makeSinglePredictions(container);
