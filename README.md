@@ -25,6 +25,53 @@ users with similar capabilities to define, train, and deploy neural network mode
 - **Cross-Platform Compatibility**: Support multiple operating systems, including Linux, macOS, and Windows, through
   dockerization.
 
+## Table of Contents
+
+- [About the CNN-CPP](#about-the-cnn-cpp)
+  - [Introduction](#introduction)
+  - [Inspiration](#inspiration)
+  - [Goals](#goals)
+- [Table of Contents](#table-of-contents)
+- [Repository Structure](#repository-structure)
+- [Framework Components & Capabilities](#framework-components--capabilities)
+  - [Neural Network](#neural-network)
+  - [Batch Manager](#batch-manager)
+  - [Convolution Layer](#convolution-layer)
+  - [Max Pooling Layer](#max-pooling-layer)
+  - [Average Pooling Layer](#average-pooling-layer)
+  - [Activation Layer](#activation-layer)
+  - [Flatten Layer](#flatten-layer)
+  - [Fully Connected Layer](#fully-connected-layer)
+  - [Batch Normalization Layer](#batch-normalization-layer)
+  - [Loss Function](#loss-function)
+  - [Optimizer](#optimizer)
+  - [Tensor Operations](#tensor-operations)
+  - [Learning Decay](#learning-decay)
+  - [ELRALES](#elrales-epoch-loss-recovery-adaptive-learning-early-stopping)
+  - [Gradient Clipping](#gradient-clipping)
+  - [NNLogger](#nnlogger)
+  - [Image Loader](#image-loader)
+  - [Image Container](#image-container)
+  - [Image Augmentor](#image-augmentor)
+- [Framework Structure](#framework-structure)
+- [Getting Started](#getting-started)
+  - [Step 1: Clone the Repository](#step-1-clone-the-repository)
+  - [Step 2: Installing Dependencies](#step-2-installing-dependencies)
+    - [Linux](#linux)
+      - [Option 1: Native Installation](#option-1-native-installation)
+      - [Option 2: Docker Installation](#option-2-docker-installation)
+    - [Windows & Mac OS](#windows--mac-os)
+  - [Step 3: Only For Docker](#step-3-only-for-docker)
+- [Using the Framework](#using-the-framework)
+  - [Python Invoke](#python-invoke)
+  - [Creating a Model](#creating-a-model)
+  - [Datasets](#datasets)
+- [Doxygen Documentation](#doxygen-documentation)
+  - [Generating Documentation](#generating-documentation)
+  - [Generating PDF Documentation](#generating-pdf-documentation)
+- [Results](#results)
+- [Further Plans](#further-plans)
+
 ## Repository Structure
 
 ```plaintext
@@ -874,13 +921,14 @@ on the specified **LearningDecayType** and associated parameters:
 - <code style="color: teal;">None</code> If no decay is specified, the learning rate remains constant throughout the
   training process.
 
-By default `Learning Decay` is disabled, it can be enabled with single line of code, example:  
- `wmodels/cnn_cd_ld_bn_e25`
+  > **Note:**  
+  > By default, `Learning Decay` is disabled. It can be enabled with a single line of code, example:
+  > `wmodels/cnn_cd_ld_bn_e25`.
 
-> **Note:**  
-> Enabling Learning Decay is mutually exclusive with enabling ELRALES.  
-> Only one mechanism can be activated during training.  
-> Exceptions are thrown during compiling the model if this is not respected.
+  > **Note:**  
+  > Enabling Learning Decay is mutually exclusive with enabling ELRALES.  
+  > Only one mechanism can be activated during training.  
+  > Exceptions are thrown during compiling the model if this is not respected.
 
 ---
 
@@ -940,8 +988,9 @@ broken down into the following steps:
   - When the total number of epoch failures exceeds the predefined limit, training is stopped to prevent overfitting and
     wasted computation. This ensures that the model does not continue to train when there is little to no benefit.
 
-  By default `ELRALES` is disabled, it can be enabled with single line of code, example:  
-  `wmodels/cnn_cd_elrales_e25`
+  > **Note:**  
+  > By default, `ELRALES` is disabled. It can be enabled with a single line of code, example:
+  > `wmodels/cnn_cd_elrales_e25`.
 
   > **Note:**  
   > Enabling ELRALES is mutually exclusive with enabling Learning Decay.  
@@ -967,8 +1016,9 @@ networks.
 - <code style="color: teal;">Training Stability</code> By clipping gradients, this class helps to maintain training
   stability and ensures that the model can continue learning without being disrupted by large gradient values.
 
-By default `Gradient Clipping` is disabled, it can be enabled with single line of code, example:  
- `wmodels/cnn_example`
+  > **Note:**  
+  > By default, `Gradient Clipping` is disabled. It can be enabled with a single line of code, example:
+  > `wmodels/cnn_example`.
 
 ---
 
@@ -993,7 +1043,7 @@ CSV logging to help in debugging and understanding the network's behavior.
   remaining (ETA), and average loss. This comprehensive progress report helps monitor the training process effectively.
 
 - <code style="color: teal;">CSV Logging</code> The class allows the initialization and updating of CSV files to record
-  training and testing metrics such as accuracy, loss, and `ELRALES` state machine (if used). This data can be used for
+  training and testing metrics such as accuracy, loss, and ELRALES state machine (if used). This data can be used for
   further analysis or visualization.
 
 ---
@@ -1119,6 +1169,16 @@ Windows docker setup:
 [Docker Desktop for Windows installation guide](https://docs.docker.com/desktop/install/windows-install/).  
 Mac OS docker setup: [Docker Desktop for Mac installation guide](https://docs.docker.com/desktop/install/mac-install/).
 
+> **Note:**  
+> Using a virtual machine is not recommended for optimal performance. However, if you decide to use a Linux virtual
+> machine, ensure the following configurations:
+>
+> - **CPU Allocation**: Allow the virtual machine to use all available CPU cores.
+> - **RAM Allocation**: Allocate at least 4 GB of RAM. More memory may be required depending on the model and dataset
+>   used.
+>
+> These settings are important to minimize performance issues during resource-intensive tasks.
+
 ---
 
 ### Step 3: Only For Docker
@@ -1176,17 +1236,23 @@ Size of Docker image for CNN-CPP is approximately: **1.85GB**
 Once docker container is started in interactive mode or native Linux setup is done, you can proceed to python invokes.
 
 - <code style="color: teal;">invoke extract</code> The extract task extracts all .zip files in the datasets folder,
-  including handling split .zip files (some datasets are already available in datasets folder).
+  including handling split .zip files.
+
+  > **Note:**  
+  > Some datasets are already available in the **datasets** folder.
 
 - <code style="color: teal;">invoke build</code> The build task compiles the framework.
 
-  - --jobs: Specifies the number of jobs to run simultaneously during the build (default is 1), recommendation is to use
-    4 jobs (**invoke build --jobs 4**) for faster build of the framework.
+  - --jobs: Specifies the number of jobs to run simultaneously during the build.
+
+    > **Note:**  
+    > By default, the build process uses a single job. However, using 4 jobs (**invoke build --jobs 4**) is recommended
+    > for faster compilation.
 
   - --clean: Cleans the build directories before compiling.
 
     > **Note:**  
-    > First build might take a while, since it builds OpenCV first.
+    > First compilation might take a while, since it builds OpenCV first.
 
 - <code style="color: teal;">invoke run</code> The run task executes the compiled framework located in the build
   directory.
@@ -1195,8 +1261,10 @@ Once docker container is started in interactive mode or native Linux setup is do
 
   - --build: Cleans build directories (removes compiled files and binaries).
   - --datasets: Cleans the datasets folder, keeping only .zip files.
-  - --all: Performs a full cleanup, combining build and datasets.  
-    By default all invocations to clean are deleting unversioned **.txt**, **.png**, **.csv** files.
+  - --all: Performs a full cleanup, combining build and datasets.
+
+    > **Note:** By default, all clean invocations will remove unversioned **.txt**, **.png**, **.csv** files, as well as
+    > Doxygen directories and IDE-specific files.
 
 - <code style="color: teal;">invoke install</code> The install task installs the dependencies by running the
   **install.sh** script (no need for this when using docker, or in case **install.sh** is already run with native Linux
@@ -1254,9 +1322,8 @@ the framework can automatically detect categories and handle one-hot encoding in
   automatically detects categories and performs one-hot encoding under the hood, eliminating the need for manual
   preprocessing.
 
-Already existing datasets can be used as an example after extraction.
-
-## Results
+> **Note:**  
+> Already existing datasets in the `datasets` folder can be used as examples after extraction.
 
 ## Doxygen Documentation
 
@@ -1265,11 +1332,8 @@ structures are annotated following Doxygen's conventions to support this process
 comments and assembling a comprehensive documentation set in a variety of output formats, such as **HTML** and **LaTeX**
 for PDF documents.
 
-### Detailed Documentation Coverage
-
-**Doxygen** annotations cover descriptions, parameter details, return values, and notable exceptions or special
-conditions. This extensive coverage ensures all code elements are well-documented, promoting maintainability and
-enhancing future framework scalability.
+> **Note:**  
+> The steps for generating Doxygen documentation can be replaced with a single command: **invoke doxygen**.
 
 ### Generating Documentation
 
@@ -1292,6 +1356,8 @@ cd latex
 make
 ```
 
-The result is a **PDF** document that can be viewed with any standard viewer.
+The result is a **PDF** document called **refman.pdf** that can be viewed with any standard viewer.
+
+## Results
 
 ## Further Plans
