@@ -29,7 +29,7 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean
 
 RUN pip3 install --upgrade pip
-RUN pip3 install requests matplotlib invoke
+RUN pip3 install requests matplotlib invoke tensorflow keras numpy scipy
 
 WORKDIR /CNN_CPP
 

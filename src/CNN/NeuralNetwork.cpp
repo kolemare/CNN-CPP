@@ -465,6 +465,7 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
 
         std::cout << "Evaluating..." << std::endl;
         std::tuple<double, double> evaluation = evaluate(imageContainer);
+        this->makeSinglePredictions(imageContainer);
 
         if (ELRALES_Mode::ENABLED == elralesMode)
         {
@@ -476,8 +477,8 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
                 std::cout << "Epoch " << epoch + 1 << " completed." << std::endl;
                 std::cout << "Training Accuracy: " << accuracy << std::endl;
                 std::cout << "Training Loss: " << average_loss << std::endl;
-                std::cout << "Testing Accuracy: " << std::get<0>(evaluation) << std::endl;
-                std::cout << "Testing Loss: " << std::get<1>(evaluation) << std::endl;
+                std::cout << "Validation Accuracy: " << std::get<0>(evaluation) << std::endl;
+                std::cout << "Validation Loss: " << std::get<1>(evaluation) << std::endl;
                 std::cout << "ELRALES: " << elralesState << std::endl;
                 NNLogger::appendToCSV(outputCSV, epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), elralesState);
             }
@@ -486,8 +487,8 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
                 std::cout << "Wasted Epoch " << epoch + 1 << " completed." << std::endl;
                 std::cout << "Wasted Training Accuracy: " << accuracy << std::endl;
                 std::cout << "Wasted Training Loss: " << average_loss << std::endl;
-                std::cout << "Wasted Testing Accuracy: " << std::get<0>(evaluation) << std::endl;
-                std::cout << "Wasted Testing Loss: " << std::get<1>(evaluation) << std::endl;
+                std::cout << "Wasted Validation Accuracy: " << std::get<0>(evaluation) << std::endl;
+                std::cout << "Wasted Validation Loss: " << std::get<1>(evaluation) << std::endl;
                 std::cout << "ELRALES: " << elralesState << std::endl;
                 NNLogger::appendToCSV(outputCSV, epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), elralesState);
                 ++epochs; // This ensures the number of successful epochs remains constant
@@ -497,8 +498,8 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
                 std::cout << "EarlyStopping Epoch " << epoch + 1 << " completed." << std::endl;
                 std::cout << "EarlyStopping Training Accuracy: " << accuracy << std::endl;
                 std::cout << "EarlyStopping Training Loss: " << average_loss << std::endl;
-                std::cout << "EarlyStopping Testing Accuracy: " << std::get<0>(evaluation) << std::endl;
-                std::cout << "EarlyStopping Testing Loss: " << std::get<1>(evaluation) << std::endl;
+                std::cout << "EarlyStopping Validation Accuracy: " << std::get<0>(evaluation) << std::endl;
+                std::cout << "EarlyStopping Validation Loss: " << std::get<1>(evaluation) << std::endl;
                 std::cout << "ELRALES: " << elralesState << std::endl;
                 NNLogger::appendToCSV(outputCSV, epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), elralesState);
                 break;
@@ -510,8 +511,8 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
             std::cout << "Epoch " << epoch + 1 << " completed." << std::endl;
             std::cout << "Training Accuracy: " << accuracy << std::endl;
             std::cout << "Training Loss: " << average_loss << std::endl;
-            std::cout << "Testing Accuracy: " << std::get<0>(evaluation) << std::endl;
-            std::cout << "Testing Loss: " << std::get<1>(evaluation) << std::endl;
+            std::cout << "Validation Accuracy: " << std::get<0>(evaluation) << std::endl;
+            std::cout << "Validation Loss: " << std::get<1>(evaluation) << std::endl;
             std::cout << "ELRALES: OFF" << std::endl;
             NNLogger::appendToCSV(outputCSV, epoch + 1, accuracy, average_loss, std::get<0>(evaluation), std::get<1>(evaluation), "OFF");
         }
@@ -606,10 +607,10 @@ void NeuralNetwork::makeSinglePredictions(const ImageContainer &imageContainer)
     {
         throw std::runtime_error("Network must be compiled before making single predictions.");
     }
-    if (!trained)
-    {
-        throw std::runtime_error("Network must be trained before making single predictions.");
-    }
+    // if (!trained)
+    // {
+    //     throw std::runtime_error("Network must be trained before making single predictions.");
+    // }
     if (0 == batchSize)
     {
         throw std::runtime_error("Bad batch size, unknown error.");

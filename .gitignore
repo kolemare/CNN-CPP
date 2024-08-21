@@ -3,9 +3,12 @@
 
 # Ignore all .txt files
 *.txt
+!/wreadme/cnn_cpp/txt/*txt
+!/wreadme/tf/txt/*txt
 
 # Ignore all .csv files
 *.csv
+!/wreadme/cnn_cpp/csv/*csv
 
 # Do not ignore CMakeLists.txt
 !CMakeLists.txt
@@ -33,6 +36,7 @@ Thumbs.db
 !/datasets/catsdogs_part.zip.ac
 !/datasets/cifar10_part.zip.aa
 !/datasets/cifar10_part.zip.ab
+!/datasets/minst.zip
 !/datasets/sanity_2_colors.zip
 !/datasets/sanity_2_shapes.zip
 !/datasets/sanity_5_colors.zip

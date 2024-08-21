@@ -35,7 +35,7 @@ apt-get install -y \
 # Upgrade pip and install Python packages
 echo "Upgrading pip and installing Python packages..."
 pip3 install --upgrade pip
-pip3 install requests matplotlib invoke
+pip3 install requests matplotlib invoke tensorflow keras numpy scipy
 
 # Clean up unnecessary packages and cache
 echo "Cleaning up unnecessary packages and cache..."

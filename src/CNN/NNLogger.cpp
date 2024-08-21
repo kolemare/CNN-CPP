@@ -259,7 +259,7 @@ void NNLogger::initializeCSV(const std::string &filePath)
     }
 
     // Write the headers
-    csvFile << "epoch_num;training_accuracy;training_loss;testing_accuracy;testing_loss;elrales\n";
+    csvFile << "epoch_num;training_accuracy;training_loss;validation_accuracy;validation_loss;elrales\n";
     csvFile.close();
 }
 
@@ -267,8 +267,8 @@ void NNLogger::appendToCSV(const std::string &filename,
                            int epoch,
                            double trainAcc,
                            double trainLoss,
-                           double testAcc,
-                           double testLoss,
+                           double validAcc,
+                           double validLoss,
                            const std::string &elralesState)
 {
     std::ofstream csvFile(filename, std::ios::app);
@@ -278,6 +278,6 @@ void NNLogger::appendToCSV(const std::string &filename,
     }
 
     // Append the epoch data
-    csvFile << epoch << ";" << trainAcc << ";" << trainLoss << ";" << testAcc << ";" << testLoss << ";" << elralesState << "\n";
+    csvFile << epoch << ";" << trainAcc << ";" << trainLoss << ";" << validAcc << ";" << validLoss << ";" << elralesState << "\n";
     csvFile.close();
 }

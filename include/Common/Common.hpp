@@ -33,13 +33,13 @@
  * @def LOADING_PROGRESS
  * @brief Macro to enable loading progress display.
  */
-#define LOADING_PROGRESS
+// #define LOADING_PROGRESS
 
 /**
  * @def AUGMENT_PROGRESS
  * @brief Macro to enable augmentation progress display.
  */
-#define AUGMENT_PROGRESS
+// #define AUGMENT_PROGRESS
 
 /**
  * @def SAVE_BATCHES

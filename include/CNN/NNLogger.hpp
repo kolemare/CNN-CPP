@@ -95,8 +95,8 @@ public:
      * @param epoch The current epoch number.
      * @param trainAcc The training accuracy for the current epoch.
      * @param trainLoss The training loss for the current epoch.
-     * @param testAcc The testing accuracy for the current epoch.
-     * @param testLoss The testing loss for the current epoch.
+     * @param validAcc The validation accuracy for the current epoch.
+     * @param validLoss The validation loss for the current epoch.
      * @param elralesState The ELRALES state description for the current epoch.
      * @throw std::runtime_error If the file cannot be opened.
      */
@@ -104,8 +104,8 @@ public:
                             int epoch,
                             double trainAcc,
                             double trainLoss,
-                            double testAcc,
-                            double testLoss,
+                            double validAcc,
+                            double validLoss,
                             const std::string &elralesState);
 };
 

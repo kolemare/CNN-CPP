@@ -39,9 +39,9 @@ void cnn_sanity_5_shapes()
     cnn.addActivationLayer(ActivationType::RELU);
     cnn.addFullyConnectedLayer(5);
     cnn.addActivationLayer(ActivationType::SOFTMAX);
+
     cnn.setLossFunction(LossType::CATEGORICAL_CROSS_ENTROPY);
     cnn.enableGradientClipping();
-
     cnn.compile(OptimizerType::Adam);
 
     int epochs = 5;

@@ -1,14 +1,14 @@
 #include <gtest/gtest.h>
-#include "cnn_cd_e50.hpp"
+#include "cnn_cd_e30.hpp"
 #include "cnn_cd_elrales_e25.hpp"
-#include "cnn_cd_ld_bn_e25.hpp"
-#include "cnn_cifar10_bn_e5.hpp"
+#include "cnn_cd_ld_e25.hpp"
+#include "cnn_cd_nb_e25.hpp"
 #include "cnn_cifar10_e5.hpp"
+#include "cnn_example.hpp"
 #include "cnn_sanity_2_colors.hpp"
 #include "cnn_sanity_2_shapes.hpp"
 #include "cnn_sanity_5_colors.hpp"
 #include "cnn_sanity_5_shapes.hpp"
-#include "cnn_example.hpp"
 
 #include "ImageLoader.hpp"
 #include "ImageAugmentor.hpp"
@@ -36,15 +36,15 @@ int main(int argc, char **argv)
     {
         try
         {
-            // cnn_cd_e50();
-            // cnn_cd_elrales_e25();
-            // cnn_cd_ld_bn_e25();
-            // cnn_cifar10_bn_e5();
+            // cnn_cd_e30();
+            cnn_cd_elrales_e25();
+            // cnn_cd_ld_e25();
+            // cnn_cd_nb_e25();
             // cnn_cifar10_e5();
-            cnn_sanity_2_colors();
-            cnn_sanity_2_shapes();
-            cnn_sanity_5_colors();
-            cnn_sanity_5_shapes();
+            // cnn_sanity_2_colors();
+            // cnn_sanity_2_shapes();
+            // cnn_sanity_5_colors();
+            // cnn_sanity_5_shapes();
             // cnn_example();
         }
         catch (const std::exception &e)

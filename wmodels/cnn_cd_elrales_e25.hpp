@@ -15,12 +15,13 @@ void cnn_cd_elrales_e25()
 
     ImageAugmentor augmentor(targetWidth, targetHeight);
 
+    augmentor.setZoomFactor(1.2f);
+    augmentor.setShearRange(0.2f);
+    augmentor.setHorizontalFlip(true);
+
     augmentor.setZoomChance(1.0f);
-    augmentor.setHorizontalFlipChance(0.5f);
-    augmentor.setVerticalFlipChance(0.0f);
-    augmentor.setGaussianNoiseChance(0.0f);
-    augmentor.setGaussianBlurChance(0.0f);
     augmentor.setShearChance(1.0f);
+    augmentor.setHorizontalFlipChance(0.5f);
 
     augmentor.augmentImages(container, AugmentTarget::TRAIN_DATASET);
 
@@ -42,19 +43,16 @@ void cnn_cd_elrales_e25()
     cnn.addActivationLayer(ActivationType::RELU);
     cnn.addFullyConnectedLayer(32);
     cnn.addActivationLayer(ActivationType::RELU);
-    cnn.addFullyConnectedLayer(16);
-    cnn.addActivationLayer(ActivationType::RELU);
-    cnn.addFullyConnectedLayer(8);
-    cnn.addActivationLayer(ActivationType::RELU);
     cnn.addFullyConnectedLayer(1);
     cnn.addActivationLayer(ActivationType::SIGMOID);
+
     cnn.setLossFunction(LossType::BINARY_CROSS_ENTROPY);
     cnn.enableGradientClipping();
 
-    double learning_rate_coef = 0.5; // 0.5 Learning Coefficient Multiplier
+    double learning_rate_coef = 0.8; // 0.8 Learning Coefficient Multiplier
     int maxSuccessiveFailures = 3;   // 3 Sucessive Epoch Failures
     int maxFails = 20;               // 20 Total Epoch Failures
-    double tolerance = 0.0;          // 0% Tolerance
+    double tolerance = 0.01;         // 1% Tolerance
 
     cnn.enableELRALES(learning_rate_coef, maxSuccessiveFailures, maxFails, tolerance);
     cnn.compile(OptimizerType::Adam);

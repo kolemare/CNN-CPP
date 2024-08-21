@@ -21,7 +21,7 @@ def delete_pngs_and_csvs():
     for directory in ['logs', 'plots']:
         if os.path.exists(directory):
             for item in os.listdir(directory):
-                if item.endswith('.png') or item.endswith('.csv'):
+                if item.endswith('.png') or item.endswith('.csv') or item.endswith('.txt'):
                     os.remove(os.path.join(directory, item))
 
 def delete_docs_vscode():
@@ -108,8 +108,8 @@ def parse_csv_file(csv_path):
                 'epoch': int(row['epoch_num']),
                 'training_accuracy': float(row['training_accuracy']),
                 'training_loss': float(row['training_loss']),
-                'testing_accuracy': float(row['testing_accuracy']),
-                'testing_loss': float(row['testing_loss']),
+                'validation_accuracy': float(row['validation_accuracy']),
+                'validation_loss': float(row['validation_loss']),
                 'elrales': row['elrales'].strip(),
             })
     
@@ -132,8 +132,8 @@ def generate_plots(epoch_data, output_dir, base_filename):
     epochs = [data['epoch'] for data in epoch_data]
     training_accuracy = [data['training_accuracy'] for data in epoch_data]
     training_loss = [data['training_loss'] for data in epoch_data]
-    testing_accuracy = [data['testing_accuracy'] for data in epoch_data]
-    testing_loss = [data['testing_loss'] for data in epoch_data]
+    validation_accuracy = [data['validation_accuracy'] for data in epoch_data]
+    validation_loss = [data['validation_loss'] for data in epoch_data]
 
     # Determine if ELRALES is used
     elrales_states = {data['elrales'] for data in epoch_data}
@@ -148,8 +148,6 @@ def generate_plots(epoch_data, output_dir, base_filename):
     if epoch_data[-1]['elrales'] == 'EARLY_STOPPING':
         plt.plot(epochs[-1:], [training_accuracy[-1]], 'o', color='black')
 
-    plt.plot(epochs, testing_accuracy, label='Testing Accuracy', color=(148/255, 0/255, 211/255))
-
     # Add agenda
     if elrales_enabled:
         plt.plot([], [], label='Normal', color=get_color('NORMAL'))
@@ -158,10 +156,12 @@ def generate_plots(epoch_data, output_dir, base_filename):
         plt.scatter([], [], label='Early Stopping', color='black')  # Black ball in the legend
     else:
         plt.plot([], [], label='Training Accuracy', color=(82/255, 127/255, 199/255))
+
+    plt.plot(epochs, validation_accuracy, label='Validation Accuracy', color=(148/255, 0/255, 211/255))
     
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
-    plt.title(f'{base_filename} Accuracy')
+    plt.title('Training and Validation Accuracy')
     plt.legend()
     plt.savefig(f"{output_dir}/{base_filename}_accuracy.png")
 
@@ -173,8 +173,6 @@ def generate_plots(epoch_data, output_dir, base_filename):
     
     if epoch_data[-1]['elrales'] == 'EARLY_STOPPING':
         plt.plot(epochs[-1:], [training_loss[-1]], 'o', color='black')  # Plot a black ball for Early Stopping
-    
-    plt.plot(epochs, testing_loss, label='Testing Loss', color=(148/255, 0/255, 211/255))
 
     # Add agenda
     if elrales_enabled:
@@ -184,10 +182,12 @@ def generate_plots(epoch_data, output_dir, base_filename):
         plt.scatter([], [], label='Early Stopping', color='black')  # Black ball in the legend
     else:
         plt.plot([], [], label='Training Loss', color=(82/255, 127/255, 199/255))
+
+    plt.plot(epochs, validation_loss, label='Validation Loss', color=(148/255, 0/255, 211/255))
     
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
-    plt.title(f'{base_filename} Loss')
+    plt.title('Training and Validation Loss')
     plt.legend()
     plt.savefig(f"{output_dir}/{base_filename}_loss.png")
 
