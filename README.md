@@ -923,7 +923,7 @@ on the specified **LearningDecayType** and associated parameters:
 
   > **Note:**  
   > By default, `Learning Decay` is disabled. It can be enabled with a single line of code, example:
-  > `wmodels/cnn_cd_ld_bn_e25`.
+  > `wmodels/cnn_cd_ld_e25`.
 
   > **Note:**  
   > Enabling Learning Decay is mutually exclusive with enabling ELRALES.  

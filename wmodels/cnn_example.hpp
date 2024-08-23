@@ -66,7 +66,7 @@ void cnn_example()
     int kernel_size2 = 3;
     int stride2 = 1;
     int padding2 = 1;
-    cnn.addConvolutionLayer(filters2, kernel_size2, stride2, padding2, ConvKernelInitialization::XAVIER, ConvBiasInitialization::ZERO);
+    cnn.addConvolutionLayer(filters2, kernel_size2, stride2, padding2, ConvKernelInitialization::HE, ConvBiasInitialization::RANDOM_NORMAL);
 
     // Activation Layer 2
     ActivationType activation2 = ActivationType::RELU;
@@ -92,8 +92,8 @@ void cnn_example()
 
     // Fully Connected Layer 2
     int fc_output_size2 = 64;
-    DenseWeightInitialization fc_weight_init2 = DenseWeightInitialization::XAVIER;
-    DenseBiasInitialization fc_bias_init2 = DenseBiasInitialization::ZERO;
+    DenseWeightInitialization fc_weight_init2 = DenseWeightInitialization::HE;
+    DenseBiasInitialization fc_bias_init2 = DenseBiasInitialization::RANDOM_NORMAL;
     cnn.addFullyConnectedLayer(fc_output_size2, fc_weight_init2, fc_bias_init2);
 
     // Activation Layer 4
@@ -102,8 +102,8 @@ void cnn_example()
 
     // Fully Connected Layer 3
     int fc_output_size3 = 32;
-    DenseWeightInitialization fc_weight_init3 = DenseWeightInitialization::XAVIER;
-    DenseBiasInitialization fc_bias_init3 = DenseBiasInitialization::ZERO;
+    DenseWeightInitialization fc_weight_init3 = DenseWeightInitialization::RANDOM_NORMAL;
+    DenseBiasInitialization fc_bias_init3 = DenseBiasInitialization::RANDOM_NORMAL;
     cnn.addFullyConnectedLayer(fc_output_size3, fc_weight_init3, fc_bias_init3);
 
     // Activation Layer 5
@@ -113,7 +113,7 @@ void cnn_example()
     // Fully Connected Layer 4
     int fc_output_size4 = 1;
     DenseWeightInitialization fc_weight_init4 = DenseWeightInitialization::XAVIER;
-    DenseBiasInitialization fc_bias_init4 = DenseBiasInitialization::ZERO;
+    DenseBiasInitialization fc_bias_init4 = DenseBiasInitialization::RANDOM_NORMAL;
     cnn.addFullyConnectedLayer(fc_output_size4, fc_weight_init4, fc_bias_init4);
 
     // Activation Layer 6
@@ -133,7 +133,7 @@ void cnn_example()
     // Step 5: Train the neural network
     int epochs = 50;
     int batch_size = 32;
-    double learning_rate = 0.000025;
+    double learning_rate = 0.00005;
     cnn.train(container, epochs, batch_size, learning_rate);
     cnn.makeSinglePredictions(container);
 }

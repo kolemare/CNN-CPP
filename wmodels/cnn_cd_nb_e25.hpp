@@ -34,26 +34,26 @@ void cnn_cd_nb_e25()
     cnn.addBatchNormalizationLayer();
     cnn.addActivationLayer(ActivationType::RELU);
     cnn.addMaxPoolingLayer(2, 2);
+
     cnn.addConvolutionLayer(32, 3);
     cnn.addBatchNormalizationLayer();
     cnn.addActivationLayer(ActivationType::RELU);
     cnn.addMaxPoolingLayer(2, 2);
+
     cnn.addFlattenLayer();
+
     cnn.addFullyConnectedLayer(128);
     cnn.addBatchNormalizationLayer();
     cnn.addActivationLayer(ActivationType::RELU);
+
     cnn.addFullyConnectedLayer(64);
     cnn.addBatchNormalizationLayer();
     cnn.addActivationLayer(ActivationType::RELU);
+
     cnn.addFullyConnectedLayer(32);
     cnn.addBatchNormalizationLayer();
     cnn.addActivationLayer(ActivationType::RELU);
-    cnn.addFullyConnectedLayer(16);
-    cnn.addBatchNormalizationLayer();
-    cnn.addActivationLayer(ActivationType::RELU);
-    cnn.addFullyConnectedLayer(8);
-    cnn.addBatchNormalizationLayer();
-    cnn.addActivationLayer(ActivationType::RELU);
+
     cnn.addFullyConnectedLayer(1);
     cnn.addActivationLayer(ActivationType::SIGMOID);
 

@@ -26,20 +26,28 @@ void cnn_sanity_2_colors()
     cnn.addConvolutionLayer(32, 3);
     cnn.addActivationLayer(ActivationType::RELU);
     cnn.addMaxPoolingLayer(2, 2);
+
     cnn.addConvolutionLayer(32, 3);
     cnn.addActivationLayer(ActivationType::RELU);
     cnn.addMaxPoolingLayer(2, 2);
+
     cnn.addFlattenLayer();
+
     cnn.addFullyConnectedLayer(128);
     cnn.addActivationLayer(ActivationType::RELU);
+
     cnn.addFullyConnectedLayer(64);
     cnn.addActivationLayer(ActivationType::RELU);
+
     cnn.addFullyConnectedLayer(32);
     cnn.addActivationLayer(ActivationType::RELU);
+
     cnn.addFullyConnectedLayer(16);
     cnn.addActivationLayer(ActivationType::RELU);
+
     cnn.addFullyConnectedLayer(8);
     cnn.addActivationLayer(ActivationType::RELU);
+
     cnn.addFullyConnectedLayer(1);
     cnn.addActivationLayer(ActivationType::SIGMOID);
 

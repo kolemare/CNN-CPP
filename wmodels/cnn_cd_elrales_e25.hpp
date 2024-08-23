@@ -33,16 +33,22 @@ void cnn_cd_elrales_e25()
     cnn.addConvolutionLayer(32, 3);
     cnn.addActivationLayer(ActivationType::RELU);
     cnn.addMaxPoolingLayer(2, 2);
+
     cnn.addConvolutionLayer(32, 3);
     cnn.addActivationLayer(ActivationType::RELU);
     cnn.addMaxPoolingLayer(2, 2);
+
     cnn.addFlattenLayer();
+
     cnn.addFullyConnectedLayer(128);
     cnn.addActivationLayer(ActivationType::RELU);
+
     cnn.addFullyConnectedLayer(64);
     cnn.addActivationLayer(ActivationType::RELU);
+
     cnn.addFullyConnectedLayer(32);
     cnn.addActivationLayer(ActivationType::RELU);
+
     cnn.addFullyConnectedLayer(1);
     cnn.addActivationLayer(ActivationType::SIGMOID);
 

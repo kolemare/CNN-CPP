@@ -1,0 +1,2 @@
+Prediction for "dog.jpg" is "dog" with confidence 99.9958%.
+Prediction for "cat.jpg" is "cat" with confidence 95.6531%.
