@@ -24,35 +24,39 @@ void cnn_cifar10_e10()
     cnn.setProgressLevel(ProgressLevel::ProgressTime);
 
     cnn.addConvolutionLayer(32, 3);
+    cnn.addBatchNormalizationLayer();
     cnn.addActivationLayer(ActivationType::RELU);
     cnn.addMaxPoolingLayer(2, 2);
 
     cnn.addConvolutionLayer(64, 3);
+    cnn.addBatchNormalizationLayer();
     cnn.addActivationLayer(ActivationType::RELU);
     cnn.addMaxPoolingLayer(2, 2);
 
     cnn.addConvolutionLayer(128, 3);
+    cnn.addBatchNormalizationLayer();
     cnn.addActivationLayer(ActivationType::RELU);
     cnn.addMaxPoolingLayer(2, 2);
 
     cnn.addFlattenLayer();
 
     cnn.addFullyConnectedLayer(256);
+    cnn.addBatchNormalizationLayer();
     cnn.addActivationLayer(ActivationType::RELU);
 
     cnn.addFullyConnectedLayer(128);
+    cnn.addBatchNormalizationLayer();
     cnn.addActivationLayer(ActivationType::RELU);
 
     cnn.addFullyConnectedLayer(10);
     cnn.addActivationLayer(ActivationType::SOFTMAX);
 
     cnn.setLossFunction(LossType::CATEGORICAL_CROSS_ENTROPY);
-    cnn.enableGradientClipping();
     cnn.compile(OptimizerType::Adam);
 
     int epochs = 10;
     int batch_size = 80;
-    double learning_rate = 0.0001;
+    double learning_rate = 0.00003;
     cnn.train(container, epochs, batch_size, learning_rate);
     cnn.makeSinglePredictions(container);
 }
