@@ -142,6 +142,7 @@ void NeuralNetwork::compile(OptimizerType optimizerType,
                             const std::unordered_map<std::string, double> &optimizer_params)
 {
     std::unordered_map<std::string, double> default_params;
+    BNTarget batchNormTarget = BNTarget::None;
 
     switch (optimizerType)
     {
@@ -205,6 +206,7 @@ void NeuralNetwork::compile(OptimizerType optimizerType,
             height = (height - conv_layer->getKernelSize() + 2 * conv_layer->getPadding()) / conv_layer->getStride() + 1;
             width = (width - conv_layer->getKernelSize() + 2 * conv_layer->getPadding()) / conv_layer->getStride() + 1;
             conv_layer->setOptimizer(optimizer);
+            batchNormTarget = BNTarget::ConvolutionLayer;
         }
         else if (auto pool_layer = dynamic_cast<MaxPoolingLayer *>(layers[i].get()))
         {
@@ -225,6 +227,15 @@ void NeuralNetwork::compile(OptimizerType optimizerType,
             fc_layer->setInputSize(input_size);
             input_size = fc_layer->getOutputSize();
             fc_layer->setOptimizer(optimizer);
+            batchNormTarget = BNTarget::DenseLayer;
+        }
+        else if (auto batch_norm_layer = dynamic_cast<BatchNormalizationLayer *>(layers[i].get()))
+        {
+            if (BNTarget::None == batchNormTarget)
+            {
+                throw std::runtime_error("Incorrect place for BatchNormalization Layer, check model.");
+            }
+            batch_norm_layer->setTarget(batchNormTarget);
         }
         else if (dynamic_cast<FlattenLayer *>(layers[i].get()))
         {

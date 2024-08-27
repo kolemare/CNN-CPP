@@ -619,77 +619,146 @@ accelerate training by normalizing the input of each layer. This layer helps imp
 performance of the network by maintaining mean and variance at stable levels. It sets up internal tensors for scaling
 (gamma) and shifting (beta), as well as moving averages of mean and variance.
 
-- <code style="color: teal;">Initialization:</code>
+- <code style="color: teal;">Initialization</code>
 
-  - <code style="color: SkyBlue;">Epsilon</code>
-  - <code style="color: SkyBlue;">Momentum</code>
+  - <code style="color: SkyBlue;">Epsilon</code>: A small constant added to the variance to prevent division by zero.
+  - <code style="color: SkyBlue;">Momentum</code>: A factor used to update the moving averages of mean and variance
+    during training.
 
 - <code style="color: teal;">Forward Pass</code> The forward method computes the mean and variance for the current
   batch, normalizes the input data, and scales and shifts it using gamma and beta. It also updates the moving averages
   of mean and variance using the specified momentum.
 
-  <h3 style="display: inline-block;">$$\mu = \frac{1}{N} \sum_{n=1}^{N} x_i^{(n)}$$</h3>
+  - <code style="color: SkyBlue;">Convolutional Layers</code>
+    <h3 style="display: inline-block;">$$\mu = \frac{1}{N \times H \times W} \sum_{n=1}^{N} \sum_{h=1}^{H} \sum_{w=1}^{W} x_{i,h,w}^{(n)}$$</h3>
 
-  <h3 style="display: inline-block;">$$\sigma^2 = \frac{1}{N} \sum_{n=1}^{N} (x_i^{(n)} - \mu)^2$$</h3>
+    - **$\mu$**: The mean ($\mu$) is computed as the average of the input values $x_{i,h,w}^{(n)}$ over the batch,
+      height, and width. This step centers the input data.
 
-  <h3 style="display: inline-block;">$$\hat{x}_i^{(n)} = \frac{x_i^{(n)} - \mu}{\sqrt{\sigma^2 + \epsilon}}$$</h3>
+    <h3 style="display: inline-block;">$$\sigma^2 = \frac{1}{N \times H \times W} \sum_{n=1}^{N} \sum_{h=1}^{H} \sum_{w=1}^{W} (x_{i,h,w}^{(n)} - \mu)^2$$</h3>
 
-  <h3 style="display: inline-block;">$$y_i^{(n)} = \gamma \hat{x}_i^{(n)} + \beta$$</h3>
+    - **$\sigma^2$**: The variance ($\sigma^2$) is calculated as the average of the squared differences between each
+      input value and the mean. It measures how much the inputs vary from the mean.
 
-  - **$\mu$**: The mean ($\mu$) is computed as the average of the input values $x_i^{(n)}$ over the batch. This step
-    centers the input data.
+    <h3 style="display: inline-block;">$$\hat{x}_{i,h,w}^{(n)} = \frac{x_{i,h,w}^{(n)} - \mu}{\sqrt{\sigma^2 + \epsilon}}$$</h3>
 
-  - **$\sigma^2$**: The variance ($\sigma^2$) is calculated as the average of the squared differences between each input
-    value and the mean. It measures how much the inputs vary from the mean.
+    - **$\hat{x}_{i,h,w}^{(n)}$**: The normalized input ($\hat{x}_{i,h,w}^{(n)}$) is derived by subtracting the mean
+      from each input and dividing by the square root of the variance plus a small constant $\epsilon$. This ensures the
+      inputs have a mean of 0 and a variance of 1.
 
-  - **$\hat{x}_i^{(n)}$**: The normalized input ($\hat{x}_i^{(n)}$) is derived by subtracting the mean from each input
-    and dividing by the square root of the variance plus a small constant $\epsilon$. This ensures the inputs have a
-    mean of 0 and a variance of 1.
+    <h3 style="display: inline-block;">$$y_{i,h,w}^{(n)} = \gamma_i \hat{x}_{i,h,w}^{(n)} + \beta_i$$</h3>
 
-  - **$y_i^{(n)}$**: The final output ($y_i^{(n)}$) is obtained by scaling the normalized input with $\gamma$ and then
-    shifting it with $\beta$. These parameters allow the model to adjust the normalized data to any desired scale and
-    shift.
+    - **$y_{i,h,w}^{(n)}$**: The final output ($y_{i,h,w}^{(n)}$) is obtained by scaling the normalized input with
+      $\gamma$ and then shifting it with $\beta$. These parameters allow the model to adjust the normalized data to any
+      desired scale and shift.
+
+  - <code style="color: SkyBlue;">Dense Layers</code>
+
+    <h3 style="display: inline-block;">$$\mu = \frac{1}{N} \sum_{n=1}^{N} x_i^{(n)}$$</h3>
+
+    - **$\mu$**: The mean ($\mu$) is computed as the average of the input values $x_i^{(n)}$ over the batch. This step
+      centers the input data.
+
+    <h3 style="display: inline-block;">$$\sigma^2 = \frac{1}{N} \sum_{n=1}^{N} (x_i^{(n)} - \mu)^2$$</h3>
+
+    - **$\sigma^2$**: The variance ($\sigma^2$) is calculated as the average of the squared differences between each
+      input value and the mean. It measures how much the inputs vary from the mean.
+
+    <h3 style="display: inline-block;">$$\hat{x}_i^{(n)} = \frac{x_i^{(n)} - \mu}{\sqrt{\sigma^2 + \epsilon}}$$</h3>
+
+    - **$\hat{x}_i^{(n)}$**: The normalized input ($\hat{x}_i^{(n)}$) is derived by subtracting the mean from each input
+      and dividing by the square root of the variance plus a small constant $\epsilon$. This ensures the inputs have a
+      mean of 0 and a variance of 1.
+
+    <h3 style="display: inline-block;">$$y_i^{(n)} = \gamma_i \hat{x}_i^{(n)} + \beta_i$$</h3>
+
+    - **$y_i^{(n)}$**: The final output ($y_i^{(n)}$) is obtained by scaling the normalized input with $\gamma$ and then
+      shifting it with $\beta$. These parameters allow the model to adjust the normalized data to any desired scale and
+      shift.
 
 - <code style="color: teal;">Backward Pass</code> During backpropagation, the backward method computes gradients with
   respect to the input data, as well as the gamma and beta parameters. These gradients are used to update the parameters
   directly.
 
-  <h3 style="display: inline-block;">$$\text{dgamma} = \sum_{n=1}^{N} \sum_{i=1}^{m} \text{doutput}(n, i) \times \hat{x}_i$$</h3>
+  - <code style="color: SkyBlue;">Convolutional Layers</code>
+    <h3 style="display: inline-block;">$$\text{dgamma}_i = \sum_{n=1}^{N} \sum_{h=1}^{H} \sum_{w=1}^{W} \text{doutput}(n, i, h, w) \times \hat{x}_{i,h,w}^{(n)}$$</h3>
 
-  <h3 style="display: inline-block;">$$\text{dbeta} = \sum_{n=1}^{N} \sum_{i=1}^{m} \text{d\_output}(n, i)$$</h3>
+    - **$\text{dgamma}_i$**: The gradient with respect to $\gamma$ for the $i$-th channel is calculated by summing the
+      product of the output gradient and the normalized input across the batch, height, and width.
 
-  <h3 style="display: inline-block;">$$\text{dvariance} = \sum_{n=1}^{N} \sum_{i=1}^{m} \text{doutput}(n, i) \times (x_i - \mu) \times -\frac{1}{2} \times (\sigma^2 + \epsilon)^{-\frac{3}{2}}$$</h3>
+    <h3 style="display: inline-block;">$$\text{dbeta}_i = \sum_{n=1}^{N} \sum_{h=1}^{H} \sum_{w=1}^{W} \text{doutput}(n, i, h, w)$$</h3>
 
-  <h3 style="display: inline-block;">$$\text{dmean} = \sum_{n=1}^{N} \sum_{i=1}^{m} \left[\text{doutput}(n, i) \times -\frac{1}{\sqrt{\sigma^2 + \epsilon}}\right] + \text{dvariance} \times \frac{-2}{m} \times \sum_{i=1}^{m} (x_i - \mu)$$</h3>
+    - **$\text{dbeta}_i$**: The gradient with respect to $\beta$ for the $i$-th channel is calculated by summing the
+      output gradients across the batch, height, and width.
 
-  <h3 style="display: inline-block;">$$\text{dinput}(n, i) = \text{doutput}(n, i) \times \frac{1}{\sqrt{\sigma^2 + \epsilon}} + \frac{\text{dvariance} \times 2 \times (x_i - \mu)}{m} + \frac{\text{dmean}}{m}$$</h3>
+    <h3 style="display: inline-block;">$$\text{dvariance}_i = \sum_{n=1}^{N} \sum_{h=1}^{H} \sum_{w=1}^{W} \text{doutput}(n, i, h, w) \times (x_{i,h,w}^{(n)} - \mu_i) \times -0.5 \times (\sigma^2_i + \epsilon)^{-3/2}$$</h3>
 
-  - **$\text{dgamma}$**: The gradient with respect to $\gamma$ (scale) is calculated by summing over the product of the
-    gradient of the loss with respect to the output ($\text{doutput}$) and the normalized input ($\hat{x}_i$). This
-    update reflects how the scaling factor $\gamma$ should change to minimize the loss.
+    - **$\text{dvariance}_i$**: The gradient with respect to the variance $\sigma^2$ considers how changes in the
+      variance affect the loss. This involves the sum of the product of the loss gradients, the difference between the
+      input and the mean, and a factor dependent on the variance.
 
-  - **$\text{dbeta}$**: The gradient with respect to $\beta$ (shift) is simply the sum of the gradients of the loss with
-    respect to the output ($\text{doutput}$). This indicates how the shift parameter $\beta$ should adjust.
+    <h3 style="display: inline-block;">$$\text{dmean}_i = \sum_{n=1}^{N} \sum_{h=1}^{H} \sum_{w=1}^{W} \text{doutput}(n, i, h, w) \times -\frac{1}{\sqrt{\sigma^2_i + \epsilon}} + \text{dvariance}_i \times \frac{-2}{N \times H \times W} \times \sum_{n=1}^{N} \sum_{h=1}^{H} \sum_{w=1}^{W} (x_{i,h,w}^{(n)} - \mu_i)$$</h3>
 
-  - **$\text{dvariance}$**: The gradient with respect to the variance $\sigma^2$ considers how changes in the variance
-    affect the loss. This involves the sum of the product of the loss gradients, the difference between the input and
-    the mean, and a factor dependent on the variance.
+    - **$\text{dmean}_i$**: The gradient with respect to the mean $\mu$ is the sum of two components: the first part
+      considers the direct impact of the mean on the loss, while the second part accounts for the influence of the
+      variance on the mean.
 
-  - **$\text{dmean}$**: The gradient with respect to the mean $\mu$ is the sum of two components: the first part
-    considers the direct impact of the mean on the loss, while the second part accounts for the influence of the
-    variance on the mean.
+    <h3 style="display: inline-block;">$$\text{dinput}_{i,h,w}^{(n)} = \text{doutput}(n, i, h, w) \times \frac{1}{\sqrt{\sigma^2_i + \epsilon}} + \text{dvariance}_i \times \frac{2 \times (x_{i,h,w}^{(n)} - \mu_i)}{N \times H \times W} + \text{dmean}_i \times \frac{1}{N \times H \times W}$$</h3>
 
-  - **$\text{dinput}$**: The gradient with respect to the input $x_i$ is the sum of three terms: the first term scales
-    the gradient by the inverse standard deviation, the second term accounts for the contribution of the variance, and
-    the third term adjusts based on the mean.
+    - **$\text{dinput}_{i,h,w}^{(n)}$**: The gradient with respect to the input $x_i$ is the sum of three terms: the
+      first term scales the gradient by the inverse standard deviation, the second term accounts for the contribution of
+      the variance, and the third term adjusts based on the mean.
 
-- <code style="color: teal;">Parameter Management</code> The class provides methods for setting and retrieving gamma and
-  beta, allowing external manipulation and inspection. It ensures that these parameters can be loaded during training
-  (`ELRALES`).
-- <code style="color: teal;">Tensor Dimension Support:</code> This layer supports both 2D and 4D tensors, allowing it to
+    <h3 style="display: inline-block;">$$\gamma_i = \gamma_i - \text{learning\_rate} \times \text{dgamma}_i$$</h3>
+    <h3 style="display: inline-block;">$$\beta_i = \beta_i - \text{learning\_rate} \times \text{dbeta}_i$$</h3>
+
+    - **$\gamma_i$** and **$\beta_i$** updates: The gradients with respect to gamma and beta are used to update the
+      parameters as shown above.
+
+  - <code style="color: SkyBlue;">Dense Layers</code>
+    <h3 style="display: inline-block;">$$\text{dgamma}_i = \sum_{n=1}^{N} \text{doutput}(n, i) \times \hat{x}_i^{(n)}$$</h3>
+
+    - **$\text{dgamma}_i$**: The gradient with respect to $\gamma$ for the $i$-th feature is calculated by summing the
+      product of the output gradient and the normalized input across the batch.
+
+    <h3 style="display: inline-block;">$$\text{dbeta}_i = \sum_{n=1}^{N} \text{doutput}(n, i)$$</h3>
+
+    - **$\text{dbeta}_i$**: The gradient with respect to $\beta$ for the $i$-th feature is calculated by summing the
+      output gradients across the batch.
+
+    <h3 style="display: inline-block;">$$\text{dvariance}_i = \sum_{n=1}^{N} \text{doutput}(n, i) \times (x_i^{(n)} - \mu_i) \times -0.5 \times (\sigma^2_i + \epsilon)^{-3/2}$$</h3>
+
+    - **$\text{dvariance}_i$**: The gradient with respect to the variance $\sigma^2$ considers how changes in the
+      variance affect the loss. This involves the sum of the product of the loss gradients, the difference between the
+      input and the mean, and a factor dependent on the variance.
+
+    <h3 style="display: inline-block;">$$\text{dmean}_i = \sum_{n=1}^{N} \text{doutput}(n, i) \times -\frac{1}{\sqrt{\sigma^2_i + \epsilon}} + \text{dvariance}_i \times \frac{-2}{N} \times \sum_{n=1}^{N} (x_i^{(n)} - \mu_i)$$</h3>
+
+    - **$\text{dmean}_i$**: The gradient with respect to the mean $\mu$ is the sum of two components: the first part
+      considers the direct impact of the mean on the loss, while the second part accounts for the influence of the
+      variance on the mean.
+
+    <h3 style="display: inline-block;">$$\text{dinput}_i^{(n)} = \text{doutput}(n, i) \times \frac{1}{\sqrt{\sigma^2_i + \epsilon}} + \text{dvariance}_i \times \frac{2 \times (x_i^{(n)} - \mu_i)}{N} + \text{dmean}_i \times \frac{1}{N}$$</h3>
+
+    - **$\text{dinput}_i^{(n)}$**: The gradient with respect to the input $x_i$ is the sum of three terms: the first
+      term scales the gradient by the inverse standard deviation, the second term accounts for the contribution of the
+      variance, and the third term adjusts based on the mean.
+
+    <h3 style="display: inline-block;">$$\gamma_i = \gamma_i - \text{learning\_rate} \times \text{dgamma}_i$$</h3>
+    <h3 style="display: inline-block;">$$\beta_i = \beta_i - \text{learning\_rate} \times \text{dbeta}_i$$</h3>
+
+    - **$\gamma_i$** and **$\beta_i$** updates: The gradients with respect to gamma and beta are used to update the
+      parameters as shown above.
+
+- <code style="color: teal;">Parameter Management</code>: The class provides methods for setting and retrieving gamma
+  and beta, allowing external manipulation and inspection. It ensures that these parameters can be saved and loaded
+  during training and inference.
+
+- <code style="color: teal;">Tensor Dimension Support</code>: This layer supports both 2D and 4D tensors, allowing it to
   be seamlessly integrated after convolutional layers, fully connected layers, or any other layer in the network where
   needed.
-- <code style="color: teal;">Error Handling</code> The layer includes checks to ensure that the initialization state is
+
+- <code style="color: teal;">Error Handling</code>: The layer includes checks to ensure that the initialization state is
   set correctly before performing forward or backward passes, preventing errors due to uninitialized parameters.
 
 ---

@@ -120,6 +120,22 @@ std::string toString(LossType value)
     }
 }
 
+// Function to convert BNTarget to string
+std::string toString(BNTarget value)
+{
+    switch (value)
+    {
+    case BNTarget::ConvolutionLayer:
+        return "ConvolutionLayer";
+    case BNTarget::DenseLayer:
+        return "DenseLayer";
+    case BNTarget::None:
+        return "None";
+    default:
+        return "UNKNOWN";
+    }
+}
+
 // Function to convert PropagationType to string
 std::string toString(PropagationType value)
 {

@@ -88,14 +88,14 @@ public:
      */
     void setBeta(const Eigen::Tensor<double, 1> &beta);
 
-private:
     /**
-     * @brief Initialize parameters for batch normalization.
+     * @brief Set the target layer type (Convolutional or Dense).
      *
-     * @param feature_size The size of the feature to initialize parameters.
+     * @param target The target layer type.
      */
-    void initialize(int feature_size);
+    void setTarget(BNTarget target);
 
+private:
     /**
      * @brief Update gamma and beta parameters.
      *
@@ -103,9 +103,40 @@ private:
      */
     void updateParameters(double learning_rate);
 
+    /**
+     * @brief Normalize the input for convolutional layers.
+     *
+     * @param input_batch The input tensor for normalization.
+     * @return A normalized tensor.
+     */
+    Eigen::Tensor<double, 4> normalizeConvLayer(const Eigen::Tensor<double, 4> &input_batch);
+
+    /**
+     * @brief Normalize the input for fully connected layers.
+     *
+     * @param input_batch The input tensor for normalization.
+     * @return A normalized tensor.
+     */
+    Eigen::Tensor<double, 4> normalizeDenseLayer(const Eigen::Tensor<double, 4> &input_batch);
+
+    /**
+     * @brief Compute the backward pass for convolutional layers.
+     */
+    Eigen::Tensor<double, 4> backwardConvLayer(const Eigen::Tensor<double, 4> &d_output_batch,
+                                               const Eigen::Tensor<double, 4> &input_batch,
+                                               double learning_rate);
+
+    /**
+     * @brief Compute the backward pass for fully connected layers.
+     */
+    Eigen::Tensor<double, 4> backwardDenseLayer(const Eigen::Tensor<double, 4> &d_output_batch,
+                                                const Eigen::Tensor<double, 4> &input_batch,
+                                                double learning_rate);
+
     double epsilon;   ///< Small constant to prevent division by zero.
     double momentum;  ///< Momentum for moving averages.
     bool initialized; ///< Flag to check if the layer is initialized.
+    BNTarget target;  ///< The target type (Convolution or Dense).
 
     Eigen::Tensor<double, 1> gamma, beta;                  ///< Scale and shift parameters.
     Eigen::Tensor<double, 1> moving_mean, moving_variance; ///< Moving averages for mean and variance.

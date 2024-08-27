@@ -131,6 +131,17 @@ enum class LossType
 };
 
 /**
+ * @enum BNTarget
+ * @brief An enumeration to define the target type for batch normalization: Convolutional or Fully Connected layer.
+ */
+enum class BNTarget
+{
+    ConvolutionLayer, /**< Batch Normalization for Convolution Layer */
+    DenseLayer,       /**< Batch Normalization for FullyConnected Layer */
+    None              /**< No layer specified => Represents Error */
+};
+
+/**
  * @enum PropagationType
  * @brief Enumeration for propagation types during training.
  */
@@ -294,6 +305,13 @@ std::string toString(OptimizerType value);
  * @return The string representation of the value.
  */
 std::string toString(LossType value);
+
+/**
+ * @brief Convert BNTarget enum to string.
+ * @param value The BNTarget value.
+ * @return The string representation of the value.
+ */
+std::string toString(BNTarget value);
 
 /**
  * @brief Convert PropagationType enum to string.
