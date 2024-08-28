@@ -5,6 +5,9 @@
 *.txt
 !/wreadme/cnn_cpp/txt/*txt
 !/wreadme/tf/txt/*txt
+!/external/eigen/**/*txt
+!/external/googletest/**/*txt
+!/external/opencv/**/*txt
 
 # Ignore all .csv files
 *.csv
