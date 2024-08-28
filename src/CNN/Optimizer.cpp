@@ -1,6 +1,19 @@
 #include "Optimizer.hpp"
 #include "TensorOperations.hpp"
 
+// Initialize static members for Adam
+double Adam::beta1 = 0.9;
+double Adam::beta2 = 0.999;
+double Adam::epsilon = 1e-7;
+int Adam::t = 0;
+
+// Initialize static members for SGDWithMomentum
+double SGDWithMomentum::momentum = 0.9;
+
+// Initialize static members for RMSprop
+double RMSprop::beta = 0.9;
+double RMSprop::epsilon = 1e-7;
+
 // Factory method to create optimizers
 std::shared_ptr<Optimizer> Optimizer::create(OptimizerType type,
                                              const std::unordered_map<std::string, double> &params)
@@ -12,6 +25,7 @@ std::shared_ptr<Optimizer> Optimizer::create(OptimizerType type,
     case OptimizerType::SGDWithMomentum:
     {
         double momentum = params.at("momentum");
+        SGDWithMomentum::setMomentum(momentum);
         return std::make_shared<SGDWithMomentum>(momentum);
     }
     case OptimizerType::Adam:
@@ -19,12 +33,17 @@ std::shared_ptr<Optimizer> Optimizer::create(OptimizerType type,
         double beta1 = params.at("beta1");
         double beta2 = params.at("beta2");
         double epsilon = params.at("epsilon");
+        Adam::setBeta1(beta1);
+        Adam::setBeta2(beta2);
+        Adam::setEpsilon(epsilon);
         return std::make_shared<Adam>(beta1, beta2, epsilon);
     }
     case OptimizerType::RMSprop:
     {
         double beta = params.at("beta");
         double epsilon = params.at("epsilon");
+        RMSprop::setBeta(beta);
+        RMSprop::setEpsilon(epsilon);
         return std::make_shared<RMSprop>(beta, epsilon);
     }
     default:
@@ -45,7 +64,6 @@ void SGD::update(Eigen::Tensor<double, 4> &weights,
 
 // SGDWithMomentum implementation
 SGDWithMomentum::SGDWithMomentum(double momentum)
-    : momentum(momentum)
 {
     v_weights = Eigen::Tensor<double, 4>(1, 1, 1, 1);
     v_biases = Eigen::Tensor<double, 1>(1);
@@ -96,21 +114,20 @@ void SGDWithMomentum::setVBiases(const Eigen::Tensor<double, 1> &v_biases)
     this->v_biases = Eigen::Tensor<double, 1>(v_biases); // Copy the input tensor
 }
 
-double SGDWithMomentum::getMomentum() const
+double SGDWithMomentum::getMomentum()
 {
     return momentum;
 }
 
 void SGDWithMomentum::setMomentum(double momentum)
 {
-    this->momentum = momentum;
+    SGDWithMomentum::momentum = momentum;
 }
 
 // Adam implementation
 Adam::Adam(double beta1,
            double beta2,
            double epsilon)
-    : beta1(beta1), beta2(beta2), epsilon(epsilon), t(0)
 {
     m_weights = Eigen::Tensor<double, 4>(1, 1, 1, 1);
     v_weights = Eigen::Tensor<double, 4>(1, 1, 1, 1);
@@ -140,7 +157,6 @@ void Adam::update(Eigen::Tensor<double, 4> &weights,
         v_biases.setZero();
     }
 
-    t++;
     m_weights = beta1 * m_weights + (1.0 - beta1) * d_weights;
     v_weights = beta2 * v_weights + (1.0 - beta2) * d_weights.square();
 
@@ -197,50 +213,54 @@ void Adam::setVBiases(const Eigen::Tensor<double, 1> &v_biases)
     this->v_biases = Eigen::Tensor<double, 1>(v_biases); // Copy the input tensor
 }
 
-double Adam::getBeta1() const
+void Adam::incrementT()
+{
+    Adam::t++;
+}
+
+double Adam::getBeta1()
 {
     return beta1;
 }
 
-double Adam::getBeta2() const
+double Adam::getBeta2()
 {
     return beta2;
 }
 
-double Adam::getEpsilon() const
+double Adam::getEpsilon()
 {
     return epsilon;
 }
 
 void Adam::setEpsilon(double epsilon)
 {
-    this->epsilon = epsilon;
+    Adam::epsilon = epsilon;
 }
 
-int Adam::getT() const
+int Adam::getT()
 {
     return t;
 }
 
 void Adam::setBeta1(double beta1)
 {
-    this->beta1 = beta1;
+    Adam::beta1 = beta1;
 }
 
 void Adam::setBeta2(double beta2)
 {
-    this->beta2 = beta2;
+    Adam::beta2 = beta2;
 }
 
 void Adam::setT(int t)
 {
-    this->t = t;
+    Adam::t = t;
 }
 
 // RMSprop implementation
 RMSprop::RMSprop(double beta,
                  double epsilon)
-    : beta(beta), epsilon(epsilon)
 {
     s_weights = Eigen::Tensor<double, 4>(1, 1, 1, 1);
     s_biases = Eigen::Tensor<double, 1>(1);
@@ -291,22 +311,22 @@ void RMSprop::setSBiases(const Eigen::Tensor<double, 1> &s_biases)
     this->s_biases = Eigen::Tensor<double, 1>(s_biases); // Copy the input tensor
 }
 
-double RMSprop::getBeta() const
+double RMSprop::getBeta()
 {
     return beta;
 }
 
-double RMSprop::getEpsilon() const
+double RMSprop::getEpsilon()
 {
     return epsilon;
 }
 
 void RMSprop::setBeta(double beta)
 {
-    this->beta = beta;
+    RMSprop::beta = beta;
 }
 
 void RMSprop::setEpsilon(double epsilon)
 {
-    this->epsilon = epsilon;
+    RMSprop::epsilon = epsilon;
 }

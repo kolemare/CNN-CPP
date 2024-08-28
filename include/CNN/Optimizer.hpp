@@ -125,17 +125,17 @@ public:
      *
      * @return The momentum factor.
      */
-    double getMomentum() const;
+    static double getMomentum();
 
     /**
      * @brief Set the momentum factor.
      *
      * @param momentum The new momentum factor.
      */
-    void setMomentum(double momentum);
+    static void setMomentum(double momentum);
 
 private:
-    double momentum;
+    static double momentum;
     Eigen::Tensor<double, 4> v_weights;
     Eigen::Tensor<double, 1> v_biases;
 };
@@ -230,66 +230,73 @@ public:
     void setVBiases(const Eigen::Tensor<double, 1> &v_biases);
 
     /**
+     * @brief Increments the current time step (t).
+     *
+     * @return void.
+     */
+    static void incrementT();
+
+    /**
      * @brief Get the beta1 parameter.
      *
      * @return The beta1 parameter.
      */
-    double getBeta1() const;
+    static double getBeta1();
 
     /**
      * @brief Get the beta2 parameter.
      *
      * @return The beta2 parameter.
      */
-    double getBeta2() const;
+    static double getBeta2();
 
     /**
      * @brief Get the epsilon parameter.
      *
      * @return The epsilon parameter.
      */
-    double getEpsilon() const;
+    static double getEpsilon();
 
     /**
      * @brief Set the epsilon parameter.
      *
      * @param epsilon The new epsilon parameter.
      */
-    void setEpsilon(double epsilon);
+    static void setEpsilon(double epsilon);
 
     /**
      * @brief Get the current time step (t).
      *
      * @return The current time step (t).
      */
-    int getT() const;
+    static int getT();
 
     /**
      * @brief Set the beta1 parameter.
      *
      * @param beta1 The new beta1 parameter.
      */
-    void setBeta1(double beta1);
+    static void setBeta1(double beta1);
 
     /**
      * @brief Set the beta2 parameter.
      *
      * @param beta2 The new beta2 parameter.
      */
-    void setBeta2(double beta2);
+    static void setBeta2(double beta2);
 
     /**
      * @brief Set the current time step (t).
      *
      * @param t The new time step (t).
      */
-    void setT(int t);
+    static void setT(int t);
 
 private:
-    double beta1;
-    double beta2;
-    double epsilon;
-    int t;
+    static double beta1;
+    static double beta2;
+    static double epsilon;
+    static int t;
     Eigen::Tensor<double, 4> m_weights;
     Eigen::Tensor<double, 4> v_weights;
     Eigen::Tensor<double, 1> m_biases;
@@ -361,32 +368,32 @@ public:
      *
      * @return The beta parameter.
      */
-    double getBeta() const;
+    static double getBeta();
 
     /**
      * @brief Set the beta parameter.
      *
      * @param beta The new beta parameter.
      */
-    void setBeta(double beta);
+    static void setBeta(double beta);
 
     /**
      * @brief Get the epsilon parameter.
      *
      * @return The epsilon parameter.
      */
-    double getEpsilon() const;
+    static double getEpsilon();
 
     /**
      * @brief Set the epsilon parameter.
      *
      * @param epsilon The new epsilon parameter.
      */
-    void setEpsilon(double epsilon);
+    static void setEpsilon(double epsilon);
 
 private:
-    double beta;
-    double epsilon;
+    static double beta;
+    static double epsilon;
     Eigen::Tensor<double, 4> s_weights;
     Eigen::Tensor<double, 1> s_biases;
 };

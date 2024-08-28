@@ -2,13 +2,14 @@
 
 NeuralNetwork::NeuralNetwork()
 {
-    this->flattenAdded = false;
-    this->clippingSet = false;
-    this->elralesSet = false;
-    this->compiled = false;
-    this->trained = false;
     this->batchSize = 0;
     this->currentDepth = 3;
+    this->trained = false;
+    this->compiled = false;
+    this->elralesSet = false;
+    this->clippingSet = false;
+    this->flattenAdded = false;
+    this->adamIncrement = false;
     this->logLevel = LogLevel::None;
     this->progressLevel = ProgressLevel::None;
     outputCSV = "logs/cnn.csv";
@@ -154,6 +155,7 @@ void NeuralNetwork::compile(OptimizerType optimizerType,
         break;
     case OptimizerType::Adam:
         default_params = {{"beta1", 0.9}, {"beta2", 0.999}, {"epsilon", 1e-7}};
+        this->adamIncrement = true;
         break;
     case OptimizerType::RMSprop:
         default_params = {{"beta", 0.9}, {"epsilon", 1e-7}};
@@ -167,8 +169,6 @@ void NeuralNetwork::compile(OptimizerType optimizerType,
     {
         default_params[param.first] = param.second;
     }
-
-    optimizer = Optimizer::create(optimizerType, default_params);
 
     int height = inputHeight;
     int width = inputWidth;
@@ -205,7 +205,7 @@ void NeuralNetwork::compile(OptimizerType optimizerType,
             currentDepth = conv_layer->getFilters();
             height = (height - conv_layer->getKernelSize() + 2 * conv_layer->getPadding()) / conv_layer->getStride() + 1;
             width = (width - conv_layer->getKernelSize() + 2 * conv_layer->getPadding()) / conv_layer->getStride() + 1;
-            conv_layer->setOptimizer(optimizer);
+            conv_layer->setOptimizer(Optimizer::create(optimizerType, default_params));
             batchNormTarget = BNTarget::ConvolutionLayer;
         }
         else if (auto pool_layer = dynamic_cast<MaxPoolingLayer *>(layers[i].get()))
@@ -226,7 +226,7 @@ void NeuralNetwork::compile(OptimizerType optimizerType,
             }
             fc_layer->setInputSize(input_size);
             input_size = fc_layer->getOutputSize();
-            fc_layer->setOptimizer(optimizer);
+            fc_layer->setOptimizer(Optimizer::create(optimizerType, default_params));
             batchNormTarget = BNTarget::DenseLayer;
         }
         else if (auto batch_norm_layer = dynamic_cast<BatchNormalizationLayer *>(layers[i].get()))
@@ -312,6 +312,11 @@ void NeuralNetwork::backward(const Eigen::Tensor<double, 4> &d_output,
     if (LogLevel::LayerSummary == logLevel)
     {
         NNLogger::printTensorSummary(d_output, "OUTPUT", PropagationType::BACK);
+    }
+
+    if (true == this->adamIncrement)
+    {
+        Adam::incrementT();
     }
 
     Eigen::Tensor<double, 4> d_input = d_output;

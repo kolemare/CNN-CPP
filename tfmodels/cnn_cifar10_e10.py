@@ -67,7 +67,7 @@ cnn.add(tf.keras.layers.Activation('relu'))
 cnn.add(tf.keras.layers.Dense(units=10, activation='softmax'))
 
 # Compile the CNN with adjusted learning rate and gradient clipping
-optimizer = tf.keras.optimizers.Adam(learning_rate=0.00003, clipvalue=1.0)
+optimizer = tf.keras.optimizers.Adam(learning_rate=0.0001, clipvalue=1.0)
 cnn.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
 
 # Function to make predictions and check if all are correct

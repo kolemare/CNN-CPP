@@ -231,14 +231,14 @@ public:
 private:
     std::vector<std::shared_ptr<Layer>> layers;        ///< Vector of layers in the network.
     std::unique_ptr<LossFunction> lossFunction;        ///< The loss function used by the network.
-    std::shared_ptr<Optimizer> optimizer;              ///< The optimizer used for training.
     std::vector<Eigen::Tensor<double, 4>> layerInputs; ///< Cached inputs for each layer.
 
-    bool flattenAdded; ///< Flag indicating if a flatten layer has been added.
-    bool clippingSet;  ///< Flag indicating if gradient clipping has been set.
-    bool elralesSet;   ///< Flag indicating if ELRALES has been set.
-    bool compiled;     ///< Flag indicating if the network has been compiled.
-    bool trained;      ///< Flag indicating if the network has been trained.
+    bool flattenAdded;  ///< Flag indicating if a flatten layer has been added.
+    bool clippingSet;   ///< Flag indicating if gradient clipping has been set.
+    bool elralesSet;    ///< Flag indicating if ELRALES has been set.
+    bool compiled;      ///< Flag indicating if the network has been compiled.
+    bool trained;       ///< Flag indicating if the network has been trained.
+    bool adamIncrement; ///< Flag indicating if the network used at least 1 Adam.
 
     int currentDepth; ///< Current depth of the input as it passes through layers.
     int inputSize;    ///< Input size for fully connected layers.

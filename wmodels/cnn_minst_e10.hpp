@@ -48,7 +48,7 @@ void cnn_minst_e10()
 
     int epochs = 10;
     int batch_size = 80;
-    double learning_rate = 0.00003;
+    double learning_rate = 0.0001;
     cnn.train(container, epochs, batch_size, learning_rate);
     cnn.makeSinglePredictions(container);
 }
