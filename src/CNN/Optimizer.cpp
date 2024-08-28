@@ -33,16 +33,6 @@ std::shared_ptr<Optimizer> Optimizer::create(OptimizerType type,
 }
 
 // SGD implementation
-void SGD::update(Eigen::Tensor<double, 2> &weights,
-                 Eigen::Tensor<double, 1> &biases,
-                 const Eigen::Tensor<double, 2> &d_weights,
-                 const Eigen::Tensor<double, 1> &d_biases,
-                 double learning_rate)
-{
-    TensorOperations::applyUpdates(weights, d_weights, learning_rate);
-    TensorOperations::applyUpdates(biases, d_biases, learning_rate);
-}
-
 void SGD::update(Eigen::Tensor<double, 4> &weights,
                  Eigen::Tensor<double, 1> &biases,
                  const Eigen::Tensor<double, 4> &d_weights,
@@ -53,38 +43,12 @@ void SGD::update(Eigen::Tensor<double, 4> &weights,
     TensorOperations::applyUpdates(biases, d_biases, learning_rate);
 }
 
-// SGD with Momentum implementation
+// SGDWithMomentum implementation
 SGDWithMomentum::SGDWithMomentum(double momentum)
+    : momentum(momentum)
 {
-    this->momentum = momentum;
-    v_weights_2d = Eigen::Tensor<double, 2>(1, 1);
-    v_biases_2d = Eigen::Tensor<double, 1>(1);
-    v_weights_4d = Eigen::Tensor<double, 4>(1, 1, 1, 1);
-    v_biases_4d = Eigen::Tensor<double, 1>(1);
-}
-
-void SGDWithMomentum::update(Eigen::Tensor<double, 2> &weights,
-                             Eigen::Tensor<double, 1> &biases,
-                             const Eigen::Tensor<double, 2> &d_weights,
-                             const Eigen::Tensor<double, 1> &d_biases,
-                             double learning_rate)
-{
-    if (v_weights_2d.dimension(0) != weights.dimension(0) || v_weights_2d.dimension(1) != weights.dimension(1))
-    {
-        v_weights_2d = Eigen::Tensor<double, 2>(weights.dimension(0), weights.dimension(1));
-        v_weights_2d.setZero();
-    }
-    if (v_biases_2d.dimension(0) != biases.dimension(0))
-    {
-        v_biases_2d = Eigen::Tensor<double, 1>(biases.dimension(0));
-        v_biases_2d.setZero();
-    }
-
-    v_weights_2d = momentum * v_weights_2d + learning_rate * d_weights;
-    v_biases_2d = momentum * v_biases_2d + learning_rate * d_biases;
-
-    TensorOperations::applyUpdates(weights, v_weights_2d, 1.0);
-    TensorOperations::applyUpdates(biases, v_biases_2d, 1.0);
+    v_weights = Eigen::Tensor<double, 4>(1, 1, 1, 1);
+    v_biases = Eigen::Tensor<double, 1>(1);
 }
 
 void SGDWithMomentum::update(Eigen::Tensor<double, 4> &weights,
@@ -93,119 +57,65 @@ void SGDWithMomentum::update(Eigen::Tensor<double, 4> &weights,
                              const Eigen::Tensor<double, 1> &d_biases,
                              double learning_rate)
 {
-    if (v_weights_4d.dimension(0) != weights.dimension(0) || v_weights_4d.dimension(1) != weights.dimension(1) || v_weights_4d.dimension(2) != weights.dimension(2) || v_weights_4d.dimension(3) != weights.dimension(3))
+    if (v_weights.dimension(0) != weights.dimension(0) || v_weights.dimension(1) != weights.dimension(1) ||
+        v_weights.dimension(2) != weights.dimension(2) || v_weights.dimension(3) != weights.dimension(3))
     {
-        v_weights_4d = Eigen::Tensor<double, 4>(weights.dimension(0), weights.dimension(1), weights.dimension(2), weights.dimension(3));
-        v_weights_4d.setZero();
+        v_weights = Eigen::Tensor<double, 4>(weights.dimension(0), weights.dimension(1), weights.dimension(2), weights.dimension(3));
+        v_weights.setZero();
     }
-    if (v_biases_4d.dimension(0) != biases.dimension(0))
+    if (v_biases.dimension(0) != biases.dimension(0))
     {
-        v_biases_4d = Eigen::Tensor<double, 1>(biases.dimension(0));
-        v_biases_4d.setZero();
+        v_biases = Eigen::Tensor<double, 1>(biases.dimension(0));
+        v_biases.setZero();
     }
 
-    v_weights_4d = momentum * v_weights_4d + learning_rate * d_weights;
-    v_biases_4d = momentum * v_biases_4d + learning_rate * d_biases;
+    v_weights = momentum * v_weights + learning_rate * d_weights;
+    v_biases = momentum * v_biases + learning_rate * d_biases;
 
-    TensorOperations::applyUpdates(weights, v_weights_4d, 1.0);
-    TensorOperations::applyUpdates(biases, v_biases_4d, 1.0);
+    TensorOperations::applyUpdates(weights, v_weights, 1.0);
+    TensorOperations::applyUpdates(biases, v_biases, 1.0);
 }
 
-Eigen::Tensor<double, 2> SGDWithMomentum::getVWeights2D() const
+Eigen::Tensor<double, 4> SGDWithMomentum::getVWeights() const
 {
-    return Eigen::Tensor<double, 2>(v_weights_2d); // Return a copy
+    return Eigen::Tensor<double, 4>(v_weights); // Return a copy
 }
 
-Eigen::Tensor<double, 1> SGDWithMomentum::getVBiases2D() const
+Eigen::Tensor<double, 1> SGDWithMomentum::getVBiases() const
 {
-    return Eigen::Tensor<double, 1>(v_biases_2d); // Return a copy
+    return Eigen::Tensor<double, 1>(v_biases); // Return a copy
 }
 
-Eigen::Tensor<double, 4> SGDWithMomentum::getVWeights4D() const
+void SGDWithMomentum::setVWeights(const Eigen::Tensor<double, 4> &v_weights)
 {
-    return Eigen::Tensor<double, 4>(v_weights_4d); // Return a copy
+    this->v_weights = Eigen::Tensor<double, 4>(v_weights); // Copy the input tensor
 }
 
-Eigen::Tensor<double, 1> SGDWithMomentum::getVBiases4D() const
+void SGDWithMomentum::setVBiases(const Eigen::Tensor<double, 1> &v_biases)
 {
-    return Eigen::Tensor<double, 1>(v_biases_4d); // Return a copy
+    this->v_biases = Eigen::Tensor<double, 1>(v_biases); // Copy the input tensor
 }
 
-void SGDWithMomentum::setVWeights2D(const Eigen::Tensor<double, 2> &v_weights)
+double SGDWithMomentum::getMomentum() const
 {
-    v_weights_2d = Eigen::Tensor<double, 2>(v_weights); // Copy the input tensor
+    return momentum;
 }
 
-void SGDWithMomentum::setVBiases2D(const Eigen::Tensor<double, 1> &v_biases)
+void SGDWithMomentum::setMomentum(double momentum)
 {
-    v_biases_2d = Eigen::Tensor<double, 1>(v_biases); // Copy the input tensor
-}
-
-void SGDWithMomentum::setVWeights4D(const Eigen::Tensor<double, 4> &v_weights)
-{
-    v_weights_4d = Eigen::Tensor<double, 4>(v_weights); // Copy the input tensor
-}
-
-void SGDWithMomentum::setVBiases4D(const Eigen::Tensor<double, 1> &v_biases)
-{
-    v_biases_4d = Eigen::Tensor<double, 1>(v_biases); // Copy the input tensor
+    this->momentum = momentum;
 }
 
 // Adam implementation
 Adam::Adam(double beta1,
            double beta2,
            double epsilon)
+    : beta1(beta1), beta2(beta2), epsilon(epsilon), t(0)
 {
-    this->beta1 = beta1;
-    this->beta2 = beta2;
-    this->epsilon = epsilon;
-    t = 0;
-    m_weights_2d = Eigen::Tensor<double, 2>(1, 1);
-    v_weights_2d = Eigen::Tensor<double, 2>(1, 1);
-    m_biases_2d = Eigen::Tensor<double, 1>(1);
-    v_biases_2d = Eigen::Tensor<double, 1>(1);
-    m_weights_4d = Eigen::Tensor<double, 4>(1, 1, 1, 1);
-    v_weights_4d = Eigen::Tensor<double, 4>(1, 1, 1, 1);
-    m_biases_4d = Eigen::Tensor<double, 1>(1);
-    v_biases_4d = Eigen::Tensor<double, 1>(1);
-}
-
-void Adam::update(Eigen::Tensor<double, 2> &weights,
-                  Eigen::Tensor<double, 1> &biases,
-                  const Eigen::Tensor<double, 2> &d_weights,
-                  const Eigen::Tensor<double, 1> &d_biases,
-                  double learning_rate)
-{
-    if (m_weights_2d.dimension(0) != weights.dimension(0) || m_weights_2d.dimension(1) != weights.dimension(1))
-    {
-        m_weights_2d = Eigen::Tensor<double, 2>(weights.dimension(0), weights.dimension(1));
-        v_weights_2d = Eigen::Tensor<double, 2>(weights.dimension(0), weights.dimension(1));
-        m_weights_2d.setZero();
-        v_weights_2d.setZero();
-    }
-    if (m_biases_2d.dimension(0) != biases.dimension(0))
-    {
-        m_biases_2d = Eigen::Tensor<double, 1>(biases.dimension(0));
-        v_biases_2d = Eigen::Tensor<double, 1>(biases.dimension(0));
-        m_biases_2d.setZero();
-        v_biases_2d.setZero();
-    }
-
-    t++;
-    m_weights_2d = beta1 * m_weights_2d + (1.0 - beta1) * d_weights;
-    v_weights_2d = beta2 * v_weights_2d + (1.0 - beta2) * d_weights.square();
-
-    auto m_hat_weights = m_weights_2d / (1.0 - std::pow(beta1, t));
-    auto v_hat_weights = v_weights_2d / (1.0 - std::pow(beta2, t));
-
-    m_biases_2d = beta1 * m_biases_2d + (1.0 - beta1) * d_biases;
-    v_biases_2d = beta2 * v_biases_2d + (1.0 - beta2) * d_biases.square();
-
-    auto m_hat_biases = m_biases_2d / (1.0 - std::pow(beta1, t));
-    auto v_hat_biases = v_biases_2d / (1.0 - std::pow(beta2, t));
-
-    TensorOperations::applyUpdates(weights, m_hat_weights / (v_hat_weights.sqrt() + epsilon), learning_rate);
-    TensorOperations::applyUpdates(biases, m_hat_biases / (v_hat_biases.sqrt() + epsilon), learning_rate);
+    m_weights = Eigen::Tensor<double, 4>(1, 1, 1, 1);
+    v_weights = Eigen::Tensor<double, 4>(1, 1, 1, 1);
+    m_biases = Eigen::Tensor<double, 1>(1);
+    v_biases = Eigen::Tensor<double, 1>(1);
 }
 
 void Adam::update(Eigen::Tensor<double, 4> &weights,
@@ -214,152 +124,126 @@ void Adam::update(Eigen::Tensor<double, 4> &weights,
                   const Eigen::Tensor<double, 1> &d_biases,
                   double learning_rate)
 {
-    if (m_weights_4d.dimension(0) != weights.dimension(0) || m_weights_4d.dimension(1) != weights.dimension(1) || m_weights_4d.dimension(2) != weights.dimension(2) || m_weights_4d.dimension(3) != weights.dimension(3))
+    if (m_weights.dimension(0) != weights.dimension(0) || m_weights.dimension(1) != weights.dimension(1) ||
+        m_weights.dimension(2) != weights.dimension(2) || m_weights.dimension(3) != weights.dimension(3))
     {
-        m_weights_4d = Eigen::Tensor<double, 4>(weights.dimension(0), weights.dimension(1), weights.dimension(2), weights.dimension(3));
-        v_weights_4d = Eigen::Tensor<double, 4>(weights.dimension(0), weights.dimension(1), weights.dimension(2), weights.dimension(3));
-        m_weights_4d.setZero();
-        v_weights_4d.setZero();
+        m_weights = Eigen::Tensor<double, 4>(weights.dimension(0), weights.dimension(1), weights.dimension(2), weights.dimension(3));
+        v_weights = Eigen::Tensor<double, 4>(weights.dimension(0), weights.dimension(1), weights.dimension(2), weights.dimension(3));
+        m_weights.setZero();
+        v_weights.setZero();
     }
-    if (m_biases_4d.dimension(0) != biases.dimension(0))
+    if (m_biases.dimension(0) != biases.dimension(0))
     {
-        m_biases_4d = Eigen::Tensor<double, 1>(biases.dimension(0));
-        v_biases_4d = Eigen::Tensor<double, 1>(biases.dimension(0));
-        m_biases_4d.setZero();
-        v_biases_4d.setZero();
+        m_biases = Eigen::Tensor<double, 1>(biases.dimension(0));
+        v_biases = Eigen::Tensor<double, 1>(biases.dimension(0));
+        m_biases.setZero();
+        v_biases.setZero();
     }
 
     t++;
-    m_weights_4d = beta1 * m_weights_4d + (1.0 - beta1) * d_weights;
-    v_weights_4d = beta2 * v_weights_4d + (1.0 - beta2) * d_weights.square();
+    m_weights = beta1 * m_weights + (1.0 - beta1) * d_weights;
+    v_weights = beta2 * v_weights + (1.0 - beta2) * d_weights.square();
 
-    auto m_hat_weights = m_weights_4d / (1.0 - std::pow(beta1, t));
-    auto v_hat_weights = v_weights_4d / (1.0 - std::pow(beta2, t));
+    auto m_hat_weights = m_weights / (1.0 - std::pow(beta1, t));
+    auto v_hat_weights = v_weights / (1.0 - std::pow(beta2, t));
 
-    m_biases_4d = beta1 * m_biases_4d + (1.0 - beta1) * d_biases;
-    v_biases_4d = beta2 * v_biases_4d + (1.0 - beta2) * d_biases.square();
+    m_biases = beta1 * m_biases + (1.0 - beta1) * d_biases;
+    v_biases = beta2 * v_biases + (1.0 - beta2) * d_biases.square();
 
-    auto m_hat_biases = m_biases_4d / (1.0 - std::pow(beta1, t));
-    auto v_hat_biases = v_biases_4d / (1.0 - std::pow(beta2, t));
+    auto m_hat_biases = m_biases / (1.0 - std::pow(beta1, t));
+    auto v_hat_biases = v_biases / (1.0 - std::pow(beta2, t));
 
     TensorOperations::applyUpdates(weights, m_hat_weights / (v_hat_weights.sqrt() + epsilon), learning_rate);
     TensorOperations::applyUpdates(biases, m_hat_biases / (v_hat_biases.sqrt() + epsilon), learning_rate);
 }
 
-Eigen::Tensor<double, 2> Adam::getMWeights2D() const
+Eigen::Tensor<double, 4> Adam::getMWeights() const
 {
-    return Eigen::Tensor<double, 2>(m_weights_2d); // Return a copy
+    return Eigen::Tensor<double, 4>(m_weights); // Return a copy
 }
 
-Eigen::Tensor<double, 2> Adam::getVWeights2D() const
+Eigen::Tensor<double, 4> Adam::getVWeights() const
 {
-    return Eigen::Tensor<double, 2>(v_weights_2d); // Return a copy
+    return Eigen::Tensor<double, 4>(v_weights); // Return a copy
 }
 
-Eigen::Tensor<double, 1> Adam::getMBiases2D() const
+Eigen::Tensor<double, 1> Adam::getMBiases() const
 {
-    return Eigen::Tensor<double, 1>(m_biases_2d); // Return a copy
+    return Eigen::Tensor<double, 1>(m_biases); // Return a copy
 }
 
-Eigen::Tensor<double, 1> Adam::getVBiases2D() const
+Eigen::Tensor<double, 1> Adam::getVBiases() const
 {
-    return Eigen::Tensor<double, 1>(v_biases_2d); // Return a copy
+    return Eigen::Tensor<double, 1>(v_biases); // Return a copy
 }
 
-Eigen::Tensor<double, 4> Adam::getMWeights4D() const
+void Adam::setMWeights(const Eigen::Tensor<double, 4> &m_weights)
 {
-    return Eigen::Tensor<double, 4>(m_weights_4d); // Return a copy
+    this->m_weights = Eigen::Tensor<double, 4>(m_weights); // Copy the input tensor
 }
 
-Eigen::Tensor<double, 4> Adam::getVWeights4D() const
+void Adam::setVWeights(const Eigen::Tensor<double, 4> &v_weights)
 {
-    return Eigen::Tensor<double, 4>(v_weights_4d); // Return a copy
+    this->v_weights = Eigen::Tensor<double, 4>(v_weights); // Copy the input tensor
 }
 
-Eigen::Tensor<double, 1> Adam::getMBiases4D() const
+void Adam::setMBiases(const Eigen::Tensor<double, 1> &m_biases)
 {
-    return Eigen::Tensor<double, 1>(m_biases_4d); // Return a copy
+    this->m_biases = Eigen::Tensor<double, 1>(m_biases); // Copy the input tensor
 }
 
-Eigen::Tensor<double, 1> Adam::getVBiases4D() const
+void Adam::setVBiases(const Eigen::Tensor<double, 1> &v_biases)
 {
-    return Eigen::Tensor<double, 1>(v_biases_4d); // Return a copy
+    this->v_biases = Eigen::Tensor<double, 1>(v_biases); // Copy the input tensor
 }
 
-void Adam::setMWeights2D(const Eigen::Tensor<double, 2> &m_weights)
+double Adam::getBeta1() const
 {
-    m_weights_2d = Eigen::Tensor<double, 2>(m_weights); // Copy the input tensor
+    return beta1;
 }
 
-void Adam::setVWeights2D(const Eigen::Tensor<double, 2> &v_weights)
+double Adam::getBeta2() const
 {
-    v_weights_2d = Eigen::Tensor<double, 2>(v_weights); // Copy the input tensor
+    return beta2;
 }
 
-void Adam::setMBiases2D(const Eigen::Tensor<double, 1> &m_biases)
+double Adam::getEpsilon() const
 {
-    m_biases_2d = Eigen::Tensor<double, 1>(m_biases); // Copy the input tensor
+    return epsilon;
 }
 
-void Adam::setVBiases2D(const Eigen::Tensor<double, 1> &v_biases)
+void Adam::setEpsilon(double epsilon)
 {
-    v_biases_2d = Eigen::Tensor<double, 1>(v_biases); // Copy the input tensor
+    this->epsilon = epsilon;
 }
 
-void Adam::setMWeights4D(const Eigen::Tensor<double, 4> &m_weights)
+int Adam::getT() const
 {
-    m_weights_4d = Eigen::Tensor<double, 4>(m_weights); // Copy the input tensor
+    return t;
 }
 
-void Adam::setVWeights4D(const Eigen::Tensor<double, 4> &v_weights)
+void Adam::setBeta1(double beta1)
 {
-    v_weights_4d = Eigen::Tensor<double, 4>(v_weights); // Copy the input tensor
+    this->beta1 = beta1;
 }
 
-void Adam::setMBiases4D(const Eigen::Tensor<double, 1> &m_biases)
+void Adam::setBeta2(double beta2)
 {
-    m_biases_4d = Eigen::Tensor<double, 1>(m_biases); // Copy the input tensor
+    this->beta2 = beta2;
 }
 
-void Adam::setVBiases4D(const Eigen::Tensor<double, 1> &v_biases)
+void Adam::setT(int t)
 {
-    v_biases_4d = Eigen::Tensor<double, 1>(v_biases); // Copy the input tensor
+    this->t = t;
 }
 
 // RMSprop implementation
 RMSprop::RMSprop(double beta,
                  double epsilon)
+    : beta(beta), epsilon(epsilon)
 {
-    this->beta = beta;
-    this->epsilon = epsilon;
-    s_weights_2d = Eigen::Tensor<double, 2>(1, 1);
-    s_biases_2d = Eigen::Tensor<double, 1>(1);
-    s_weights_4d = Eigen::Tensor<double, 4>(1, 1, 1, 1);
-    s_biases_4d = Eigen::Tensor<double, 1>(1);
-}
-
-void RMSprop::update(Eigen::Tensor<double, 2> &weights,
-                     Eigen::Tensor<double, 1> &biases,
-                     const Eigen::Tensor<double, 2> &d_weights,
-                     const Eigen::Tensor<double, 1> &d_biases,
-                     double learning_rate)
-{
-    if (s_weights_2d.dimension(0) != weights.dimension(0) || s_weights_2d.dimension(1) != weights.dimension(1))
-    {
-        s_weights_2d = Eigen::Tensor<double, 2>(weights.dimension(0), weights.dimension(1));
-        s_weights_2d.setZero();
-    }
-    if (s_biases_2d.dimension(0) != biases.dimension(0))
-    {
-        s_biases_2d = Eigen::Tensor<double, 1>(biases.dimension(0));
-        s_biases_2d.setZero();
-    }
-
-    s_weights_2d = beta * s_weights_2d + (1.0 - beta) * d_weights.square();
-    s_biases_2d = beta * s_biases_2d + (1.0 - beta) * d_biases.square();
-
-    TensorOperations::applyUpdates(weights, d_weights / (s_weights_2d.sqrt() + epsilon), learning_rate);
-    TensorOperations::applyUpdates(biases, d_biases / (s_biases_2d.sqrt() + epsilon), learning_rate);
+    s_weights = Eigen::Tensor<double, 4>(1, 1, 1, 1);
+    s_biases = Eigen::Tensor<double, 1>(1);
 }
 
 void RMSprop::update(Eigen::Tensor<double, 4> &weights,
@@ -368,60 +252,61 @@ void RMSprop::update(Eigen::Tensor<double, 4> &weights,
                      const Eigen::Tensor<double, 1> &d_biases,
                      double learning_rate)
 {
-    if (s_weights_4d.dimension(0) != weights.dimension(0) || s_weights_4d.dimension(1) != weights.dimension(1) || s_weights_4d.dimension(2) != weights.dimension(2) || s_weights_4d.dimension(3) != weights.dimension(3))
+    if (s_weights.dimension(0) != weights.dimension(0) || s_weights.dimension(1) != weights.dimension(1) ||
+        s_weights.dimension(2) != weights.dimension(2) || s_weights.dimension(3) != weights.dimension(3))
     {
-        s_weights_4d = Eigen::Tensor<double, 4>(weights.dimension(0), weights.dimension(1), weights.dimension(2), weights.dimension(3));
-        s_weights_4d.setZero();
+        s_weights = Eigen::Tensor<double, 4>(weights.dimension(0), weights.dimension(1), weights.dimension(2), weights.dimension(3));
+        s_weights.setZero();
     }
-    if (s_biases_4d.dimension(0) != biases.dimension(0))
+    if (s_biases.dimension(0) != biases.dimension(0))
     {
-        s_biases_4d = Eigen::Tensor<double, 1>(biases.dimension(0));
-        s_biases_4d.setZero();
+        s_biases = Eigen::Tensor<double, 1>(biases.dimension(0));
+        s_biases.setZero();
     }
 
-    s_weights_4d = beta * s_weights_4d + (1.0 - beta) * d_weights.square();
-    s_biases_4d = beta * s_biases_4d + (1.0 - beta) * d_biases.square();
+    s_weights = beta * s_weights + (1.0 - beta) * d_weights.square();
+    s_biases = beta * s_biases + (1.0 - beta) * d_biases.square();
 
-    TensorOperations::applyUpdates(weights, d_weights / (s_weights_4d.sqrt() + epsilon), learning_rate);
-    TensorOperations::applyUpdates(biases, d_biases / (s_biases_4d.sqrt() + epsilon), learning_rate);
+    TensorOperations::applyUpdates(weights, d_weights / (s_weights.sqrt() + epsilon), learning_rate);
+    TensorOperations::applyUpdates(biases, d_biases / (s_biases.sqrt() + epsilon), learning_rate);
 }
 
-Eigen::Tensor<double, 2> RMSprop::getSWeights2D() const
+Eigen::Tensor<double, 4> RMSprop::getSWeights() const
 {
-    return Eigen::Tensor<double, 2>(s_weights_2d); // Return a copy
+    return Eigen::Tensor<double, 4>(s_weights); // Return a copy
 }
 
-Eigen::Tensor<double, 1> RMSprop::getSBiases2D() const
+Eigen::Tensor<double, 1> RMSprop::getSBiases() const
 {
-    return Eigen::Tensor<double, 1>(s_biases_2d); // Return a copy
+    return Eigen::Tensor<double, 1>(s_biases); // Return a copy
 }
 
-Eigen::Tensor<double, 4> RMSprop::getSWeights4D() const
+void RMSprop::setSWeights(const Eigen::Tensor<double, 4> &s_weights)
 {
-    return Eigen::Tensor<double, 4>(s_weights_4d); // Return a copy
+    this->s_weights = Eigen::Tensor<double, 4>(s_weights); // Copy the input tensor
 }
 
-Eigen::Tensor<double, 1> RMSprop::getSBiases4D() const
+void RMSprop::setSBiases(const Eigen::Tensor<double, 1> &s_biases)
 {
-    return Eigen::Tensor<double, 1>(s_biases_4d); // Return a copy
+    this->s_biases = Eigen::Tensor<double, 1>(s_biases); // Copy the input tensor
 }
 
-void RMSprop::setSWeights2D(const Eigen::Tensor<double, 2> &s_weights)
+double RMSprop::getBeta() const
 {
-    s_weights_2d = Eigen::Tensor<double, 2>(s_weights); // Copy the input tensor
+    return beta;
 }
 
-void RMSprop::setSBiases2D(const Eigen::Tensor<double, 1> &s_biases)
+double RMSprop::getEpsilon() const
 {
-    s_biases_2d = Eigen::Tensor<double, 1>(s_biases); // Copy the input tensor
+    return epsilon;
 }
 
-void RMSprop::setSWeights4D(const Eigen::Tensor<double, 4> &s_weights)
+void RMSprop::setBeta(double beta)
 {
-    s_weights_4d = Eigen::Tensor<double, 4>(s_weights); // Copy the input tensor
+    this->beta = beta;
 }
 
-void RMSprop::setSBiases4D(const Eigen::Tensor<double, 1> &s_biases)
+void RMSprop::setEpsilon(double epsilon)
 {
-    s_biases_4d = Eigen::Tensor<double, 1>(s_biases); // Copy the input tensor
+    this->epsilon = epsilon;
 }

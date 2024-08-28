@@ -4,10 +4,11 @@
 #include "Layer.hpp"
 
 /**
- * @brief Class representing a fully connected layer in a neural network.
+ * @brief Class representing a fully connected (dense) layer in a neural network.
  *
- * This class implements the functionalities for a fully connected layer,
- * including initialization, forward pass, backward pass, and parameter management.
+ * This class provides the implementation of a fully connected layer,
+ * including methods for forward and backward propagation, as well as
+ * methods to manage the layer's weights, biases, and optimizers.
  */
 class FullyConnectedLayer : public Layer
 {
@@ -15,8 +16,8 @@ public:
     /**
      * @brief Construct a new FullyConnectedLayer object.
      *
-     * Initializes a fully connected layer with the specified output size, weight initialization,
-     * bias initialization, and random seed.
+     * Initializes the fully connected layer with the specified number of output neurons,
+     * weight initialization method, bias initialization method, and random seed.
      *
      * @param output_size The number of output neurons in the layer.
      * @param weight_init The method to initialize the weights (default is Xavier).
@@ -31,8 +32,8 @@ public:
     /**
      * @brief Perform the forward pass for the fully connected layer.
      *
-     * Computes the output of the layer by performing matrix multiplication with the input
-     * and adding biases.
+     * Computes the output of the layer by performing matrix multiplication between the input
+     * and weights, then adds the biases.
      *
      * @param input_batch The input tensor with dimensions (batch_size, depth, height, width).
      * @return Eigen::Tensor<double, 4> The output tensor with dimensions (batch_size, 1, 1, output_size).
@@ -42,8 +43,8 @@ public:
     /**
      * @brief Perform the backward pass for the fully connected layer.
      *
-     * Computes the gradients with respect to the weights, biases, and input,
-     * and updates the weights and biases using the optimizer.
+     * Computes the gradients with respect to the weights, biases, and input, and updates
+     * the weights and biases using the optimizer.
      *
      * @param d_output_batch The gradient tensor with dimensions (batch_size, 1, 1, output_size).
      * @param input_batch The original input tensor with dimensions (batch_size, depth, height, width).
@@ -57,19 +58,25 @@ public:
     /**
      * @brief Set the weights of the layer.
      *
-     * @param new_weights The new weights tensor with dimensions (output_size, input_size).
+     * Assigns new values to the weights of the layer, ensuring the dimensions match
+     * the expected shape.
+     *
+     * @param new_weights The new weights tensor with dimensions (output_size, 1, 1, input_size).
      */
-    void setWeights(const Eigen::Tensor<double, 2> &new_weights);
+    void setWeights(const Eigen::Tensor<double, 4> &new_weights);
 
     /**
      * @brief Get the weights of the layer.
      *
-     * @return Eigen::Tensor<double, 2> A copy of the weights tensor.
+     * @return Eigen::Tensor<double, 4> A copy of the weights tensor.
      */
-    Eigen::Tensor<double, 2> getWeights() const;
+    Eigen::Tensor<double, 4> getWeights() const;
 
     /**
      * @brief Set the biases of the layer.
+     *
+     * Assigns new values to the biases of the layer, ensuring the dimensions match
+     * the expected shape.
      *
      * @param new_biases The new biases tensor with dimensions (output_size).
      */
@@ -100,9 +107,11 @@ public:
     int getOutputSize() const;
 
     /**
-     * @brief Check if an optimizer is needed for the layer.
+     * @brief Check if the layer requires an optimizer.
      *
-     * @return true, as fully connected layers typically require an optimizer for training.
+     * Fully connected layers typically require an optimizer for training.
+     *
+     * @return true if the layer needs an optimizer, otherwise false.
      */
     bool needsOptimizer() const override;
 
@@ -123,8 +132,8 @@ public:
 private:
     int input_size;                   ///< Input size of the layer
     int output_size;                  ///< Output size of the layer
-    Eigen::Tensor<double, 2> weights; ///< Weights of the layer
-    Eigen::Tensor<double, 1> biases;  ///< Biases of the layer
+    Eigen::Tensor<double, 4> weights; ///< Weights as a 4D tensor (output_size, 1, 1, input_size)
+    Eigen::Tensor<double, 1> biases;  ///< Biases as a 1D tensor (output_size)
 
     DenseWeightInitialization weight_init; ///< Weight initialization method
     DenseBiasInitialization bias_init;     ///< Bias initialization method

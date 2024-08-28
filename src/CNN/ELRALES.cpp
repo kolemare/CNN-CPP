@@ -6,11 +6,11 @@ ELRALES::ELRALES(double learning_rate_coef,
                  double tolerance,
                  const std::vector<std::shared_ptr<Layer>> &layers)
 {
-    if (1 < learning_rate_coef || 0 > learning_rate_coef)
+    if (learning_rate_coef > 1.0 || learning_rate_coef < 0.0)
     {
         throw std::runtime_error("ELRALES => Learning rate coefficient must be between 0 and 1.");
     }
-    if (1 < tolerance || 0 > tolerance)
+    if (tolerance > 1.0 || tolerance < 0.0)
     {
         throw std::runtime_error("ELRALES => Tolerance must be between 0 and 1.");
     }
@@ -120,30 +120,29 @@ void ELRALES::saveState(const std::vector<std::shared_ptr<Layer>> &layers)
             if (layer->needsOptimizer())
             {
                 auto optimizer = layer->getOptimizer();
-                if (auto sgd_momentum = std::dynamic_pointer_cast<SGDWithMomentum>(optimizer))
+                if (auto adam = std::dynamic_pointer_cast<Adam>(optimizer))
                 {
-                    state.optimizer_state.v_weights_2d = sgd_momentum->getVWeights2D();
-                    state.optimizer_state.v_biases_2d = sgd_momentum->getVBiases2D();
-                    state.optimizer_state.v_weights_4d = sgd_momentum->getVWeights4D();
-                    state.optimizer_state.v_biases_4d = sgd_momentum->getVBiases4D();
-                }
-                else if (auto adam = std::dynamic_pointer_cast<Adam>(optimizer))
-                {
-                    state.optimizer_state.m_weights_2d = adam->getMWeights2D();
-                    state.optimizer_state.v_weights_2d = adam->getVWeights2D();
-                    state.optimizer_state.m_biases_2d = adam->getMBiases2D();
-                    state.optimizer_state.v_biases_2d = adam->getVBiases2D();
-                    state.optimizer_state.m_weights_4d = adam->getMWeights4D();
-                    state.optimizer_state.v_weights_4d = adam->getVWeights4D();
-                    state.optimizer_state.m_biases_4d = adam->getMBiases4D();
-                    state.optimizer_state.v_biases_4d = adam->getVBiases4D();
+                    state.optimizer_state.m_weights = adam->getMWeights();
+                    state.optimizer_state.v_weights = adam->getVWeights();
+                    state.optimizer_state.m_biases = adam->getMBiases();
+                    state.optimizer_state.v_biases = adam->getVBiases();
+                    state.optimizer_state.beta1 = adam->getBeta1();
+                    state.optimizer_state.beta2 = adam->getBeta2();
+                    state.optimizer_state.epsilon = adam->getEpsilon();
+                    state.optimizer_state.t = adam->getT();
                 }
                 else if (auto rmsprop = std::dynamic_pointer_cast<RMSprop>(optimizer))
                 {
-                    state.optimizer_state.s_weights_2d = rmsprop->getSWeights2D();
-                    state.optimizer_state.s_biases_2d = rmsprop->getSBiases2D();
-                    state.optimizer_state.s_weights_4d = rmsprop->getSWeights4D();
-                    state.optimizer_state.s_biases_4d = rmsprop->getSBiases4D();
+                    state.optimizer_state.s_weights = rmsprop->getSWeights();
+                    state.optimizer_state.s_biases = rmsprop->getSBiases();
+                    state.optimizer_state.beta = rmsprop->getBeta();
+                    state.optimizer_state.epsilon = rmsprop->getEpsilon();
+                }
+                else if (auto sgd_momentum = std::dynamic_pointer_cast<SGDWithMomentum>(optimizer))
+                {
+                    state.optimizer_state.v_weights = sgd_momentum->getVWeights();
+                    state.optimizer_state.v_biases = sgd_momentum->getVBiases();
+                    state.optimizer_state.momentum = sgd_momentum->getMomentum();
                 }
             }
 
@@ -158,30 +157,29 @@ void ELRALES::saveState(const std::vector<std::shared_ptr<Layer>> &layers)
             if (layer->needsOptimizer())
             {
                 auto optimizer = layer->getOptimizer();
-                if (auto sgd_momentum = std::dynamic_pointer_cast<SGDWithMomentum>(optimizer))
+                if (auto adam = std::dynamic_pointer_cast<Adam>(optimizer))
                 {
-                    state.optimizer_state.v_weights_2d = sgd_momentum->getVWeights2D();
-                    state.optimizer_state.v_biases_2d = sgd_momentum->getVBiases2D();
-                    state.optimizer_state.v_weights_4d = sgd_momentum->getVWeights4D();
-                    state.optimizer_state.v_biases_4d = sgd_momentum->getVBiases4D();
-                }
-                else if (auto adam = std::dynamic_pointer_cast<Adam>(optimizer))
-                {
-                    state.optimizer_state.m_weights_2d = adam->getMWeights2D();
-                    state.optimizer_state.v_weights_2d = adam->getVWeights2D();
-                    state.optimizer_state.m_biases_2d = adam->getMBiases2D();
-                    state.optimizer_state.v_biases_2d = adam->getVBiases2D();
-                    state.optimizer_state.m_weights_4d = adam->getMWeights4D();
-                    state.optimizer_state.v_weights_4d = adam->getVWeights4D();
-                    state.optimizer_state.m_biases_4d = adam->getMBiases4D();
-                    state.optimizer_state.v_biases_4d = adam->getVBiases4D();
+                    state.optimizer_state.m_weights = adam->getMWeights();
+                    state.optimizer_state.v_weights = adam->getVWeights();
+                    state.optimizer_state.m_biases = adam->getMBiases();
+                    state.optimizer_state.v_biases = adam->getVBiases();
+                    state.optimizer_state.beta1 = adam->getBeta1();
+                    state.optimizer_state.beta2 = adam->getBeta2();
+                    state.optimizer_state.epsilon = adam->getEpsilon();
+                    state.optimizer_state.t = adam->getT();
                 }
                 else if (auto rmsprop = std::dynamic_pointer_cast<RMSprop>(optimizer))
                 {
-                    state.optimizer_state.s_weights_2d = rmsprop->getSWeights2D();
-                    state.optimizer_state.s_biases_2d = rmsprop->getSBiases2D();
-                    state.optimizer_state.s_weights_4d = rmsprop->getSWeights4D();
-                    state.optimizer_state.s_biases_4d = rmsprop->getSBiases4D();
+                    state.optimizer_state.s_weights = rmsprop->getSWeights();
+                    state.optimizer_state.s_biases = rmsprop->getSBiases();
+                    state.optimizer_state.beta = rmsprop->getBeta();
+                    state.optimizer_state.epsilon = rmsprop->getEpsilon();
+                }
+                else if (auto sgd_momentum = std::dynamic_pointer_cast<SGDWithMomentum>(optimizer))
+                {
+                    state.optimizer_state.v_weights = sgd_momentum->getVWeights();
+                    state.optimizer_state.v_biases = sgd_momentum->getVBiases();
+                    state.optimizer_state.momentum = sgd_momentum->getMomentum();
                 }
             }
 
@@ -214,30 +212,29 @@ void ELRALES::restoreState(std::vector<std::shared_ptr<Layer>> &layers)
             if (layer->needsOptimizer())
             {
                 auto optimizer = layer->getOptimizer();
-                if (auto sgd_momentum = std::dynamic_pointer_cast<SGDWithMomentum>(optimizer))
+                if (auto adam = std::dynamic_pointer_cast<Adam>(optimizer))
                 {
-                    sgd_momentum->setVWeights2D(state.optimizer_state.v_weights_2d);
-                    sgd_momentum->setVBiases2D(state.optimizer_state.v_biases_2d);
-                    sgd_momentum->setVWeights4D(state.optimizer_state.v_weights_4d);
-                    sgd_momentum->setVBiases4D(state.optimizer_state.v_biases_4d);
-                }
-                else if (auto adam = std::dynamic_pointer_cast<Adam>(optimizer))
-                {
-                    adam->setMWeights2D(state.optimizer_state.m_weights_2d);
-                    adam->setVWeights2D(state.optimizer_state.v_weights_2d);
-                    adam->setMBiases2D(state.optimizer_state.m_biases_2d);
-                    adam->setVBiases2D(state.optimizer_state.v_biases_2d);
-                    adam->setMWeights4D(state.optimizer_state.m_weights_4d);
-                    adam->setVWeights4D(state.optimizer_state.v_weights_4d);
-                    adam->setMBiases4D(state.optimizer_state.m_biases_4d);
-                    adam->setVBiases4D(state.optimizer_state.v_biases_4d);
+                    adam->setMWeights(state.optimizer_state.m_weights);
+                    adam->setVWeights(state.optimizer_state.v_weights);
+                    adam->setMBiases(state.optimizer_state.m_biases);
+                    adam->setVBiases(state.optimizer_state.v_biases);
+                    adam->setBeta1(state.optimizer_state.beta1);
+                    adam->setBeta2(state.optimizer_state.beta2);
+                    adam->setEpsilon(state.optimizer_state.epsilon);
+                    adam->setT(state.optimizer_state.t);
                 }
                 else if (auto rmsprop = std::dynamic_pointer_cast<RMSprop>(optimizer))
                 {
-                    rmsprop->setSWeights2D(state.optimizer_state.s_weights_2d);
-                    rmsprop->setSBiases2D(state.optimizer_state.s_biases_2d);
-                    rmsprop->setSWeights4D(state.optimizer_state.s_weights_4d);
-                    rmsprop->setSBiases4D(state.optimizer_state.s_biases_4d);
+                    rmsprop->setSWeights(state.optimizer_state.s_weights);
+                    rmsprop->setSBiases(state.optimizer_state.s_biases);
+                    rmsprop->setBeta(state.optimizer_state.beta);
+                    rmsprop->setEpsilon(state.optimizer_state.epsilon);
+                }
+                else if (auto sgd_momentum = std::dynamic_pointer_cast<SGDWithMomentum>(optimizer))
+                {
+                    sgd_momentum->setVWeights(state.optimizer_state.v_weights);
+                    sgd_momentum->setVBiases(state.optimizer_state.v_biases);
+                    sgd_momentum->setMomentum(state.optimizer_state.momentum);
                 }
             }
         }
@@ -250,30 +247,29 @@ void ELRALES::restoreState(std::vector<std::shared_ptr<Layer>> &layers)
             if (layer->needsOptimizer())
             {
                 auto optimizer = layer->getOptimizer();
-                if (auto sgd_momentum = std::dynamic_pointer_cast<SGDWithMomentum>(optimizer))
+                if (auto adam = std::dynamic_pointer_cast<Adam>(optimizer))
                 {
-                    sgd_momentum->setVWeights2D(state.optimizer_state.v_weights_2d);
-                    sgd_momentum->setVBiases2D(state.optimizer_state.v_biases_2d);
-                    sgd_momentum->setVWeights4D(state.optimizer_state.v_weights_4d);
-                    sgd_momentum->setVBiases4D(state.optimizer_state.v_biases_4d);
-                }
-                else if (auto adam = std::dynamic_pointer_cast<Adam>(optimizer))
-                {
-                    adam->setMWeights2D(state.optimizer_state.m_weights_2d);
-                    adam->setVWeights2D(state.optimizer_state.v_weights_2d);
-                    adam->setMBiases2D(state.optimizer_state.m_biases_2d);
-                    adam->setVBiases2D(state.optimizer_state.v_biases_2d);
-                    adam->setMWeights4D(state.optimizer_state.m_weights_4d);
-                    adam->setVWeights4D(state.optimizer_state.v_weights_4d);
-                    adam->setMBiases4D(state.optimizer_state.m_biases_4d);
-                    adam->setVBiases4D(state.optimizer_state.v_biases_4d);
+                    adam->setMWeights(state.optimizer_state.m_weights);
+                    adam->setVWeights(state.optimizer_state.v_weights);
+                    adam->setMBiases(state.optimizer_state.m_biases);
+                    adam->setVBiases(state.optimizer_state.v_biases);
+                    adam->setBeta1(state.optimizer_state.beta1);
+                    adam->setBeta2(state.optimizer_state.beta2);
+                    adam->setEpsilon(state.optimizer_state.epsilon);
+                    adam->setT(state.optimizer_state.t);
                 }
                 else if (auto rmsprop = std::dynamic_pointer_cast<RMSprop>(optimizer))
                 {
-                    rmsprop->setSWeights2D(state.optimizer_state.s_weights_2d);
-                    rmsprop->setSBiases2D(state.optimizer_state.s_biases_2d);
-                    rmsprop->setSWeights4D(state.optimizer_state.s_weights_4d);
-                    rmsprop->setSBiases4D(state.optimizer_state.s_biases_4d);
+                    rmsprop->setSWeights(state.optimizer_state.s_weights);
+                    rmsprop->setSBiases(state.optimizer_state.s_biases);
+                    rmsprop->setBeta(state.optimizer_state.beta);
+                    rmsprop->setEpsilon(state.optimizer_state.epsilon);
+                }
+                else if (auto sgd_momentum = std::dynamic_pointer_cast<SGDWithMomentum>(optimizer))
+                {
+                    sgd_momentum->setVWeights(state.optimizer_state.v_weights);
+                    sgd_momentum->setVBiases(state.optimizer_state.v_biases);
+                    sgd_momentum->setMomentum(state.optimizer_state.momentum);
                 }
             }
         }

@@ -72,20 +72,20 @@ private:
      */
     struct OptimizerState
     {
-        Eigen::Tensor<double, 2> v_weights_2d; ///< Velocity for 2D weights.
-        Eigen::Tensor<double, 1> v_biases_2d;  ///< Velocity for 2D biases.
-        Eigen::Tensor<double, 4> v_weights_4d; ///< Velocity for 4D weights.
-        Eigen::Tensor<double, 1> v_biases_4d;  ///< Velocity for 4D biases.
+        Eigen::Tensor<double, 4> m_weights; ///< Momentum for weights (Adam)
+        Eigen::Tensor<double, 4> v_weights; ///< Velocity for weights (Adam, SGD with Momentum)
+        Eigen::Tensor<double, 1> m_biases;  ///< Momentum for biases (Adam)
+        Eigen::Tensor<double, 1> v_biases;  ///< Velocity for biases (Adam, SGD with Momentum)
 
-        Eigen::Tensor<double, 2> m_weights_2d; ///< Momentum for 2D weights.
-        Eigen::Tensor<double, 1> m_biases_2d;  ///< Momentum for 2D biases.
-        Eigen::Tensor<double, 4> m_weights_4d; ///< Momentum for 4D weights.
-        Eigen::Tensor<double, 1> m_biases_4d;  ///< Momentum for 4D biases.
+        Eigen::Tensor<double, 4> s_weights; ///< Squared gradients for weights (RMSprop)
+        Eigen::Tensor<double, 1> s_biases;  ///< Squared gradients for biases (RMSprop)
 
-        Eigen::Tensor<double, 2> s_weights_2d; ///< Squared gradients for 2D weights.
-        Eigen::Tensor<double, 1> s_biases_2d;  ///< Squared gradients for 2D biases.
-        Eigen::Tensor<double, 4> s_weights_4d; ///< Squared gradients for 4D weights.
-        Eigen::Tensor<double, 1> s_biases_4d;  ///< Squared gradients for 4D biases.
+        double beta1;       ///< Beta1 (Adam)
+        double beta2;       ///< Beta2 (Adam)
+        double epsilon;     ///< Epsilon (Adam, RMSprop)
+        int t;              ///< Time step (Adam)
+        double momentum;    ///< Momentum factor (SGD with Momentum)
+        double beta;        ///< Decay rate (RMSprop)
     };
 
     /**
@@ -105,7 +105,7 @@ private:
      */
     struct FullyConnectedLayerState
     {
-        Eigen::Tensor<double, 2> weights; ///< Weights for fully connected layer.
+        Eigen::Tensor<double, 4> weights; ///< Weights for fully connected layer.
         Eigen::Tensor<double, 1> biases;  ///< Biases for fully connected layer.
         OptimizerState optimizer_state;   ///< Optimizer state for fully connected layer.
     };

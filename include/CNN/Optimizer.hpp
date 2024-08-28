@@ -17,21 +17,6 @@ public:
     /**
      * @brief Update the weights and biases.
      *
-     * @param weights The weights to update (2D tensor).
-     * @param biases The biases to update (1D tensor).
-     * @param d_weights The gradients of the weights (2D tensor).
-     * @param d_biases The gradients of the biases (1D tensor).
-     * @param learning_rate The learning rate for the update.
-     */
-    virtual void update(Eigen::Tensor<double, 2> &weights,
-                        Eigen::Tensor<double, 1> &biases,
-                        const Eigen::Tensor<double, 2> &d_weights,
-                        const Eigen::Tensor<double, 1> &d_biases,
-                        double learning_rate) = 0;
-
-    /**
-     * @brief Update the weights and biases.
-     *
      * @param weights The weights to update (4D tensor).
      * @param biases The biases to update (1D tensor).
      * @param d_weights The gradients of the weights (4D tensor).
@@ -65,21 +50,6 @@ public:
     /**
      * @brief Update the weights and biases using SGD.
      *
-     * @param weights The weights to update (2D tensor).
-     * @param biases The biases to update (1D tensor).
-     * @param d_weights The gradients of the weights (2D tensor).
-     * @param d_biases The gradients of the biases (1D tensor).
-     * @param learning_rate The learning rate for the update.
-     */
-    void update(Eigen::Tensor<double, 2> &weights,
-                Eigen::Tensor<double, 1> &biases,
-                const Eigen::Tensor<double, 2> &d_weights,
-                const Eigen::Tensor<double, 1> &d_biases,
-                double learning_rate) override;
-
-    /**
-     * @brief Update the weights and biases using SGD.
-     *
      * @param weights The weights to update (4D tensor).
      * @param biases The biases to update (1D tensor).
      * @param d_weights The gradients of the weights (4D tensor).
@@ -110,21 +80,6 @@ public:
     /**
      * @brief Update the weights and biases using SGD with momentum.
      *
-     * @param weights The weights to update (2D tensor).
-     * @param biases The biases to update (1D tensor).
-     * @param d_weights The gradients of the weights (2D tensor).
-     * @param d_biases The gradients of the biases (1D tensor).
-     * @param learning_rate The learning rate for the update.
-     */
-    void update(Eigen::Tensor<double, 2> &weights,
-                Eigen::Tensor<double, 1> &biases,
-                const Eigen::Tensor<double, 2> &d_weights,
-                const Eigen::Tensor<double, 1> &d_biases,
-                double learning_rate) override;
-
-    /**
-     * @brief Update the weights and biases using SGD with momentum.
-     *
      * @param weights The weights to update (4D tensor).
      * @param biases The biases to update (1D tensor).
      * @param d_weights The gradients of the weights (4D tensor).
@@ -138,67 +93,51 @@ public:
                 double learning_rate) override;
 
     /**
-     * @brief Get the velocity for weights (2D tensor).
-     *
-     * @return The velocity for weights (2D tensor).
-     */
-    Eigen::Tensor<double, 2> getVWeights2D() const;
-
-    /**
-     * @brief Get the velocity for biases (1D tensor).
-     *
-     * @return The velocity for biases (1D tensor).
-     */
-    Eigen::Tensor<double, 1> getVBiases2D() const;
-
-    /**
      * @brief Get the velocity for weights (4D tensor).
      *
-     * @return The velocity for weights (4D tensor).
+     * @return A copy of the velocity for weights (4D tensor).
      */
-    Eigen::Tensor<double, 4> getVWeights4D() const;
+    Eigen::Tensor<double, 4> getVWeights() const;
 
     /**
      * @brief Get the velocity for biases (1D tensor).
      *
-     * @return The velocity for biases (1D tensor).
+     * @return A copy of the velocity for biases (1D tensor).
      */
-    Eigen::Tensor<double, 1> getVBiases4D() const;
-
-    /**
-     * @brief Set the velocity for weights (2D tensor).
-     *
-     * @param v_weights The new velocity for weights (2D tensor).
-     */
-    void setVWeights2D(const Eigen::Tensor<double, 2> &v_weights);
-
-    /**
-     * @brief Set the velocity for biases (1D tensor).
-     *
-     * @param v_biases The new velocity for biases (1D tensor).
-     */
-    void setVBiases2D(const Eigen::Tensor<double, 1> &v_biases);
+    Eigen::Tensor<double, 1> getVBiases() const;
 
     /**
      * @brief Set the velocity for weights (4D tensor).
      *
      * @param v_weights The new velocity for weights (4D tensor).
      */
-    void setVWeights4D(const Eigen::Tensor<double, 4> &v_weights);
+    void setVWeights(const Eigen::Tensor<double, 4> &v_weights);
 
     /**
      * @brief Set the velocity for biases (1D tensor).
      *
      * @param v_biases The new velocity for biases (1D tensor).
      */
-    void setVBiases4D(const Eigen::Tensor<double, 1> &v_biases);
+    void setVBiases(const Eigen::Tensor<double, 1> &v_biases);
+
+    /**
+     * @brief Get the momentum factor.
+     *
+     * @return The momentum factor.
+     */
+    double getMomentum() const;
+
+    /**
+     * @brief Set the momentum factor.
+     *
+     * @param momentum The new momentum factor.
+     */
+    void setMomentum(double momentum);
 
 private:
     double momentum;
-    Eigen::Tensor<double, 2> v_weights_2d;
-    Eigen::Tensor<double, 1> v_biases_2d;
-    Eigen::Tensor<double, 4> v_weights_4d;
-    Eigen::Tensor<double, 1> v_biases_4d;
+    Eigen::Tensor<double, 4> v_weights;
+    Eigen::Tensor<double, 1> v_biases;
 };
 
 /**
@@ -222,21 +161,6 @@ public:
     /**
      * @brief Update the weights and biases using the Adam optimizer.
      *
-     * @param weights The weights to update (2D tensor).
-     * @param biases The biases to update (1D tensor).
-     * @param d_weights The gradients of the weights (2D tensor).
-     * @param d_biases The gradients of the biases (1D tensor).
-     * @param learning_rate The learning rate for the update.
-     */
-    void update(Eigen::Tensor<double, 2> &weights,
-                Eigen::Tensor<double, 1> &biases,
-                const Eigen::Tensor<double, 2> &d_weights,
-                const Eigen::Tensor<double, 1> &d_biases,
-                double learning_rate) override;
-
-    /**
-     * @brief Update the weights and biases using the Adam optimizer.
-     *
      * @param weights The weights to update (4D tensor).
      * @param biases The biases to update (1D tensor).
      * @param d_weights The gradients of the weights (4D tensor).
@@ -250,130 +174,126 @@ public:
                 double learning_rate) override;
 
     /**
-     * @brief Get the first moment estimates for weights (2D tensor).
-     *
-     * @return The first moment estimates for weights (2D tensor).
-     */
-    Eigen::Tensor<double, 2> getMWeights2D() const;
-
-    /**
-     * @brief Get the second moment estimates for weights (2D tensor).
-     *
-     * @return The second moment estimates for weights (2D tensor).
-     */
-    Eigen::Tensor<double, 2> getVWeights2D() const;
-
-    /**
-     * @brief Get the first moment estimates for biases (1D tensor).
-     *
-     * @return The first moment estimates for biases (1D tensor).
-     */
-    Eigen::Tensor<double, 1> getMBiases2D() const;
-
-    /**
-     * @brief Get the second moment estimates for biases (1D tensor).
-     *
-     * @return The second moment estimates for biases (1D tensor).
-     */
-    Eigen::Tensor<double, 1> getVBiases2D() const;
-
-    /**
      * @brief Get the first moment estimates for weights (4D tensor).
      *
-     * @return The first moment estimates for weights (4D tensor).
+     * @return A copy of the first moment estimates for weights (4D tensor).
      */
-    Eigen::Tensor<double, 4> getMWeights4D() const;
+    Eigen::Tensor<double, 4> getMWeights() const;
 
     /**
      * @brief Get the second moment estimates for weights (4D tensor).
      *
-     * @return The second moment estimates for weights (4D tensor).
+     * @return A copy of the second moment estimates for weights (4D tensor).
      */
-    Eigen::Tensor<double, 4> getVWeights4D() const;
+    Eigen::Tensor<double, 4> getVWeights() const;
 
     /**
      * @brief Get the first moment estimates for biases (1D tensor).
      *
-     * @return The first moment estimates for biases (1D tensor).
+     * @return A copy of the first moment estimates for biases (1D tensor).
      */
-    Eigen::Tensor<double, 1> getMBiases4D() const;
+    Eigen::Tensor<double, 1> getMBiases() const;
 
     /**
      * @brief Get the second moment estimates for biases (1D tensor).
      *
-     * @return The second moment estimates for biases (1D tensor).
+     * @return A copy of the second moment estimates for biases (1D tensor).
      */
-    Eigen::Tensor<double, 1> getVBiases4D() const;
-
-    /**
-     * @brief Set the first moment estimates for weights (2D tensor).
-     *
-     * @param m_weights The new first moment estimates (2D tensor).
-     */
-    void setMWeights2D(const Eigen::Tensor<double, 2> &m_weights);
-
-    /**
-     * @brief Set the second moment estimates for weights (2D tensor).
-     *
-     * @param v_weights The new second moment estimates (2D tensor).
-     */
-    void setVWeights2D(const Eigen::Tensor<double, 2> &v_weights);
-
-    /**
-     * @brief Set the first moment estimates for biases (1D tensor).
-     *
-     * @param m_biases The new first moment estimates (1D tensor).
-     */
-    void setMBiases2D(const Eigen::Tensor<double, 1> &m_biases);
-
-    /**
-     * @brief Set the second moment estimates for biases (1D tensor).
-     *
-     * @param v_biases The new second moment estimates (1D tensor).
-     */
-    void setVBiases2D(const Eigen::Tensor<double, 1> &v_biases);
+    Eigen::Tensor<double, 1> getVBiases() const;
 
     /**
      * @brief Set the first moment estimates for weights (4D tensor).
      *
      * @param m_weights The new first moment estimates (4D tensor).
      */
-    void setMWeights4D(const Eigen::Tensor<double, 4> &m_weights);
+    void setMWeights(const Eigen::Tensor<double, 4> &m_weights);
 
     /**
      * @brief Set the second moment estimates for weights (4D tensor).
      *
      * @param v_weights The new second moment estimates (4D tensor).
      */
-    void setVWeights4D(const Eigen::Tensor<double, 4> &v_weights);
+    void setVWeights(const Eigen::Tensor<double, 4> &v_weights);
 
     /**
      * @brief Set the first moment estimates for biases (1D tensor).
      *
      * @param m_biases The new first moment estimates (1D tensor).
      */
-    void setMBiases4D(const Eigen::Tensor<double, 1> &m_biases);
+    void setMBiases(const Eigen::Tensor<double, 1> &m_biases);
 
     /**
      * @brief Set the second moment estimates for biases (1D tensor).
      *
      * @param v_biases The new second moment estimates (1D tensor).
      */
-    void setVBiases4D(const Eigen::Tensor<double, 1> &v_biases);
+    void setVBiases(const Eigen::Tensor<double, 1> &v_biases);
+
+    /**
+     * @brief Get the beta1 parameter.
+     *
+     * @return The beta1 parameter.
+     */
+    double getBeta1() const;
+
+    /**
+     * @brief Get the beta2 parameter.
+     *
+     * @return The beta2 parameter.
+     */
+    double getBeta2() const;
+
+    /**
+     * @brief Get the epsilon parameter.
+     *
+     * @return The epsilon parameter.
+     */
+    double getEpsilon() const;
+
+    /**
+     * @brief Set the epsilon parameter.
+     *
+     * @param epsilon The new epsilon parameter.
+     */
+    void setEpsilon(double epsilon);
+
+    /**
+     * @brief Get the current time step (t).
+     *
+     * @return The current time step (t).
+     */
+    int getT() const;
+
+    /**
+     * @brief Set the beta1 parameter.
+     *
+     * @param beta1 The new beta1 parameter.
+     */
+    void setBeta1(double beta1);
+
+    /**
+     * @brief Set the beta2 parameter.
+     *
+     * @param beta2 The new beta2 parameter.
+     */
+    void setBeta2(double beta2);
+
+    /**
+     * @brief Set the current time step (t).
+     *
+     * @param t The new time step (t).
+     */
+    void setT(int t);
 
 private:
     double beta1;
     double beta2;
     double epsilon;
     int t;
-    Eigen::Tensor<double, 2> m_weights_2d;
-    Eigen::Tensor<double, 2> v_weights_2d;
-    Eigen::Tensor<double, 1> m_biases_2d;
-    Eigen::Tensor<double, 1> v_biases_2d;
-    Eigen::Tensor<double, 4> m_weights_4d;
-    Eigen::Tensor<double, 4> v_weights_4d;
-    Eigen::Tensor<double, 1> m_biases_4d;
-    Eigen::Tensor<double, 1> v_biases_4d;
+    Eigen::Tensor<double, 4> m_weights;
+    Eigen::Tensor<double, 4> v_weights;
+    Eigen::Tensor<double, 1> m_biases;
+    Eigen::Tensor<double, 1> v_biases;
 };
 
 /**
@@ -396,21 +316,6 @@ public:
     /**
      * @brief Update the weights and biases using RMSprop.
      *
-     * @param weights The weights to update (2D tensor).
-     * @param biases The biases to update (1D tensor).
-     * @param d_weights The gradients of the weights (2D tensor).
-     * @param d_biases The gradients of the biases (1D tensor).
-     * @param learning_rate The learning rate for the update.
-     */
-    void update(Eigen::Tensor<double, 2> &weights,
-                Eigen::Tensor<double, 1> &biases,
-                const Eigen::Tensor<double, 2> &d_weights,
-                const Eigen::Tensor<double, 1> &d_biases,
-                double learning_rate) override;
-
-    /**
-     * @brief Update the weights and biases using RMSprop.
-     *
      * @param weights The weights to update (4D tensor).
      * @param biases The biases to update (1D tensor).
      * @param d_weights The gradients of the weights (4D tensor).
@@ -424,68 +329,66 @@ public:
                 double learning_rate) override;
 
     /**
-     * @brief Get the squared gradient averages for weights (2D tensor).
-     *
-     * @return The squared gradient averages for weights (2D tensor).
-     */
-    Eigen::Tensor<double, 2> getSWeights2D() const;
-
-    /**
-     * @brief Get the squared gradient averages for biases (1D tensor).
-     *
-     * @return The squared gradient averages for biases (1D tensor).
-     */
-    Eigen::Tensor<double, 1> getSBiases2D() const;
-
-    /**
      * @brief Get the squared gradient averages for weights (4D tensor).
      *
-     * @return The squared gradient averages for weights (4D tensor).
+     * @return A copy of the squared gradient averages for weights (4D tensor).
      */
-    Eigen::Tensor<double, 4> getSWeights4D() const;
+    Eigen::Tensor<double, 4> getSWeights() const;
 
     /**
      * @brief Get the squared gradient averages for biases (1D tensor).
      *
-     * @return The squared gradient averages for biases (1D tensor).
+     * @return A copy of the squared gradient averages for biases (1D tensor).
      */
-    Eigen::Tensor<double, 1> getSBiases4D() const;
-
-    /**
-     * @brief Set the squared gradient averages for weights (2D tensor).
-     *
-     * @param s_weights The new squared gradient averages (2D tensor).
-     */
-    void setSWeights2D(const Eigen::Tensor<double, 2> &s_weights);
-
-    /**
-     * @brief Set the squared gradient averages for biases (1D tensor).
-     *
-     * @param s_biases The new squared gradient averages (1D tensor).
-     */
-    void setSBiases2D(const Eigen::Tensor<double, 1> &s_biases);
+    Eigen::Tensor<double, 1> getSBiases() const;
 
     /**
      * @brief Set the squared gradient averages for weights (4D tensor).
      *
      * @param s_weights The new squared gradient averages (4D tensor).
      */
-    void setSWeights4D(const Eigen::Tensor<double, 4> &s_weights);
+    void setSWeights(const Eigen::Tensor<double, 4> &s_weights);
 
     /**
      * @brief Set the squared gradient averages for biases (1D tensor).
      *
      * @param s_biases The new squared gradient averages (1D tensor).
      */
-    void setSBiases4D(const Eigen::Tensor<double, 1> &s_biases);
+    void setSBiases(const Eigen::Tensor<double, 1> &s_biases);
+
+    /**
+     * @brief Get the beta parameter.
+     *
+     * @return The beta parameter.
+     */
+    double getBeta() const;
+
+    /**
+     * @brief Set the beta parameter.
+     *
+     * @param beta The new beta parameter.
+     */
+    void setBeta(double beta);
+
+    /**
+     * @brief Get the epsilon parameter.
+     *
+     * @return The epsilon parameter.
+     */
+    double getEpsilon() const;
+
+    /**
+     * @brief Set the epsilon parameter.
+     *
+     * @param epsilon The new epsilon parameter.
+     */
+    void setEpsilon(double epsilon);
 
 private:
     double beta;
     double epsilon;
-    Eigen::Tensor<double, 2> s_weights_2d;
-    Eigen::Tensor<double, 1> s_biases_2d;
-    Eigen::Tensor<double, 4> s_weights_4d;
-    Eigen::Tensor<double, 1> s_biases_4d;
+    Eigen::Tensor<double, 4> s_weights;
+    Eigen::Tensor<double, 1> s_biases;
 };
 
 #endif // OPTIMIZER_HPP

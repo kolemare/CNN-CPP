@@ -61,12 +61,12 @@ void FullyConnectedLayer::initializeWeights()
         break;
     }
 
-    weights = Eigen::Tensor<double, 2>(output_size, input_size);
-    for (int i = 0; i < output_size; ++i)
+    weights = Eigen::Tensor<double, 4>(output_size, 1, 1, input_size);
+    for (int o = 0; o < output_size; ++o)
     {
-        for (int j = 0; j < input_size; ++j)
+        for (int i = 0; i < input_size; ++i)
         {
-            weights(i, j) = distribution(generator);
+            weights(o, 0, 0, i) = distribution(generator);
         }
     }
 }
@@ -137,7 +137,7 @@ Eigen::Tensor<double, 4> FullyConnectedLayer::forward(const Eigen::Tensor<double
         {
             for (int i = 0; i < input_size; ++i)
             {
-                output_2d(b, o) += input_2d(b, i) * weights(o, i);
+                output_2d(b, o) += input_2d(b, i) * weights(o, 0, 0, i);
             }
             output_2d(b, o) += biases(o);
         }
@@ -185,7 +185,7 @@ Eigen::Tensor<double, 4> FullyConnectedLayer::backward(const Eigen::Tensor<doubl
     }
 
     // Calculate the gradients with respect to weights and biases
-    Eigen::Tensor<double, 2> d_weights(output_size, input_size);
+    Eigen::Tensor<double, 4> d_weights(output_size, 1, 1, input_size);
     d_weights.setZero();
     for (int o = 0; o < output_size; ++o)
     {
@@ -193,7 +193,7 @@ Eigen::Tensor<double, 4> FullyConnectedLayer::backward(const Eigen::Tensor<doubl
         {
             for (int b = 0; b < batch_size; ++b)
             {
-                d_weights(o, i) += d_output_2d(b, o) * input_2d(b, i);
+                d_weights(o, 0, 0, i) += d_output_2d(b, o) * input_2d(b, i);
             }
         }
     }
@@ -217,7 +217,7 @@ Eigen::Tensor<double, 4> FullyConnectedLayer::backward(const Eigen::Tensor<doubl
         {
             for (int o = 0; o < output_size; ++o)
             {
-                d_input_2d(b, i) += d_output_2d(b, o) * weights(o, i);
+                d_input_2d(b, i) += d_output_2d(b, o) * weights(o, 0, 0, i);
             }
         }
     }
@@ -229,18 +229,18 @@ Eigen::Tensor<double, 4> FullyConnectedLayer::backward(const Eigen::Tensor<doubl
     return d_input_2d.reshape(Eigen::array<int, 4>{batch_size, static_cast<int>(input_batch.dimension(1)), static_cast<int>(input_batch.dimension(2)), static_cast<int>(input_batch.dimension(3))});
 }
 
-void FullyConnectedLayer::setWeights(const Eigen::Tensor<double, 2> &new_weights)
+void FullyConnectedLayer::setWeights(const Eigen::Tensor<double, 4> &new_weights)
 {
-    if (new_weights.dimension(0) != output_size || new_weights.dimension(1) != input_size)
+    if (new_weights.dimension(0) != output_size || new_weights.dimension(3) != input_size)
     {
         throw std::invalid_argument("The size of new_weights must match the layer dimensions.");
     }
     weights = new_weights;
 }
 
-Eigen::Tensor<double, 2> FullyConnectedLayer::getWeights() const
+Eigen::Tensor<double, 4> FullyConnectedLayer::getWeights() const
 {
-    return Eigen::Tensor<double, 2>(weights); // Return a copy
+    return Eigen::Tensor<double, 4>(weights); // Return a copy
 }
 
 void FullyConnectedLayer::setBiases(const Eigen::Tensor<double, 1> &new_biases)
