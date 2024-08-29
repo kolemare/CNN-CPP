@@ -1,5 +1,8 @@
 #include "BatchNormalizationLayer.hpp"
 
+// Initialize the static variable to Training mode
+BNMode BatchNormalizationLayer::layerMode = BNMode::Training;
+
 BatchNormalizationLayer::BatchNormalizationLayer(double epsilon, double momentum)
 {
     this->epsilon = epsilon;
@@ -26,6 +29,11 @@ std::shared_ptr<Optimizer> BatchNormalizationLayer::getOptimizer()
 void BatchNormalizationLayer::setTarget(BNTarget target)
 {
     this->target = target;
+}
+
+void BatchNormalizationLayer::setMode(BNMode mode)
+{
+    BatchNormalizationLayer::layerMode = mode;
 }
 
 Eigen::Tensor<double, 4> BatchNormalizationLayer::forward(const Eigen::Tensor<double, 4> &input_batch)
@@ -61,6 +69,9 @@ Eigen::Tensor<double, 4> BatchNormalizationLayer::normalizeConvLayer(const Eigen
         moving_variance = Eigen::Tensor<double, 1>(input_depth);
         dgamma = Eigen::Tensor<double, 1>(input_depth);
         dbeta = Eigen::Tensor<double, 1>(input_depth);
+        cache_mean = Eigen::Tensor<double, 1>(input_depth);
+        cache_variance = Eigen::Tensor<double, 1>(input_depth);
+        cache_normalized = Eigen::Tensor<double, 4>(batch_size, input_depth, height, width);
 
         // Set initial values for parameters
         gamma.setConstant(1.0);           // Initialize scale to 1
@@ -75,61 +86,94 @@ Eigen::Tensor<double, 4> BatchNormalizationLayer::normalizeConvLayer(const Eigen
     Eigen::Tensor<double, 1> input_mean(input_depth);
     Eigen::Tensor<double, 1> input_variance(input_depth);
 
-    input_mean.setZero();
-    input_variance.setZero();
-
-    // Calculate mean for each channel
-    for (int d = 0; d < input_depth; ++d)
+    if (BNMode::Training == BatchNormalizationLayer::layerMode)
     {
-        for (int n = 0; n < batch_size; ++n)
+        // Compute mean and variance for the current batch (per channel)
+        input_mean.setZero();
+        input_variance.setZero();
+
+        // Calculate mean for each channel
+        for (int d = 0; d < input_depth; ++d)
         {
-            for (int h = 0; h < height; ++h)
+            for (int n = 0; n < batch_size; ++n)
             {
-                for (int w = 0; w < width; ++w)
+                for (int h = 0; h < height; ++h)
                 {
-                    input_mean(d) += input_batch(n, d, h, w);
+                    for (int w = 0; w < width; ++w)
+                    {
+                        input_mean(d) += input_batch(n, d, h, w);
+                    }
                 }
             }
+            input_mean(d) /= (batch_size * height * width);
         }
-        input_mean(d) /= (batch_size * height * width);
-    }
 
-    // Calculate variance for each channel
-    for (int d = 0; d < input_depth; ++d)
-    {
-        for (int n = 0; n < batch_size; ++n)
+        // Calculate variance for each channel
+        for (int d = 0; d < input_depth; ++d)
         {
-            for (int h = 0; h < height; ++h)
+            for (int n = 0; n < batch_size; ++n)
             {
-                for (int w = 0; w < width; ++w)
+                for (int h = 0; h < height; ++h)
                 {
-                    double diff = input_batch(n, d, h, w) - input_mean(d);
-                    input_variance(d) += diff * diff;
+                    for (int w = 0; w < width; ++w)
+                    {
+                        double diff = input_batch(n, d, h, w) - input_mean(d);
+                        input_variance(d) += diff * diff;
+                    }
                 }
             }
+            input_variance(d) /= (batch_size * height * width);
         }
-        input_variance(d) /= (batch_size * height * width);
+
+        // Cache the computed mean and variance for backward pass
+        cache_mean = input_mean;
+        cache_variance = input_variance;
+
+        // Update moving mean and variance
+        moving_mean = momentum * moving_mean + (1 - momentum) * input_mean;
+        moving_variance = momentum * moving_variance + (1 - momentum) * input_variance;
+    }
+    else if (BNMode::Inference == BatchNormalizationLayer::layerMode)
+    {
+        // Use moving mean and variance during inference
+        input_mean = moving_mean;
+        input_variance = moving_variance;
+    }
+    else
+    {
+        throw std::runtime_error("Unknown BNMode");
     }
 
-    // Cache mean and variance for use in backward pass
-    cache_mean = input_mean;
-    cache_variance = input_variance;
-
-    cache_normalized = Eigen::Tensor<double, 4>(batch_size, input_depth, height, width);
-    Eigen::Tensor<double, 4> output(batch_size, input_depth, height, width);
-
+    // Normalize
+    Eigen::Tensor<double, 4> normalized(batch_size, input_depth, height, width);
     for (int d = 0; d < input_depth; ++d)
     {
         double inv_sqrt_variance = 1.0 / std::sqrt(input_variance(d) + epsilon);
-
         for (int n = 0; n < batch_size; ++n)
         {
             for (int h = 0; h < height; ++h)
             {
                 for (int w = 0; w < width; ++w)
                 {
-                    cache_normalized(n, d, h, w) = (input_batch(n, d, h, w) - input_mean(d)) * inv_sqrt_variance;
-                    output(n, d, h, w) = cache_normalized(n, d, h, w) * gamma(d) + beta(d);
+                    normalized(n, d, h, w) = (input_batch(n, d, h, w) - input_mean(d)) * inv_sqrt_variance;
+                }
+            }
+        }
+    }
+
+    cache_normalized = normalized;
+
+    // Scale and shift
+    Eigen::Tensor<double, 4> output(batch_size, input_depth, height, width);
+    for (int d = 0; d < input_depth; ++d)
+    {
+        for (int n = 0; n < batch_size; ++n)
+        {
+            for (int h = 0; h < height; ++h)
+            {
+                for (int w = 0; w < width; ++w)
+                {
+                    output(n, d, h, w) = normalized(n, d, h, w) * gamma(d) + beta(d);
                 }
             }
         }
@@ -152,6 +196,9 @@ Eigen::Tensor<double, 4> BatchNormalizationLayer::normalizeDenseLayer(const Eige
         moving_variance = Eigen::Tensor<double, 1>(input_depth);
         dgamma = Eigen::Tensor<double, 1>(input_depth);
         dbeta = Eigen::Tensor<double, 1>(input_depth);
+        cache_mean = Eigen::Tensor<double, 1>(input_depth);
+        cache_variance = Eigen::Tensor<double, 1>(input_depth);
+        cache_normalized = Eigen::Tensor<double, 4>(batch_size, 1, 1, input_depth);
 
         // Set initial values for parameters
         gamma.setConstant(1.0);           // Initialize scale to 1
@@ -166,45 +213,72 @@ Eigen::Tensor<double, 4> BatchNormalizationLayer::normalizeDenseLayer(const Eige
     Eigen::Tensor<double, 1> input_mean(input_depth);
     Eigen::Tensor<double, 1> input_variance(input_depth);
 
-    input_mean.setZero();
-    input_variance.setZero();
-
-    // Calculate mean for each feature
-    for (int d = 0; d < input_depth; ++d)
+    if (BNMode::Training == BatchNormalizationLayer::layerMode)
     {
-        for (int n = 0; n < batch_size; ++n)
+        // Compute mean and variance for the current batch (per channel)
+        input_mean.setZero();
+        input_variance.setZero();
+
+        // Calculate mean for each feature
+        for (int d = 0; d < input_depth; ++d)
         {
-            input_mean(d) += input_batch(n, 0, 0, d);
+            for (int n = 0; n < batch_size; ++n)
+            {
+                input_mean(d) += input_batch(n, 0, 0, d);
+            }
+            input_mean(d) /= batch_size;
         }
-        input_mean(d) /= batch_size;
+
+        // Calculate variance for each feature
+        for (int d = 0; d < input_depth; ++d)
+        {
+            for (int n = 0; n < batch_size; ++n)
+            {
+                double diff = input_batch(n, 0, 0, d) - input_mean(d);
+                input_variance(d) += diff * diff;
+            }
+            input_variance(d) /= batch_size;
+        }
+
+        // Cache the computed mean and variance for backward pass
+        cache_mean = input_mean;
+        cache_variance = input_variance;
+
+        // Update moving mean and variance
+        moving_mean = momentum * moving_mean + (1 - momentum) * input_mean;
+        moving_variance = momentum * moving_variance + (1 - momentum) * input_variance;
+    }
+    else if (BNMode::Inference == BatchNormalizationLayer::layerMode)
+    {
+        // Use moving mean and variance during inference
+        input_mean = moving_mean;
+        input_variance = moving_variance;
+    }
+    else
+    {
+        throw std::runtime_error("Unknown BNMode");
     }
 
-    // Calculate variance for each feature
-    for (int d = 0; d < input_depth; ++d)
-    {
-        for (int n = 0; n < batch_size; ++n)
-        {
-            double diff = input_batch(n, 0, 0, d) - input_mean(d);
-            input_variance(d) += diff * diff;
-        }
-        input_variance(d) /= batch_size;
-    }
-
-    // Cache mean and variance for use in backward pass
-    cache_mean = input_mean;
-    cache_variance = input_variance;
-
-    cache_normalized = Eigen::Tensor<double, 4>(batch_size, 1, 1, input_depth);
-    Eigen::Tensor<double, 4> output(batch_size, 1, 1, input_depth);
-
+    // Normalize
+    Eigen::Tensor<double, 4> normalized(batch_size, 1, 1, input_depth);
     for (int d = 0; d < input_depth; ++d)
     {
         double inv_sqrt_variance = 1.0 / std::sqrt(input_variance(d) + epsilon);
-
         for (int n = 0; n < batch_size; ++n)
         {
-            cache_normalized(n, 0, 0, d) = (input_batch(n, 0, 0, d) - input_mean(d)) * inv_sqrt_variance;
-            output(n, 0, 0, d) = cache_normalized(n, 0, 0, d) * gamma(d) + beta(d);
+            normalized(n, 0, 0, d) = (input_batch(n, 0, 0, d) - input_mean(d)) * inv_sqrt_variance;
+        }
+    }
+
+    cache_normalized = normalized;
+
+    // Scale and shift
+    Eigen::Tensor<double, 4> output(batch_size, 1, 1, input_depth);
+    for (int d = 0; d < input_depth; ++d)
+    {
+        for (int n = 0; n < batch_size; ++n)
+        {
+            output(n, 0, 0, d) = normalized(n, 0, 0, d) * gamma(d) + beta(d);
         }
     }
 
@@ -296,7 +370,16 @@ Eigen::Tensor<double, 4> BatchNormalizationLayer::backwardConvLayer(const Eigen:
             }
         }
 
-        d_mean(d) += d_variance(d) * -2.0 * cache_mean(d) / (batch_size * height * width);
+        for (int n = 0; n < batch_size; ++n)
+        {
+            for (int h = 0; h < height; ++h)
+            {
+                for (int w = 0; w < width; ++w)
+                {
+                    d_mean(d) += d_variance(d) * -2.0 * (input_batch(n, d, h, w) - cache_mean(d)) / (batch_size * height * width);
+                }
+            }
+        }
     }
 
     Eigen::Tensor<double, 4> d_input(batch_size, input_depth, height, width);
@@ -370,7 +453,10 @@ Eigen::Tensor<double, 4> BatchNormalizationLayer::backwardDenseLayer(const Eigen
             d_mean(d) += d_output_batch(n, 0, 0, d) * inv_sqrt_variance;
         }
 
-        d_mean(d) += d_variance(d) * -2.0 * cache_mean(d) / batch_size;
+        for (int n = 0; n < batch_size; ++n)
+        {
+            d_mean(d) += d_variance(d) * -2.0 * (input_batch(n, 0, 0, d) - cache_mean(d)) / batch_size;
+        }
     }
 
     Eigen::Tensor<double, 4> d_input(batch_size, 1, 1, input_depth);

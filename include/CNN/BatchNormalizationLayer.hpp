@@ -95,6 +95,13 @@ public:
      */
     void setTarget(BNTarget target);
 
+    /**
+     * @brief Set the layer mode (Inference or Training).
+     *
+     * @param target The requested mode.
+     */
+    static void setMode(BNMode mode);
+
 private:
     /**
      * @brief Update gamma and beta parameters.
@@ -133,10 +140,11 @@ private:
                                                 const Eigen::Tensor<double, 4> &input_batch,
                                                 double learning_rate);
 
-    double epsilon;   ///< Small constant to prevent division by zero.
-    double momentum;  ///< Momentum for moving averages.
-    bool initialized; ///< Flag to check if the layer is initialized.
-    BNTarget target;  ///< The target type (Convolution or Dense).
+    double epsilon;             ///< Small constant to prevent division by zero.
+    double momentum;            ///< Momentum for moving averages.
+    bool initialized;           ///< Flag to check if the layer is initialized.
+    BNTarget target;            ///< The target type (Convolution or Dense).
+    static BNMode layerMode;    ///< Mode druing forward propagation (Inference or Training).
 
     Eigen::Tensor<double, 1> gamma, beta;                  ///< Scale and shift parameters.
     Eigen::Tensor<double, 1> moving_mean, moving_variance; ///< Moving averages for mean and variance.

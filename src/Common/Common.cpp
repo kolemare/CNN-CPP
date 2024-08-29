@@ -136,6 +136,20 @@ std::string toString(BNTarget value)
     }
 }
 
+// Function to convert BNMode to string
+std::string toString(BNMode value)
+{
+    switch (value)
+    {
+    case BNMode::Inference:
+        return "Inference";
+    case BNMode::Training:
+        return "Training";
+    default:
+        return "UNKNOWN";
+    }
+}
+
 // Function to convert PropagationType to string
 std::string toString(PropagationType value)
 {
@@ -173,6 +187,20 @@ std::string toString(BatchType value)
         return "Training";
     case BatchType::Testing:
         return "Testing";
+    default:
+        return "UNKNOWN";
+    }
+}
+
+// Function to convert BatchMode to string
+std::string toString(BatchMode value)
+{
+    switch (value)
+    {
+    case BatchMode::ShuffleOnly:
+        return "ShuffleOnly";
+    case BatchMode::UniformDistribution:
+        return "UniformDistribution";
     default:
         return "UNKNOWN";
     }

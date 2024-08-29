@@ -12,6 +12,7 @@ NeuralNetwork::NeuralNetwork()
     this->adamIncrement = false;
     this->logLevel = LogLevel::None;
     this->progressLevel = ProgressLevel::None;
+    this->batchMode = BatchMode::ShuffleOnly;
     outputCSV = "logs/cnn.csv";
 }
 
@@ -389,7 +390,7 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
 
     NNLogger::initializeCSV(outputCSV);
 
-    BatchManager batchManager(imageContainer, batch_size, BatchType::Training);
+    BatchManager batchManager(imageContainer, batch_size, BatchType::Training, this->batchMode);
     std::cout << "Training started..." << std::endl;
     auto start = std::chrono::steady_clock::now();
     double current_learning_rate = learning_rate;
@@ -399,6 +400,7 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
 
     for (int epoch = 0; epoch < epochs; ++epoch)
     {
+        BatchNormalizationLayer::setMode(BNMode::Training);
         if (LearningDecayType::NONE != learningDecayMode && learningDecay)
         {
             current_learning_rate = learningDecay->computeLearningRate(learning_rate, epoch);
@@ -552,7 +554,10 @@ std::tuple<double, double> NeuralNetwork::evaluate(const ImageContainer &imageCo
         throw std::runtime_error("Loss function must be set before evaluation.");
     }
 
-    BatchManager batchManager(imageContainer, imageContainer.getTestImages().size(), BatchType::Testing);
+    //Set the Batch Normalization mode to Inference
+    BatchNormalizationLayer::setMode(BNMode::Inference);
+
+    BatchManager batchManager(imageContainer, imageContainer.getTestImages().size(), BatchType::Testing, this->batchMode);
     Eigen::Tensor<double, 4> batch_input;
     Eigen::Tensor<int, 2> batch_label;
 
@@ -632,8 +637,11 @@ void NeuralNetwork::makeSinglePredictions(const ImageContainer &imageContainer)
         throw std::runtime_error("Bad batch size, unknown error.");
     }
 
+    //Set the Batch Normalization mode to Inference
+    BatchNormalizationLayer::setMode(BNMode::Inference);
+
     // Create a batch manager for single prediction
-    BatchManager batchManager(imageContainer, batchSize, BatchType::Testing);
+    BatchManager batchManager(imageContainer, batchSize, BatchType::Testing, this->batchMode);
     batchManager.loadSinglePredictionBatch();
 
     // Process each batch of single prediction images
@@ -762,6 +770,11 @@ void NeuralNetwork::enableLearningDecay(LearningDecayType decayType,
     learningDecay = std::make_unique<LearningDecay>(decayType, params);
     std::cout << "|Learning Decay Enabled with Type: " << toString(decayType) << "|" << std::endl;
     this->hardReset();
+}
+
+void NeuralNetwork::setBatchMode(BatchMode mode)
+{
+    this->batchMode = mode;
 }
 
 void NeuralNetwork::hardReset()

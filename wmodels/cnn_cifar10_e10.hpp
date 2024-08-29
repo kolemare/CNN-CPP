@@ -52,6 +52,7 @@ void cnn_cifar10_e10()
     cnn.addActivationLayer(ActivationType::SOFTMAX);
 
     cnn.setLossFunction(LossType::CATEGORICAL_CROSS_ENTROPY);
+    cnn.setBatchMode(BatchMode::ShuffleOnly);
     cnn.enableGradientClipping();
     cnn.compile(OptimizerType::Adam);
 

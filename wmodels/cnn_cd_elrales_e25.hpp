@@ -53,7 +53,7 @@ void cnn_cd_elrales_e25()
     cnn.addActivationLayer(ActivationType::SIGMOID);
 
     cnn.setLossFunction(LossType::BINARY_CROSS_ENTROPY);
-    cnn.enableGradientClipping();
+    cnn.setBatchMode(BatchMode::UniformDistribution);
 
     double learning_rate_coef = 0.8; // 0.8 Learning Coefficient Multiplier
     int maxSuccessiveFailures = 3;   // 3 Sucessive Epoch Failures
@@ -61,6 +61,7 @@ void cnn_cd_elrales_e25()
     double tolerance = 0.01;         // 1% Tolerance
 
     cnn.enableELRALES(learning_rate_coef, maxSuccessiveFailures, maxFails, tolerance);
+    cnn.enableGradientClipping();
     cnn.compile(OptimizerType::Adam);
 
     int epochs = 25;

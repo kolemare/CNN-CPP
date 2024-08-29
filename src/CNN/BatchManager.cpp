@@ -4,12 +4,14 @@ namespace fs = std::filesystem;
 
 BatchManager::BatchManager(const ImageContainer &imageContainer,
                            int batchSize,
-                           BatchType batchType)
+                           BatchType batchType,
+                           BatchMode batchMode)
     : imageContainer(imageContainer)
 {
     this->batchSize = batchSize;
     this->currentBatchIndex = 0;
     this->batchType = batchType;
+    this->batchMode = batchMode;
 
     // Get unique categories from the image container
     categories = imageContainer.getUniqueLabels();
@@ -158,6 +160,10 @@ void BatchManager::saveBatchImages(const Eigen::Tensor<double, 4> &batchImages,
         std::string categoryDir = batchDir + "/" + category;
         fs::create_directory(categoryDir);
 
+        // Create the image filename with the encoding index
+        std::string imageFilename = category + "_" + std::to_string(i) + "_" + std::to_string(labelIndex) + ".jpg";
+        std::string imagePath = categoryDir + "/" + imageFilename;
+
         // Convert the Eigen tensor to OpenCV Mat format
         cv::Mat image(batchImages.dimension(2), batchImages.dimension(3), CV_32FC3);
         for (int h = 0; h < batchImages.dimension(2); ++h)
@@ -173,7 +179,6 @@ void BatchManager::saveBatchImages(const Eigen::Tensor<double, 4> &batchImages,
 
         // Convert the image to 8-bit format and save to disk
         image.convertTo(image, CV_8UC3, 255.0 / imageContainer.getNormalizationScale());
-        std::string imagePath = categoryDir + "/image" + std::to_string(i) + ".jpg";
         cv::imwrite(imagePath, image);
     }
 }
@@ -209,23 +214,57 @@ bool BatchManager::getNextBatch(Eigen::Tensor<double, 4> &batchImages,
     batchLabels.resize(batchSize, categories.size());
     batchLabels.setZero(); // Initialize labels to zero for one-hot encoding
 
-    // Calculate the number of images to add from each category to maintain balance
-    int numCategories = static_cast<int>(categories.size());
-    int imagesPerCategory = batchSize / numCategories;
-
-    // Fill the batch with images from each category
-    for (const auto &category : categories)
+    if (BatchMode::UniformDistribution == this->batchMode)
     {
-        auto &images = categoryImages[category];
-        auto &labels = categoryLabels[category];
+        // Code for uniform distribution across categories
+        int numCategories = static_cast<int>(categories.size());
+        int imagesPerCategory = batchSize / numCategories;
 
-        int numImagesToAdd = std::min(static_cast<int>(images.size()), imagesPerCategory);
+        for (const auto &category : categories)
+        {
+            auto &images = categoryImages[category];
+            auto &labels = categoryLabels[category];
+
+            int numImagesToAdd = std::min(static_cast<int>(images.size()), imagesPerCategory);
+            for (int i = 0; i < numImagesToAdd; ++i)
+            {
+                if (batchIndex >= batchSize)
+                    break;
+
+                cv::Mat &image = *images[i];
+                for (int h = 0; h < imageHeight; ++h)
+                {
+                    for (int w = 0; w < imageWidth; ++w)
+                    {
+                        for (int c = 0; c < imageChannels; ++c)
+                        {
+                            batchImages(batchIndex, c, h, w) = image.at<cv::Vec3f>(h, w)[c];
+                        }
+                    }
+                }
+
+                // One-hot encode the label using categoryToIndex
+                int labelIndex = categoryToIndex[labels[i]];
+                batchLabels(batchIndex, labelIndex) = 1;
+                batchIndex++;
+            }
+
+            if (numImagesToAdd > 0)
+            {
+                images.erase(images.begin(), images.begin() + numImagesToAdd);
+                labels.erase(labels.begin(), labels.begin() + numImagesToAdd);
+            }
+        }
+    }
+    else if (BatchMode::ShuffleOnly == this->batchMode)
+    {
+        // Ensure we have enough images and labels left to fill the batch
+        int remainingImages = static_cast<int>(allImages.size());
+        int numImagesToAdd = std::min(remainingImages, batchSize);
+
         for (int i = 0; i < numImagesToAdd; ++i)
         {
-            if (batchIndex >= batchSize)
-                break;
-
-            cv::Mat &image = *images[i];
+            cv::Mat &image = *allImages[i];
             for (int h = 0; h < imageHeight; ++h)
             {
                 for (int w = 0; w < imageWidth; ++w)
@@ -238,21 +277,21 @@ bool BatchManager::getNextBatch(Eigen::Tensor<double, 4> &batchImages,
             }
 
             // One-hot encode the label using categoryToIndex
-            int labelIndex = categoryToIndex[labels[i]];
-
+            int labelIndex = categoryToIndex[allLabels[i]];
             batchLabels(batchIndex, labelIndex) = 1;
             batchIndex++;
         }
 
-        // Remove used images and labels
-        if (numImagesToAdd > 0)
-        {
-            images.erase(images.begin(), images.begin() + numImagesToAdd);
-            labels.erase(labels.begin(), labels.begin() + numImagesToAdd);
-        }
+        // Remove the used images and labels from the main list
+        allImages.erase(allImages.begin(), allImages.begin() + numImagesToAdd);
+        allLabels.erase(allLabels.begin(), allLabels.begin() + numImagesToAdd);
+    }
+    else
+    {
+        throw std::runtime_error("Unrecognized batch mode.");
     }
 
-    // If the batch is not full, fill remaining slots with random images from original dataset copies
+    // Fill remaining slots with random images from the original dataset copies if necessary
     while (batchIndex < batchSize)
     {
         if (allImages.empty())

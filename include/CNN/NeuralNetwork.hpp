@@ -228,6 +228,17 @@ public:
     void enableLearningDecay(LearningDecayType decayType,
                              const std::unordered_map<std::string, double> &params);
 
+    /**
+     * @brief Sets the batch mode.
+     * 
+     * @param mode The type of mode to use.
+     *
+     * This method sets the batch mode that will be used by BatchManager during training and evaluation.
+     * Possible modes are UniformDistribution and ShuffleOnly
+     * 
+     */
+    void setBatchMode(BatchMode mode);
+
 private:
     std::vector<std::shared_ptr<Layer>> layers;        ///< Vector of layers in the network.
     std::unique_ptr<LossFunction> lossFunction;        ///< The loss function used by the network.
@@ -255,6 +266,7 @@ private:
     ELRALES_Mode elralesMode = ELRALES_Mode::DISABLED;                       ///< Mode for ELRALES.
     ELRALES_StateMachine elralesStateMachine = ELRALES_StateMachine::NORMAL; ///< Current state of the ELRALES state machine.
     std::vector<ELRALES_StateMachine> elralesStateMachineTimeLine{};         ///< Timeline of ELRALES state machine states.
+    BatchMode batchMode = BatchMode::ShuffleOnly;                            ///< Batch Manager batch organization mode.
 
     std::unique_ptr<LearningDecay> learningDecay;                  ///< Learning decay strategy.
     LearningDecayType learningDecayMode = LearningDecayType::NONE; ///< Type of learning decay used.
@@ -265,7 +277,7 @@ private:
     int maxEpochFailures;                       ///< Max total epoch failures for ELRALES.
     double tolerance;                           ///< Tolerance for ELRALES.
     std::unique_ptr<ELRALES> elrales = nullptr; ///< ELRALES instance for adaptive learning and early stopping.
-    std::string outputCSV;                      ///< Relative path to the output csv of training and testing metrics
+    std::string outputCSV;                      ///< Relative path to the output csv of training and testing metrics.
 
     /**
      * @brief Resets the members when making changes to network to their initial state.

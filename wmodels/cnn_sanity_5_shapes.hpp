@@ -48,6 +48,7 @@ void cnn_sanity_5_shapes()
     cnn.addActivationLayer(ActivationType::SOFTMAX);
 
     cnn.setLossFunction(LossType::CATEGORICAL_CROSS_ENTROPY);
+    cnn.setBatchMode(BatchMode::UniformDistribution);
     cnn.enableGradientClipping();
     cnn.compile(OptimizerType::Adam);
 

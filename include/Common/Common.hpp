@@ -142,6 +142,16 @@ enum class BNTarget
 };
 
 /**
+ * @enum BNMode
+ * @brief An enumeration to define whether the Batch Normalization is doing inference of training.
+ */
+enum class BNMode
+{
+    Inference, /**< Inference Mode */
+    Training,  /**< Training Mode */
+};
+
+/**
  * @enum PropagationType
  * @brief Enumeration for propagation types during training.
  */
@@ -169,6 +179,16 @@ enum class BatchType
 {
     Training, /**< Training batch */
     Testing   /**< Testing batch */
+};
+
+/**
+ * @enum BatchMode
+ * @brief Enumeration for batch organizations.
+ */
+enum class BatchMode
+{
+    UniformDistribution,
+    ShuffleOnly
 };
 
 /**
@@ -314,6 +334,13 @@ std::string toString(LossType value);
 std::string toString(BNTarget value);
 
 /**
+ * @brief Convert BNMode enum to string.
+ * @param value The BNMode value.
+ * @return The string representation of the value.
+ */
+std::string toString(BNMode value);
+
+/**
  * @brief Convert PropagationType enum to string.
  * @param value The PropagationType value.
  * @return The string representation of the value.
@@ -333,6 +360,13 @@ std::string toString(GradientClippingMode value);
  * @return The string representation of the value.
  */
 std::string toString(BatchType value);
+
+/**
+ * @brief Convert BatchMode enum to string.
+ * @param value The BatchMode value.
+ * @return The string representation of the value.
+ */
+std::string toString(BatchMode value);
 
 /**
  * @brief Convert ELRALES_Mode enum to string.

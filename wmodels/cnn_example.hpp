@@ -124,6 +124,10 @@ void cnn_example()
     LossType loss_type = LossType::BINARY_CROSS_ENTROPY;
     cnn.setLossFunction(loss_type);
 
+    // Setting the batch organization
+    BatchMode batch_mode = BatchMode::ShuffleOnly;
+    cnn.setBatchMode(batch_mode);
+
     // Enable Default Gradient Clipping
     cnn.enableGradientClipping(1.0);
 

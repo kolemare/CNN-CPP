@@ -53,7 +53,7 @@ void cnn_cd_ld_e25()
     cnn.addActivationLayer(ActivationType::SIGMOID);
 
     cnn.setLossFunction(LossType::BINARY_CROSS_ENTROPY);
-    cnn.enableGradientClipping();
+    cnn.setBatchMode(BatchMode::UniformDistribution);
 
     std::unordered_map<std::string, double> polynomial_params = {
         {"end_learning_rate", 0.00001},
@@ -61,6 +61,7 @@ void cnn_cd_ld_e25()
         {"power", 2.0}};
 
     cnn.enableLearningDecay(LearningDecayType::POLYNOMIAL, polynomial_params);
+    cnn.enableGradientClipping();
     cnn.compile(OptimizerType::Adam);
 
     int epochs = 25;

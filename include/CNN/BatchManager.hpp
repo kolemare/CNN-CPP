@@ -18,15 +18,17 @@ public:
     /**
      * @brief Constructs a BatchManager object.
      *
-     * Initializes the BatchManager with image data, batch size, and type (training or testing).
+     * Initializes the BatchManager with image data, batch size, batch type (training or testing) and batch mode (UniformDistribution or ShuffleOnly).
      *
      * @param imageContainer The container with images and labels.
      * @param batchSize The size of each batch.
      * @param batchType The type of batch (training or testing).
+     * @param batchMode Organization of batch (UniformDistribution or ShuffleOnly).
      */
     BatchManager(const ImageContainer &imageContainer,
                  int batchSize,
-                 BatchType batchType);
+                 BatchType batchType,
+                 BatchMode batchMode);
 
     /**
      * @brief Initializes batches by categorizing images and labels.
@@ -127,6 +129,7 @@ private:
     size_t currentBatchIndex;                                                              ///< The index of the current batch.
     size_t totalBatches;                                                                   ///< The total number of batches.
     BatchType batchType;                                                                   ///< The type of batch (training or testing).
+    BatchMode batchMode;                                                                   ///< Organization of batch (UniformDistribution or ShuffleOnly).
 };
 
 #endif // BATCHMANAGER_HPP
