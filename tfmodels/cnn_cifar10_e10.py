@@ -34,40 +34,37 @@ class_indices_rev = {v: k for k, v in class_indices.items()}  # Reverse mapping 
 cnn = tf.keras.models.Sequential()
 
 # Convolutional Layer Block 1
-cnn.add(tf.keras.layers.Conv2D(filters=32, kernel_size=3, input_shape=[32, 32, 3]))
-cnn.add(tf.keras.layers.BatchNormalization())
-cnn.add(tf.keras.layers.Activation('relu'))
+cnn.add(tf.keras.layers.Conv2D(filters=32, kernel_size=3, activation='relu', input_shape=[32, 32, 3]))
 cnn.add(tf.keras.layers.MaxPool2D(pool_size=2, strides=2))
 
 # Convolutional Layer Block 2
-cnn.add(tf.keras.layers.Conv2D(filters=64, kernel_size=3))
-cnn.add(tf.keras.layers.BatchNormalization())
-cnn.add(tf.keras.layers.Activation('relu'))
+cnn.add(tf.keras.layers.Conv2D(filters=64, kernel_size=3, activation='relu'))
 cnn.add(tf.keras.layers.MaxPool2D(pool_size=2, strides=2))
 
 # Convolutional Layer Block 3
-cnn.add(tf.keras.layers.Conv2D(filters=128, kernel_size=3))
-cnn.add(tf.keras.layers.BatchNormalization())
-cnn.add(tf.keras.layers.Activation('relu'))
+cnn.add(tf.keras.layers.Conv2D(filters=64, kernel_size=3, activation='relu'))
 cnn.add(tf.keras.layers.MaxPool2D(pool_size=2, strides=2))
 
 # Flattening
 cnn.add(tf.keras.layers.Flatten())
 
-# Fully Connected Layers
-cnn.add(tf.keras.layers.Dense(units=256))
-cnn.add(tf.keras.layers.BatchNormalization())
-cnn.add(tf.keras.layers.Activation('relu'))
-
-cnn.add(tf.keras.layers.Dense(units=128))
-cnn.add(tf.keras.layers.BatchNormalization())
-cnn.add(tf.keras.layers.Activation('relu'))
+# Fully Connected Layer
+cnn.add(tf.keras.layers.Dense(units=128, activation='relu'))
 
 # Output Layer
 cnn.add(tf.keras.layers.Dense(units=10, activation='softmax'))
 
+# Learning rate scheduler for step decay
+def step_decay(epoch):
+    initial_lr = 0.0005
+    decay_factor = 0.7
+    lr = initial_lr * (decay_factor ** epoch)
+    return lr
+
+lr_scheduler = tf.keras.callbacks.LearningRateScheduler(step_decay)
+
 # Compile the CNN with adjusted learning rate and gradient clipping
-optimizer = tf.keras.optimizers.Adam(learning_rate=0.0001, clipvalue=1.0)
+optimizer = tf.keras.optimizers.Adam(learning_rate=0.0005, clipvalue=1.0)
 cnn.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
 
 # Function to make predictions and check if all are correct
@@ -129,7 +126,7 @@ history = cnn.fit(
     x=train_set,
     validation_data=test_set,
     epochs=10,
-    callbacks=[prediction_callback]
+    callbacks=[prediction_callback, lr_scheduler]
 )
 
 # Plotting the results
