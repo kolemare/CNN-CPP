@@ -41,8 +41,8 @@ int main(int argc, char **argv)
             // cnn_cd_elrales_e25();
             // cnn_cd_ld_e25();
             // cnn_cd_nb_e25();
-            cnn_cifar10_e10();
-            // cnn_mnist_e3();
+            // cnn_cifar10_e10();
+            cnn_mnist_e3();
             // cnn_sanity_2_colors();
             // cnn_sanity_2_shapes();
             // cnn_sanity_5_colors();
