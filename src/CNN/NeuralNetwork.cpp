@@ -1,3 +1,28 @@
+/*
+MIT License
+Copyright (c) 2024 Marko Kostić
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+This project is the CNN-CPP Framework. Usage of this code is free, and
+uploading and using the code is also free, with a humble request to mention
+the origin of the implementation, the author Marko Kostić, and the repository
+link: https://github.com/kolemare/CNN-CPP.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 #include "NeuralNetwork.hpp"
 
 NeuralNetwork::NeuralNetwork()
@@ -554,7 +579,7 @@ std::tuple<double, double> NeuralNetwork::evaluate(const ImageContainer &imageCo
         throw std::runtime_error("Loss function must be set before evaluation.");
     }
 
-    //Set the Batch Normalization mode to Inference
+    // Set the Batch Normalization mode to Inference
     BatchNormalizationLayer::setMode(BNMode::Inference);
 
     BatchManager batchManager(imageContainer, imageContainer.getTestImages().size(), BatchType::Testing, this->batchMode);
@@ -637,7 +662,7 @@ void NeuralNetwork::makeSinglePredictions(const ImageContainer &imageContainer)
         throw std::runtime_error("Bad batch size, unknown error.");
     }
 
-    //Set the Batch Normalization mode to Inference
+    // Set the Batch Normalization mode to Inference
     BatchNormalizationLayer::setMode(BNMode::Inference);
 
     // Create a batch manager for single prediction

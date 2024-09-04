@@ -13,7 +13,7 @@ def clean_build():
 def delete_txts():
     print("Cleaning all .txt files...")
     for item in os.listdir('.'):
-        if item.endswith('.txt') and item != 'CMakeLists.txt':
+        if item.endswith('.txt') and item != 'CMakeLists.txt' and item != 'LICENSE.txt':
             os.remove(item)
 
 def delete_pngs_and_csvs():

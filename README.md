@@ -16,13 +16,14 @@ users with similar capabilities to define, train, and deploy neural network mode
 
 ### Goals
 
-| Goal                                                                                                                                                                                                                                                         | Status |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
-| **Comprehensiveness**: Provide a complete suite of tools and functionalities for handling the entire deep learning workflow, from data loading and augmentation to model evaluation and learning visualization.                                              | ✅     |
-| **Flexibility**: Allow users to easily define, train, and modify complex neural network architectures.                                                                                                                                                       | ✅     |
-| **Extensibility**: Enable developers to extend the framework with custom layers, optimizers, and other components, facilitating research and experimentation.                                                                                                | ✅     |
-| **Cross-Platform Compatibility**: Support multiple operating systems, including Linux, macOS, and Windows, through dockerization.                                                                                                                            | ✅     |
-| **Efficiency**: Maximize performance and minimize training time through optimized C++ implementations. The framework is slower by two orders of magnitude compared to TensorFlow, meaning it is approximately 100 times slower in performing the same tasks. | ❌     |
+| Goal                                                                                                                                                                                                                                                                                                                                                                             | Status |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| **Comprehensiveness**: Provide a complete suite of tools and functionalities for handling the entire deep learning workflow, from data loading and augmentation to model evaluation and learning visualization.                                                                                                                                                                  | ✅     |
+| **Flexibility**: Allow users to easily define, train, and modify complex neural network architectures.                                                                                                                                                                                                                                                                           | ✅     |
+| **Extensibility**: Enable developers to extend the framework with custom layers, optimizers, and other components, facilitating research and experimentation.                                                                                                                                                                                                                    | ✅     |
+| **Cross-Platform Compatibility**: Support multiple operating systems, including Linux, macOS, and Windows, through dockerization.                                                                                                                                                                                                                                                | ✅     |
+| **Efficiency**: Maximize performance and minimize training time through optimized C++ implementations. The framework is slower by two orders of magnitude compared to TensorFlow, meaning it is approximately 100 times slower in performing the same tasks.                                                                                                                     | ❌     |
+| **Higher Accuracy**: Achieve better training and validation accuracy than TensorFlow by using 64-bit precision, while TensorFlow typically uses lower precision (16 and 32-bit). This goal was not planned initially but was successfully achieved. However, this does not apply when using Batch Normalization Layers as the implementations differ between the two frameworks. | ✅     |
 
 ## Table of Contents
 
@@ -75,6 +76,7 @@ users with similar capabilities to define, train, and deploy neural network mode
   - [MNIST](#mnist)
   - [CIFAR-10](#cifar-10)
   - [Cats Dogs ELRALES](#cats-dogs-elrales)
+- [LICENSE](#license)
 
 ## Repository Structure
 
@@ -764,7 +766,7 @@ performance of the network by maintaining mean and variance at stable levels. It
 
 - <code style="color: teal;">Parameter Management</code>: The class provides methods for setting and retrieving gamma
   and beta, allowing external manipulation and inspection. It ensures that these parameters can be saved and loaded
-  during training and inference.
+  during inference and during training (`ELRALES`).
 
 - <code style="color: teal;">Tensor Dimension Support</code>: This layer supports both 2D and 4D tensors, allowing it to
   be seamlessly integrated after convolutional layers, fully connected layers, or any other layer in the network where
@@ -888,11 +890,11 @@ follows:
   - **$\text{biases}$**: The biases of the model that are being updated.
   - **$\text{dbiases}$**: The gradient of the loss with respect to the biases, calculated during backpropagation.
 
-- <code style="color: teal;">Adam</code> This optimizer combines the advantages of both the AdaGrad and RMSProp
-  algorithms, maintaining adaptive learning rates for each parameter by computing first (mean) and second (variance)
-  moments of the gradients. It employs bias-correction terms to ensure unbiased estimates of these moments. Adam
-  maintains separate moving averages of gradients (m_weights, m_biases) and squared gradients (v_weights, v_biases) for
-  both weights and biases.
+- <code style="color: teal;">Adam</code> (Adaptive Moment Estimation) This optimizer combines the advantages of both the
+  AdaGrad and RMSProp algorithms, maintaining adaptive learning rates for each parameter by computing first (mean) and
+  second (variance) moments of the gradients. It employs bias-correction terms to ensure unbiased estimates of these
+  moments. Adam maintains separate moving averages of gradients (m_weights, m_biases) and squared gradients (v_weights,
+  v_biases) for both weights and biases.
 
   <h3 style="display: inline-block;">$$m_{\text{weights}} = \beta_1 \cdot m_{\text{weights}} + (1 - \beta_1) \cdot \text{dweights}$$</h3>
   <h3 style="display: inline-block;">$$v_{\text{weights}} = \beta_2 \cdot v_{\text{weights}} + (1 - \beta_2) \cdot \text{dweights}^2$$</h3>
@@ -926,9 +928,9 @@ follows:
   - **$\epsilon$**: A small constant added for numerical stability, preventing division by zero.
   - **$t$**: The time step or iteration count, which helps in correcting the bias in the moment estimates.
 
-- <code style="color: teal;">RMSprop</code> This optimizer maintains an exponentially decaying average of past squared
-  gradients to divide the gradient element-wise, which helps in dealing with the vanishing learning rate problem. It
-  updates the weights and biases based on the root mean square of gradients.
+- <code style="color: teal;">RMSprop</code> (Root Mean Squared Propagation) This optimizer maintains an exponentially
+  decaying average of past squared gradients to divide the gradient element-wise, which helps in dealing with the
+  vanishing learning rate problem. It updates the weights and biases based on the root mean square of gradients.
 
   <h3 style="display: inline-block;">$$s_{\text{weights}} = \beta \cdot s_{\text{weights}} + (1 - \beta) \cdot \text{dweights}^2$$</h3>
   <h3 style="display: inline-block;">$$\text{weights} = \text{weights} - \eta \cdot \frac{\text{dweights}}{\sqrt{s_{\text{weights}}} + \epsilon}$$</h3>
@@ -1308,7 +1310,7 @@ docker rm [container_id]  # Replace [container_id] with your actual container ID
 Once the Docker image is removed, you will need to rebuild it if you wish to use Docker again for the CNN-CPP Framework.
 Building the Docker image is a one-time requirement unless it is deleted.  
 This ensures that all necessary components are properly set up for your development environment.  
-Size of Docker image for CNN-CPP is approximately: **1.85GB**
+Size of Docker image for CNN-CPP is approximately: **8.74GB**
 
 ## Using the Framework
 
@@ -1442,13 +1444,17 @@ The result is a **PDF** document called **refman.pdf** that can be viewed with a
 ## Results
 
 This section compares the training and validation performance between **CNN-CPP** (left column) and **TensorFlow**
-(right column) on the same exact models. Below you will find the training and validation accuracy and loss
+(right column) on the exact same models. Below you will find the training and validation accuracy and loss
 visualizations.
 
-For these tests, an Intel Core **i7-10700K** CPU was used (stock). The i7-10700K is desktop 8-core, 16-thread processor
-with a base clock speed of 3.8 GHz and a turbo boost frequency of up to 5.1 GHz. This CPU offers strong single-threaded
-and multi-threaded performance, making it well-suited for tasks such as training neural networks, though it does not
-support AVX-512 instructions, which could enhance performance in some deep learning workloads.
+For these tests, an Intel Core i7-10700K CPU was used (stock). The **i7-10700K** is an 8-core, 16-thread desktop
+processor with a base clock speed of 3.8 GHz and a turbo boost frequency of up to 5.1 GHz. This CPU offers strong
+single-threaded and multi-threaded performance, making it well-suited for tasks such as training neural networks.
+However, it does not support AVX-512 instructions, which could enhance performance in some deep learning workloads.
+
+Additionally, there are 4 sanity datasets used during implementation evaluation: one with 2 colors, one with 2 shapes,
+one with 5 colors, and one with 5 shapes. The training, testing, and single prediction images are the same across all
+categories. After 1 epoch, the accuracy reached 100%, so the plots for these datasets are not shown.
 
 ### Cats Dogs
 
@@ -1697,3 +1703,7 @@ The model is trained and validated on a dataset containing images of cats and do
 | ![CNN-CPP Loss](wreadme/cnn_cpp/cnn_cd_elrales_e25_loss.png)         | ![TensorFlow Loss](wreadme/cnn_cpp/cnn_cd_elrales_e25_es_loss.png)         |
 | Prediction for "dog.jpg" is "dog" with confidence 99.9968%. ✅       | Prediction for "dog.jpg" is "dog" with confidence 99.9958%. ✅             |
 | Prediction for "cat.jpg" is "cat" with confidence 91.7796%. ✅       | Prediction for "cat.jpg" is "cat" with confidence 95.6531%. ✅             |
+
+## License
+
+This project is licensed under the MIT License. For more details, please see the [LICENSE](LICENSE.txt) file.

@@ -8,6 +8,7 @@
 !/external/eigen/**/*txt
 !/external/googletest/**/*txt
 !/external/opencv/**/*txt
+!LICENSE.txt
 
 # Ignore all .csv files
 *.csv

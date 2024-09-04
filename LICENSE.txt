@@ -1,5 +1,5 @@
-/*
 MIT License
+
 Copyright (c) 2024 Marko Kostić
 
 Permission is hereby granted, free of charge, to any person obtaining a copy 
@@ -21,27 +21,20 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
 SOFTWARE.
-*/
 
-#include "TensorOperations.hpp"
+---
 
-void TensorOperations::applyUpdates(Eigen::Tensor<double, 2> &weights,
-                                    const Eigen::Tensor<double, 2> &updates,
-                                    double scale)
-{
-    weights -= scale * updates;
-}
+Third-Party Components:
 
-void TensorOperations::applyUpdates(Eigen::Tensor<double, 4> &weights,
-                                    const Eigen::Tensor<double, 4> &updates,
-                                    double scale)
-{
-    weights -= scale * updates;
-}
+This project includes third-party components. Please refer to their respective 
+licenses:
 
-void TensorOperations::applyUpdates(Eigen::Tensor<double, 1> &biases,
-                                    const Eigen::Tensor<double, 1> &updates,
-                                    double scale)
-{
-    biases -= scale * updates;
-}
+1. OpenCV: Licensed under the Apache License 2.0. See `external/opencv/LICENSE.txt` 
+   for more details.
+2. Eigen: Licensed under multiple licenses (MPL2, BSD, Apache, etc.). See the 
+   `external/eigen/COPYING.*` files for more details.
+3. GoogleTest: Licensed under the Apache License 2.0. See `external/googletest/LICENSE.txt` 
+   for more details.
+
+Datasets used in this project (CatsDogs, MNIST, CIFAR-10) are available for 
+educational and research purposes and follow their respective licenses.
