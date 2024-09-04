@@ -8,4 +8,3 @@ Prediction for "category_6.png" is "category_6" with confidence 89.9181%.
 Prediction for "category_7.png" is "category_7" with confidence 94.8519%.
 Prediction for "category_8.png" is "category_8" with confidence 74.2565%.
 Prediction for "category_9.png" is "category_9" with confidence 84.3253%.
-

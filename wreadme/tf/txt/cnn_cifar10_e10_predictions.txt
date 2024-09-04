@@ -1,0 +1,10 @@
+Prediction for cat.jpg is "cat" with confidence: 21.22%
+Prediction for automobile.jpg is "automobile" with confidence: 95.32%
+Prediction for frog.jpg is "frog" with confidence: 98.60%
+Prediction for deer.jpg is "frog" with confidence: 76.39%
+Prediction for airplane.jpg is "airplane" with confidence: 70.14%
+Prediction for bird.jpg is "bird" with confidence: 56.94%
+Prediction for horse.jpg is "horse" with confidence: 83.91%
+Prediction for dog.jpg is "dog" with confidence: 66.92%
+Prediction for truck.jpg is "truck" with confidence: 90.47%
+Prediction for ship.jpg is "ship" with confidence: 96.62%

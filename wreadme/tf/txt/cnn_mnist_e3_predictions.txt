@@ -1,0 +1,10 @@
+Prediction for category_0.png is "category_0" with confidence: 99.24%
+Prediction for category_1.png is "category_1" with confidence: 99.64%
+Prediction for category_2.png is "category_2" with confidence: 98.85%
+Prediction for category_3.png is "category_3" with confidence: 99.94%
+Prediction for category_4.png is "category_4" with confidence: 99.95%
+Prediction for category_5.png is "category_5" with confidence: 99.93%
+Prediction for category_6.png is "category_6" with confidence: 99.83%
+Prediction for category_7.png is "category_7" with confidence: 99.49%
+Prediction for category_8.png is "category_8" with confidence: 99.87%
+Prediction for category_9.png is "category_9" with confidence: 99.72%

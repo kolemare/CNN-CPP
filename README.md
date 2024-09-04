@@ -16,14 +16,13 @@ users with similar capabilities to define, train, and deploy neural network mode
 
 ### Goals
 
-- **Efficiency**: Maximize performance and minimize resource usage through optimized C++ implementations.
-- **Flexibility**: Allow users to easily define, train, and modify complex neural network architectures.
-- **Comprehensiveness**: Provide a complete suite of tools and functionalities for handling the entire deep learning
-  workflow, from data loading and augmentation to model evaluation and learning visualization.
-- **Extensibility**: Enable developers to extend the framework with custom layers, optimizers, and other components,
-  facilitating research and experimentation.
-- **Cross-Platform Compatibility**: Support multiple operating systems, including Linux, macOS, and Windows, through
-  dockerization.
+| Goal                                                                                                                                                                                                                                                         | Status |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| **Comprehensiveness**: Provide a complete suite of tools and functionalities for handling the entire deep learning workflow, from data loading and augmentation to model evaluation and learning visualization.                                              | ✅     |
+| **Flexibility**: Allow users to easily define, train, and modify complex neural network architectures.                                                                                                                                                       | ✅     |
+| **Extensibility**: Enable developers to extend the framework with custom layers, optimizers, and other components, facilitating research and experimentation.                                                                                                | ✅     |
+| **Cross-Platform Compatibility**: Support multiple operating systems, including Linux, macOS, and Windows, through dockerization.                                                                                                                            | ✅     |
+| **Efficiency**: Maximize performance and minimize training time through optimized C++ implementations. The framework is slower by two orders of magnitude compared to TensorFlow, meaning it is approximately 100 times slower in performing the same tasks. | ❌     |
 
 ## Table of Contents
 
@@ -70,7 +69,12 @@ users with similar capabilities to define, train, and deploy neural network mode
   - [Generating Documentation](#generating-documentation)
   - [Generating PDF Documentation](#generating-pdf-documentation)
 - [Results](#results)
-- [Further Plans](#further-plans)
+  - [Cats Dogs](#cats-dogs)
+  - [Cats Dogs Polynomial LD](#cats-dogs-polynomial-ld)
+  - [Cats Dogs Batch Norm](#cats-dogs-batch-norm)
+  - [MNIST](#mnist)
+  - [CIFAR-10](#cifar-10)
+  - [Cats Dogs ELRALES](#cats-dogs-elrales)
 
 ## Repository Structure
 
@@ -180,8 +184,9 @@ facilitates efficient data feeding during training and testing by handling the f
   prediction tasks, allowing for inference on individual images.
 
 - <code style="color: teal;">Batch Indexing and Balancing</code> The manager keeps track of the current batch index and
-  ensures that batches are balanced in terms of category distribution. If last batch is not full in epoch, it fills the
-  remaining slots with random images from the original dataset to maintain batch size consistency.
+  ensures that batches are processed according to the specified mode. In Uniform Distribution mode, batches are balanced
+  in terms of category distribution. In Shuffle Only mode, images and labels are shuffled randomly without consideration
+  for category balance.
 
 - <code style="color: teal;">Batch Saving</code> Optionally, batches can be saved to disk for debugging or analysis,
   with each batch organized by category.
@@ -192,6 +197,13 @@ facilitates efficient data feeding during training and testing by handling the f
 
 - <code style="color: teal;">Category Management</code> It manages category information, allowing retrieval of category
   names and ensuring that all operations are consistent with the dataset's categorical structure.
+
+- <code style="color: teal;">Uniform Distribution Mode</code> In this mode, the BatchManager ensures that each category
+  is equally represented within each batch. If a category does not have enough images to fill its portion of the batch,
+  the remaining images are randomly sampled from the dataset.
+
+- <code style="color: teal;">Shuffle Only Mode</code> In this mode, images and labels are shuffled randomly, without
+  regard to category balance, and batches are filled purely based on the shuffled order of the dataset.
 
 ---
 
@@ -1429,4 +1441,259 @@ The result is a **PDF** document called **refman.pdf** that can be viewed with a
 
 ## Results
 
-## Further Plans
+This section compares the training and validation performance between **CNN-CPP** (left column) and **TensorFlow**
+(right column) on the same exact models. Below you will find the training and validation accuracy and loss
+visualizations.
+
+For these tests, an Intel Core **i7-10700K** CPU was used (stock). The i7-10700K is desktop 8-core, 16-thread processor
+with a base clock speed of 3.8 GHz and a turbo boost frequency of up to 5.1 GHz. This CPU offers strong single-threaded
+and multi-threaded performance, making it well-suited for tasks such as training neural networks, though it does not
+support AVX-512 instructions, which could enhance performance in some deep learning workloads.
+
+### Cats Dogs
+
+| Model Component             | CNN-CPP Description                            | TensorFlow Description                         |
+| --------------------------- | ---------------------------------------------- | ---------------------------------------------- |
+| **Model Implementation**    | wmodels/cnn_cd_e30.hpp                         | tfmodels/cnn_cd_e30.py                         |
+| **Input Image Size**        | 32x32 pixels                                   | 32x32 pixels                                   |
+| **Convolutional Layer 1**   | 32 filters, 3x3 kernel, ReLU activation        | 32 filters, 3x3 kernel, ReLU activation        |
+| **MaxPooling Layer 1**      | 2x2 pool size                                  | 2x2 pool size                                  |
+| **Convolutional Layer 2**   | 32 filters, 3x3 kernel, ReLU activation        | 32 filters, 3x3 kernel, ReLU activation        |
+| **MaxPooling Layer 2**      | 2x2 pool size                                  | 2x2 pool size                                  |
+| **Flatten Layer**           | Converts 4D Tensor to 4D Tensor(2D)            | Converts 2D matrices to 1D vector              |
+| **Fully Connected Layer 1** | 128 units, ReLU activation                     | 128 units, ReLU activation                     |
+| **Fully Connected Layer 2** | 64 units, ReLU activation                      | 64 units, ReLU activation                      |
+| **Fully Connected Layer 3** | 32 units, ReLU activation                      | 32 units, ReLU activation                      |
+| **Output Layer**            | 1-unit Dense layer with Sigmoid                | 1-unit Dense layer with Sigmoid                |
+| **Loss Function**           | Binary Cross-Entropy                           | Binary Cross-Entropy                           |
+| **Optimizer**               | Adam with gradient clipping (clipvalue=1.0)    | Adam with gradient clipping (clipvalue=1.0)    |
+| **Learning Rate**           | 0.00005                                        | 0.00005                                        |
+| **Batch Size**              | 32                                             | 32                                             |
+| **Epochs**                  | 30                                             | 30                                             |
+| **Batch Mode**              | Uniform Distribution                           | Flow From Directory                            |
+| **Augmentation**            | Zoom (0.2), Shear (0.2), Horizontal Flip (50%) | Zoom (0.2), Shear (0.2), Horizontal Flip (50%) |
+
+The model is trained and validated on a dataset containing images of cats and dogs:
+
+- **Training Data**: 4,000 images of dogs and 4,000 images of cats.
+- **Validation Data**: 1,000 images of dogs and 1,000 images of cats.
+- **Single Prediction Data**: 1 dog image and 1 cat image for single prediction tasks.
+
+| CNN-CPP                                                        | TensorFlow                                                   |
+| -------------------------------------------------------------- | ------------------------------------------------------------ |
+| ![CNN-CPP Accuracy](wreadme/cnn_cpp/cnn_cd_e30_accuracy.png)   | ![TensorFlow Accuracy](wreadme/tf/cnn_cd_e30_accuracy.png)   |
+| ![CNN-CPP Loss](wreadme/cnn_cpp/cnn_cd_e30_loss.png)           | ![TensorFlow Loss](wreadme/tf/cnn_cd_e30_loss.png)           |
+| Prediction for "dog.jpg" is "dog" with confidence 99.9252%. ✅ | Prediction for "dog.jpg" is "dog" with confidence 98.59%. ✅ |
+| Prediction for "cat.jpg" is "cat" with confidence 98.1948%. ✅ | Prediction for "cat.jpg" is "cat" with confidence 87.65%. ✅ |
+
+---
+
+### Cats Dogs Polynomial LD
+
+| Model Component             | CNN-CPP Description                            | TensorFlow Description                         |
+| --------------------------- | ---------------------------------------------- | ---------------------------------------------- |
+| **Model Implementation**    | wmodels/cnn_cd_ld_e25.hpp                      | tfmodels/cnn_cd_ld_e25.py                      |
+| **Input Image Size**        | 32x32 pixels                                   | 32x32 pixels                                   |
+| **Convolutional Layer 1**   | 32 filters, 3x3 kernel, ReLU activation        | 32 filters, 3x3 kernel, ReLU activation        |
+| **MaxPooling Layer 1**      | 2x2 pool size                                  | 2x2 pool size                                  |
+| **Convolutional Layer 2**   | 32 filters, 3x3 kernel, ReLU activation        | 32 filters, 3x3 kernel, ReLU activation        |
+| **MaxPooling Layer 2**      | 2x2 pool size                                  | 2x2 pool size                                  |
+| **Flatten Layer**           | Converts 4D Tensor to 4D Tensor(2D)            | Converts 2D matrices to 1D vector              |
+| **Fully Connected Layer 1** | 128 units, ReLU activation                     | 128 units, ReLU activation                     |
+| **Fully Connected Layer 2** | 64 units, ReLU activation                      | 64 units, ReLU activation                      |
+| **Fully Connected Layer 3** | 32 units, ReLU activation                      | 32 units, ReLU activation                      |
+| **Output Layer**            | 1-unit Dense layer with Sigmoid                | 1-unit Dense layer with Sigmoid                |
+| **Loss Function**           | Binary Cross-Entropy                           | Binary Cross-Entropy                           |
+| **Optimizer**               | Adam with gradient clipping (clipvalue=1.0)    | Adam with gradient clipping (clipvalue=1.0)    |
+| **Learning Rate**           | 0.0001 (Polynomial Decay)                      | 0.0001 (Polynomial Decay)                      |
+| **Polynomial Decay Params** | End LR: 0.00001, Decay Steps: 25, Power: 2.0   | End LR: 0.00001, Decay Steps: 25, Power: 2.0   |
+| **Batch Size**              | 32                                             | 32                                             |
+| **Epochs**                  | 25                                             | 25                                             |
+| **Batch Mode**              | Uniform Distribution                           | Flow From Directory                            |
+| **Augmentation**            | Zoom (0.2), Shear (0.2), Horizontal Flip (50%) | Zoom (0.2), Shear (0.2), Horizontal Flip (50%) |
+
+The model is trained and validated on a dataset containing images of cats and dogs:
+
+- **Training Data**: 4,000 images of dogs and 4,000 images of cats.
+- **Validation Data**: 1,000 images of dogs and 1,000 images of cats.
+- **Single Prediction Data**: 1 dog image and 1 cat image for single prediction tasks.
+
+| CNN-CPP                                                         | TensorFlow                                                    |
+| --------------------------------------------------------------- | ------------------------------------------------------------- |
+| ![CNN-CPP Accuracy](wreadme/cnn_cpp/cnn_cd_ld_e25_accuracy.png) | ![TensorFlow Accuracy](wreadme/tf/cnn_cd_ld_e25_accuracy.png) |
+| ![CNN-CPP Loss](wreadme/cnn_cpp/cnn_cd_ld_e25_loss.png)         | ![TensorFlow Loss](wreadme/tf/cnn_cd_ld_e25_loss.png)         |
+| Prediction for "dog.jpg" is "dog" with confidence 99.1866%. ✅  | Prediction for dog.jpg is "dog" with confidence: 78.54%. ✅   |
+| Prediction for "cat.jpg" is "cat" with confidence 75.9565%. ✅  | Prediction for cat.jpg is "cat" with confidence: 54.99%. ✅   |
+
+---
+
+### Cats Dogs Batch Norm
+
+| Model Component             | CNN-CPP Description                            | TensorFlow Description                         |
+| --------------------------- | ---------------------------------------------- | ---------------------------------------------- |
+| **Model Implementation**    | wmodels/cnn_cd_nb_e25.hpp                      | tfmodels/cnn_cd_nb_e25.py                      |
+| **Input Image Size**        | 32x32 pixels                                   | 32x32 pixels                                   |
+| **Convolutional Layer 1**   | 32 filters, 3x3 kernel, ReLU                   | 32 filters, 3x3 kernel, ReLU                   |
+| **Batch Normalization 1**   | Applied after Conv Layer 1                     | Applied after Conv Layer 1                     |
+| **MaxPooling Layer 1**      | 2x2 pool size                                  | 2x2 pool size                                  |
+| **Convolutional Layer 2**   | 32 filters, 3x3 kernel, ReLU                   | 32 filters, 3x3 kernel, ReLU                   |
+| **Batch Normalization 2**   | Applied after Conv Layer 2                     | Applied after Conv Layer 2                     |
+| **MaxPooling Layer 2**      | 2x2 pool size                                  | 2x2 pool size                                  |
+| **Flatten Layer**           | Converts 4D Tensor to 4D Tensor(2D)            | Converts 2D matrices to 1D vector              |
+| **Fully Connected Layer 1** | 128 units, ReLU                                | 128 units, ReLU                                |
+| **Batch Normalization 3**   | Applied after Fully Connected Layer 1          | Applied after Fully Connected Layer 1          |
+| **Fully Connected Layer 2** | 64 units, ReLU                                 | 64 units, ReLU                                 |
+| **Batch Normalization 4**   | Applied after Fully Connected Layer 2          | Applied after Fully Connected Layer 2          |
+| **Fully Connected Layer 3** | 32 units, ReLU                                 | 32 units, ReLU                                 |
+| **Batch Normalization 5**   | Applied after Fully Connected Layer 3          | Applied after Fully Connected Layer 3          |
+| **Output Layer**            | 1-unit Dense layer with Sigmoid                | 1-unit Dense layer with Sigmoid                |
+| **Loss Function**           | Binary Cross-Entropy                           | Binary Cross-Entropy                           |
+| **Optimizer**               | Adam with gradient clipping (clipvalue=1.0)    | Adam with gradient clipping (clipvalue=1.0)    |
+| **Learning Rate**           | 0.0001                                         | 0.0001                                         |
+| **Batch Size**              | 32                                             | 32                                             |
+| **Epochs**                  | 25                                             | 25                                             |
+| **Batch Mode**              | Uniform Distribution                           | Flow From Directory                            |
+| **Augmentation**            | Zoom (0.2), Shear (0.2), Horizontal Flip (50%) | Zoom (0.2), Shear (0.2), Horizontal Flip (50%) |
+
+The model is trained and validated on a dataset containing images of cats and dogs:
+
+- **Training Data**: 4,000 images of dogs and 4,000 images of cats.
+- **Validation Data**: 1,000 images of dogs and 1,000 images of cats.
+- **Single Prediction Data**: 1 dog image and 1 cat image for single prediction tasks.
+
+| CNN-CPP                                                         | TensorFlow                                                    |
+| --------------------------------------------------------------- | ------------------------------------------------------------- |
+| ![CNN-CPP Accuracy](wreadme/cnn_cpp/cnn_cd_nb_e25_accuracy.png) | ![TensorFlow Accuracy](wreadme/tf/cnn_cd_nb_e25_accuracy.png) |
+| ![CNN-CPP Loss](wreadme/cnn_cpp/cnn_cd_nb_e25_loss.png)         | ![TensorFlow Loss](wreadme/tf/cnn_cd_nb_e25_loss.png)         |
+| Prediction for "dog.jpg" is "dog" with confidence 97.6306%. ✅  | Prediction for dog.jpg is "dog" with confidence: 99.88%. ✅   |
+| Prediction for "cat.jpg" is "cat" with confidence 89.2549%. ✅  | Prediction for cat.jpg is "cat" with confidence: 85.96%. ✅   |
+
+---
+
+### MNIST
+
+| Model Component             | CNN-CPP Description                         | TensorFlow Description                      |
+| --------------------------- | ------------------------------------------- | ------------------------------------------- |
+| **Model Implementation**    | wmodels/cnn_mnist_e3.hpp                    | tfmodels/cnn_mnist_e3.py                    |
+| **Input Image Size**        | 28x28 pixels                                | 28x28 pixels                                |
+| **Convolutional Layer 1**   | 32 filters, 3x3 kernel, ReLU                | 32 filters, 3x3 kernel, ReLU                |
+| **Batch Normalization 1**   | Applied after Conv Layer 1                  | Applied after Conv Layer 1                  |
+| **MaxPooling Layer 1**      | 2x2 pool size                               | 2x2 pool size                               |
+| **Convolutional Layer 2**   | 64 filters, 3x3 kernel, ReLU                | 64 filters, 3x3 kernel, ReLU                |
+| **Batch Normalization 2**   | Applied after Conv Layer 2                  | Applied after Conv Layer 2                  |
+| **MaxPooling Layer 2**      | 2x2 pool size                               | 2x2 pool size                               |
+| **Flatten Layer**           | Converts 4D Tensor to 4D Tensor(2D)         | Converts 2D matrices to 1D vector           |
+| **Fully Connected Layer 1** | 128 units, ReLU                             | 128 units, ReLU                             |
+| **Batch Normalization 3**   | Applied after Fully Connected Layer 1       | Applied after Fully Connected Layer 1       |
+| **Fully Connected Layer 2** | 10 units, Softmax activation                | 10 units, Softmax activation                |
+| **Loss Function**           | Categorical Cross-Entropy                   | Categorical Cross-Entropy                   |
+| **Optimizer**               | Adam with gradient clipping (clipvalue=1.0) | Adam with gradient clipping (clipvalue=1.0) |
+| **Learning Rate**           | 0.00005                                     | 0.00005                                     |
+| **Batch Size**              | 80                                          | 80                                          |
+| **Epochs**                  | 3                                           | 3                                           |
+| **Batch Mode**              | Shuffle Only                                | Flow From Directory                         |
+| **Augmentation**            | None                                        | None                                        |
+
+The model is trained and validated on the MNIST dataset, which contains grayscale images of handwritten digits (0-9):
+
+- **Training Data**: 60,000 images of digits (0-9).
+- **Validation Data**: 10,000 images of digits (0-9).
+- **Single Prediction Data**: One image per digit (0-9) taken from the validation set for single predictions.
+
+| CNN-CPP                                                                      | TensorFlow                                                                |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| ![CNN-CPP Accuracy](wreadme/cnn_cpp/cnn_mnist_e3_accuracy.png)               | ![TensorFlow Accuracy](wreadme/tf/cnn_mnist_e3_accuracy.png)              |
+| ![CNN-CPP Loss](wreadme/cnn_cpp/cnn_mnist_e3_loss.png)                       | ![TensorFlow Loss](wreadme/tf/cnn_mnist_e3_loss.png)                      |
+| Prediction for "category_0.png" is "category_0" with confidence 77.6742%. ✅ | Prediction for category_0.png is "category_0" with confidence: 99.24%. ✅ |
+| Prediction for "category_1.png" is "category_1" with confidence 90.0234%. ✅ | Prediction for category_1.png is "category_1" with confidence: 99.64%. ✅ |
+| Prediction for "category_2.png" is "category_2" with confidence 87.8634%. ✅ | Prediction for category_2.png is "category_2" with confidence: 98.85%. ✅ |
+| Prediction for "category_3.png" is "category_3" with confidence 97.0475%. ✅ | Prediction for category_3.png is "category_3" with confidence: 99.94%. ✅ |
+| Prediction for "category_4.png" is "category_4" with confidence 84.2373%. ✅ | Prediction for category_4.png is "category_4" with confidence: 99.95%. ✅ |
+| Prediction for "category_5.png" is "category_5" with confidence 96.0565%. ✅ | Prediction for category_5.png is "category_5" with confidence: 99.93%. ✅ |
+| Prediction for "category_6.png" is "category_6" with confidence 89.9181%. ✅ | Prediction for category_6.png is "category_6" with confidence: 99.83%. ✅ |
+| Prediction for "category_7.png" is "category_7" with confidence 94.8519%. ✅ | Prediction for category_7.png is "category_7" with confidence: 99.49%. ✅ |
+| Prediction for "category_8.png" is "category_8" with confidence 74.2565%. ✅ | Prediction for category_8.png is "category_8" with confidence: 99.87%. ✅ |
+| Prediction for "category_9.png" is "category_9" with confidence 84.3253%. ✅ | Prediction for category_9.png is "category_9" with confidence: 99.72%. ✅ |
+
+### CIFAR-10
+
+| Model Component             | CNN-CPP Description                         | TensorFlow Description                      |
+| --------------------------- | ------------------------------------------- | ------------------------------------------- |
+| **Model Implementation**    | wmodels/cnn_cifar10_e10.hpp                 | tfmodels/cnn_cifar10_e10.py                 |
+| **Input Image Size**        | 32x32 pixels                                | 32x32 pixels                                |
+| **Convolutional Layer 1**   | 32 filters, 3x3 kernel, ReLU                | 32 filters, 3x3 kernel, ReLU                |
+| **MaxPooling Layer 1**      | 2x2 pool size                               | 2x2 pool size                               |
+| **Convolutional Layer 2**   | 64 filters, 3x3 kernel, ReLU                | 64 filters, 3x3 kernel, ReLU                |
+| **MaxPooling Layer 2**      | 2x2 pool size                               | 2x2 pool size                               |
+| **Convolutional Layer 3**   | 64 filters, 3x3 kernel, ReLU                | 64 filters, 3x3 kernel, ReLU                |
+| **MaxPooling Layer 3**      | 2x2 pool size                               | 2x2 pool size                               |
+| **Flatten Layer**           | Converts 4D Tensor to 4D Tensor(2D)         | Converts 2D matrices to 1D vector           |
+| **Fully Connected Layer 1** | 128 units, ReLU                             | 128 units, ReLU                             |
+| **Fully Connected Layer 2** | 10 units, Softmax activation                | 10 units, Softmax activation                |
+| **Loss Function**           | Categorical Cross-Entropy                   | Categorical Cross-Entropy                   |
+| **Optimizer**               | Adam with gradient clipping (clipvalue=1.0) | Adam with gradient clipping (clipvalue=1.0) |
+| **Learning Rate**           | 0.0005 (Step Decay)                         | 0.0005 (Step Decay)                         |
+| **Step Decay Params**       | Step Size: 1, Decay Factor: 0.7             | Step Size: 1, Decay Factor: 0.7             |
+| **Batch Size**              | 80                                          | 80                                          |
+| **Epochs**                  | 10                                          | 10                                          |
+| **Batch Mode**              | Shuffle Only                                | Flow From Directory                         |
+| **Augmentation**            | None                                        | None                                        |
+
+The model is trained and validated on the CIFAR-10 dataset, which contains 60,000 32x32 color images in 10 different
+classes:
+
+- **Training Data**: 50,000 images of 10 classes.
+- **Validation Data**: 10,000 images of 10 classes.
+- **Single Prediction Data**: 10 images, one per class, downloaded from Google Images for single predictions.
+
+| CNN-CPP                                                                      | TensorFlow                                                                |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| ![CNN-CPP Accuracy](wreadme/cnn_cpp/cnn_cifar10_e10_accuracy.png)            | ![TensorFlow Accuracy](wreadme/tf/cnn_cifar10_e10_accuracy.png)           |
+| ![CNN-CPP Loss](wreadme/cnn_cpp/cnn_cifar10_e10_loss.png)                    | ![TensorFlow Loss](wreadme/tf/cnn_cifar10_e10_loss.png)                   |
+| Prediction for "cat.jpg" is "cat" with confidence 42.5325%. ✅               | Prediction for cat.jpg is "cat" with confidence: 21.22%. ✅               |
+| Prediction for "dog.jpg" is "dog" with confidence 87.6412%. ✅               | Prediction for dog.jpg is "dog" with confidence: 66.92%. ✅               |
+| Prediction for "frog.jpg" is "frog" with confidence 91.7512%. ✅             | Prediction for frog.jpg is "frog" with confidence: 98.60%. ✅             |
+| Prediction for "deer.jpg" is "deer" with confidence 94.8323%. ✅             | Prediction for deer.jpg is "frog" with confidence: 76.39%. ❌             |
+| Prediction for "bird.jpg" is "bird" with confidence 94.2929%. ✅             | Prediction for bird.jpg is "bird" with confidence: 56.94%. ✅             |
+| Prediction for "ship.jpg" is "ship" with confidence 99.3474%. ✅             | Prediction for ship.jpg is "ship" with confidence: 96.62%. ✅             |
+| Prediction for "horse.jpg" is "horse" with confidence 77.5294%. ✅           | Prediction for horse.jpg is "horse" with confidence: 83.91%. ✅           |
+| Prediction for "truck.jpg" is "truck" with confidence 89.7804%. ✅           | Prediction for truck.jpg is "truck" with confidence: 90.47%. ✅           |
+| Prediction for "airplane.jpg" is "airplane" with confidence 99.8279%. ✅     | Prediction for airplane.jpg is "airplane" with confidence: 70.14%. ✅     |
+| Prediction for "automobile.jpg" is "automobile" with confidence 98.7025%. ✅ | Prediction for automobile.jpg is "automobile" with confidence: 95.32%. ✅ |
+
+### Cats Dogs ELRALES
+
+| Model Component             | CNN-CPP ELRALES                                | CNN-CPP ELRALES Early Stopping                 |
+| --------------------------- | ---------------------------------------------- | ---------------------------------------------- |
+| **Model Implementation**    | wmodels/cnn_cd_elrales_e25.hpp                 | wmodels/cnn_cd_elrales_e25.hpp                 |
+| **Input Image Size**        | 32x32 pixels                                   | 32x32 pixels                                   |
+| **Convolutional Layer 1**   | 32 filters, 3x3 kernel, ReLU activation        | 32 filters, 3x3 kernel, ReLU activation        |
+| **MaxPooling Layer 1**      | 2x2 pool size                                  | 2x2 pool size                                  |
+| **Convolutional Layer 2**   | 32 filters, 3x3 kernel, ReLU activation        | 32 filters, 3x3 kernel, ReLU activation        |
+| **MaxPooling Layer 2**      | 2x2 pool size                                  | 2x2 pool size                                  |
+| **Flatten Layer**           | Converts 4D Tensor to 4D Tensor(2D)            | Converts 4D Tensor to 4D Tensor(2D)            |
+| **Fully Connected Layer 1** | 128 units, ReLU activation                     | 128 units, ReLU activation                     |
+| **Fully Connected Layer 2** | 64 units, ReLU activation                      | 64 units, ReLU activation                      |
+| **Fully Connected Layer 3** | 32 units, ReLU activation                      | 32 units, ReLU activation                      |
+| **Output Layer**            | 1-unit Dense layer with Sigmoid                | 1-unit Dense layer with Sigmoid                |
+| **Loss Function**           | Binary Cross-Entropy                           | Binary Cross-Entropy                           |
+| **Optimizer**               | Adam with gradient clipping (clipvalue=1.0)    | Adam with gradient clipping (clipvalue=1.0)    |
+| **Learning Rate**           | 0.0001 (ELRALES)                               | 0.0001 (ELRALES)                               |
+| **ELRALES Params**          | LRC: 0.8, MSF: 3, MF: 20, TOL: 0.01            | LRC: 0.5, MSF: 3, MF: 20, TOL: 0               |
+| **Batch Size**              | 32                                             | 32                                             |
+| **Epochs**                  | 25                                             | 25                                             |
+| **Batch Mode**              | Uniform Distribution                           | Uniform Distribution                           |
+| **Augmentation**            | Zoom (0.2), Shear (0.2), Horizontal Flip (50%) | Zoom (0.2), Shear (0.2), Horizontal Flip (50%) |
+
+The model is trained and validated on a dataset containing images of cats and dogs:
+
+- **Training Data**: 4,000 images of dogs and 4,000 images of cats.
+- **Validation Data**: 1,000 images of dogs and 1,000 images of cats.
+- **Single Prediction Data**: 1 dog image and 1 cat image for single prediction tasks.
+
+| ELRALES                                                              | ELRALES Early Stopping                                                     |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| ![CNN-CPP Accuracy](wreadme/cnn_cpp/cnn_cd_elrales_e25_accuracy.png) | ![TensorFlow Accuracy](wreadme/cnn_cpp/cnn_cd_elrales_e25_es_accuracy.png) |
+| ![CNN-CPP Loss](wreadme/cnn_cpp/cnn_cd_elrales_e25_loss.png)         | ![TensorFlow Loss](wreadme/cnn_cpp/cnn_cd_elrales_e25_es_loss.png)         |
+| Prediction for "dog.jpg" is "dog" with confidence 99.9968%. ✅       | Prediction for "dog.jpg" is "dog" with confidence 99.9958%. ✅             |
+| Prediction for "cat.jpg" is "cat" with confidence 91.7796%. ✅       | Prediction for "cat.jpg" is "cat" with confidence 95.6531%. ✅             |
