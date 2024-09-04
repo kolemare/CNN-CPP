@@ -1,0 +1,4 @@
+epoch_num;training_accuracy;training_loss;validation_accuracy;validation_loss;elrales
+1;0.861983;0.612697;0.9148;0.423821;OFF
+2;0.9081;0.441679;0.9235;0.371921;OFF
+3;0.916233;0.397178;0.9298;0.343644;OFF
