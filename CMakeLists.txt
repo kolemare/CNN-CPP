@@ -7,10 +7,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set compiler-specific flags to suppress warnings
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    add_compile_options(-w) # Suppress all warnings for GCC/Clang
+    add_compile_options(-w)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    add_compile_options(/W0) # Suppress all warnings for MSVC
+    add_compile_options(/W0)
 endif()
+
+# Protobuf (required for ONNX protobuf)
+find_package(Protobuf REQUIRED)
+include_directories(external/onnx_proto)
 
 # Include Eigen
 add_subdirectory(external/eigen)
@@ -48,18 +52,30 @@ file(GLOB_RECURSE COMMON_SORCES "src/Common/*.cpp")
 file(GLOB_RECURSE IMAGE_SOURCES "src/Image/*.cpp")
 file(GLOB_RECURSE TP_SOURCES "src/ThreadPool/*.cpp")
 file(GLOB_RECURSE CNN_SOURCES "src/CNN/*.cpp")
-
-# Include main.cpp directly
-set(MAIN_SOURCE src/main.cpp)
-
-# Test files
 file(GLOB_RECURSE TEST_SOURCES "tests/*.cpp")
 
-# Create the executable for the main application
-add_executable(CNN_CPP ${COMMON_SORCES} ${IMAGE_SOURCES} ${TP_SOURCES} ${CNN_SOURCES} ${MAIN_SOURCE} ${TEST_SOURCES})
+set(MAIN_SOURCE src/main.cpp)
 
-# Link Eigen, GoogleTest, and OpenCV libraries
-target_link_libraries(CNN_CPP Eigen3::Eigen gtest gtest_main
+# ONNX protobuf sources (generated/placed in external/onnx_proto)
+set(ONNX_PROTO_SOURCES
+    external/onnx_proto/onnx-ml.pb.cc
+)
+
+add_executable(CNN_CPP
+    ${COMMON_SORCES}
+    ${IMAGE_SOURCES}
+    ${TP_SOURCES}
+    ${CNN_SOURCES}
+    ${MAIN_SOURCE}
+    ${TEST_SOURCES}
+    ${ONNX_PROTO_SOURCES}
+)
+
+target_link_libraries(CNN_CPP
+    Eigen3::Eigen
+    gtest
+    gtest_main
+    protobuf::libprotobuf
     ${INSTALL_DIR}/lib/libopencv_core.so
     ${INSTALL_DIR}/lib/libopencv_highgui.so
     ${INSTALL_DIR}/lib/libopencv_imgproc.so

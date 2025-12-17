@@ -42,6 +42,7 @@ SOFTWARE.
 #include "NNLogger.hpp"
 #include "ELRALES.hpp"
 #include "LearningDecay.hpp"
+#include "ModelSerializer.hpp"
 
 /**
  * @class NeuralNetwork
@@ -255,14 +256,16 @@ public:
 
     /**
      * @brief Sets the batch mode.
-     * 
+     *
      * @param mode The type of mode to use.
      *
      * This method sets the batch mode that will be used by BatchManager during training and evaluation.
      * Possible modes are UniformDistribution and ShuffleOnly
-     * 
+     *
      */
     void setBatchMode(BatchMode mode);
+
+    void saveModel(std::string path);
 
 private:
     std::vector<std::shared_ptr<Layer>> layers;        ///< Vector of layers in the network.
@@ -292,6 +295,7 @@ private:
     ELRALES_StateMachine elralesStateMachine = ELRALES_StateMachine::NORMAL; ///< Current state of the ELRALES state machine.
     std::vector<ELRALES_StateMachine> elralesStateMachineTimeLine{};         ///< Timeline of ELRALES state machine states.
     BatchMode batchMode = BatchMode::ShuffleOnly;                            ///< Batch Manager batch organization mode.
+    std::unique_ptr<BatchManager> batchManager;
 
     std::unique_ptr<LearningDecay> learningDecay;                  ///< Learning decay strategy.
     LearningDecayType learningDecayMode = LearningDecayType::NONE; ///< Type of learning decay used.

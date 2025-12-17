@@ -415,7 +415,12 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
 
     NNLogger::initializeCSV(outputCSV);
 
-    BatchManager batchManager(imageContainer, batch_size, BatchType::Training, this->batchMode);
+    batchManager = std::make_unique<BatchManager>(
+        imageContainer,
+        batch_size,
+        BatchType::Training,
+        this->batchMode);
+
     std::cout << "Training started..." << std::endl;
     auto start = std::chrono::steady_clock::now();
     double current_learning_rate = learning_rate;
@@ -433,13 +438,13 @@ void NeuralNetwork::train(const ImageContainer &imageContainer,
         }
         Eigen::Tensor<double, 4> batch_input;
         Eigen::Tensor<int, 2> batch_label;
-        int totalBatches = batchManager.getTotalBatches();
+        int totalBatches = batchManager->getTotalBatches();
         int batchCounter = 0;
         double total_epoch_loss = 0.0;
         int correct_predictions = 0;
         int num_epoch_samples = 0;
 
-        while (batchManager.getNextBatch(batch_input, batch_label))
+        while (batchManager->getNextBatch(batch_input, batch_label))
         {
             // Forward pass
             Eigen::Tensor<double, 4> predictions = forward(batch_input);
@@ -582,7 +587,11 @@ std::tuple<double, double> NeuralNetwork::evaluate(const ImageContainer &imageCo
     // Set the Batch Normalization mode to Inference
     BatchNormalizationLayer::setMode(BNMode::Inference);
 
-    BatchManager batchManager(imageContainer, imageContainer.getTestImages().size(), BatchType::Testing, this->batchMode);
+    batchManager = std::make_unique<BatchManager>(
+        imageContainer,
+        imageContainer.getTestImages().size(),
+        BatchType::Testing,
+        this->batchMode);
     Eigen::Tensor<double, 4> batch_input;
     Eigen::Tensor<int, 2> batch_label;
 
@@ -590,7 +599,7 @@ std::tuple<double, double> NeuralNetwork::evaluate(const ImageContainer &imageCo
     int correct_predictions = 0;
     int num_samples = 0;
 
-    while (batchManager.getNextBatch(batch_input, batch_label))
+    while (batchManager->getNextBatch(batch_input, batch_label))
     {
         Eigen::Tensor<double, 4> predictions = forward(batch_input);
 
@@ -808,4 +817,9 @@ void NeuralNetwork::hardReset()
     this->trained = false;
     this->currentDepth = 3;
     this->batchSize = 0;
+}
+
+void NeuralNetwork::saveModel(std::string path)
+{
+    ModelSerializer::exportOnnx(path, layers, this->batchManager->getCategories());
 }

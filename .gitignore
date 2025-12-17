@@ -53,6 +53,10 @@ Thumbs.db
 /logs/*
 !/logs/.gitkeep
 
+# Ignore the torchtest directory
+/torchtest/*
+!/torchtest/testmodel.py
+
 # Ignore the plots directory
 /plots/*
 !/plots/.gitkeep

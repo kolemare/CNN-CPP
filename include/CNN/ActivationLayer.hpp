@@ -103,6 +103,8 @@ public:
      */
     double getAlpha() const;
 
+    ActivationType getType() const { return type; }
+
 private:
     ActivationType type; ///< The type of activation function used.
     double alpha;        ///< Alpha parameter for Leaky ReLU and ELU.

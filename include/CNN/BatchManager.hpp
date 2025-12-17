@@ -139,6 +139,8 @@ public:
      */
     size_t getTotalBatches() const;
 
+    const std::vector<std::string> &getCategories() const;
+
 private:
     const ImageContainer &imageContainer;                                                  ///< The container with images and labels.
     int batchSize;                                                                         ///< The size of each batch.
