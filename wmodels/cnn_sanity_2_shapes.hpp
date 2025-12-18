@@ -60,4 +60,7 @@ void cnn_sanity_2_shapes()
     int batch_size = 10;
     cnn.train(container, epochs, batch_size);
     cnn.makeSinglePredictions(container);
+
+    const std::string onnx_path = "torchtest/model.onnx";
+    cnn.saveModel(onnx_path);
 }

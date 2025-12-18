@@ -67,6 +67,11 @@ void NeuralNetwork::setProgressLevel(ProgressLevel level)
     this->hardReset();
 }
 
+void NeuralNetwork::setBatchSize(const int size)
+{
+    this->batchSize = size;
+}
+
 void NeuralNetwork::addConvolutionLayer(int filters,
                                         int kernel_size,
                                         int stride,
@@ -166,7 +171,8 @@ void NeuralNetwork::setLossFunction(LossType type)
 }
 
 void NeuralNetwork::compile(OptimizerType optimizerType,
-                            const std::unordered_map<std::string, double> &optimizer_params)
+                            const std::unordered_map<std::string, double> &optimizer_params,
+                            bool initializeWeights)
 {
     std::unordered_map<std::string, double> default_params;
     BNTarget batchNormTarget = BNTarget::None;
@@ -200,7 +206,7 @@ void NeuralNetwork::compile(OptimizerType optimizerType,
     int width = inputWidth;
     int input_size = -1;
 
-    if (!lossFunction)
+    if (!lossFunction && initializeWeights)
     {
         // Loss function must be set before compilation
         throw std::runtime_error("Loss function must be set before compiling.");
@@ -227,7 +233,7 @@ void NeuralNetwork::compile(OptimizerType optimizerType,
     {
         if (auto conv_layer = dynamic_cast<ConvolutionLayer *>(layers[i].get()))
         {
-            conv_layer->setInputDepth(currentDepth);
+            conv_layer->setInputDepth(currentDepth, initializeWeights);
             currentDepth = conv_layer->getFilters();
             height = (height - conv_layer->getKernelSize() + 2 * conv_layer->getPadding()) / conv_layer->getStride() + 1;
             width = (width - conv_layer->getKernelSize() + 2 * conv_layer->getPadding()) / conv_layer->getStride() + 1;
@@ -250,7 +256,7 @@ void NeuralNetwork::compile(OptimizerType optimizerType,
             {
                 throw std::runtime_error("Input size for FullyConnectedLayer cannot be determined.");
             }
-            fc_layer->setInputSize(input_size);
+            fc_layer->setInputSize(input_size, initializeWeights);
             input_size = fc_layer->getOutputSize();
             fc_layer->setOptimizer(Optimizer::create(optimizerType, default_params));
             batchNormTarget = BNTarget::DenseLayer;
@@ -821,5 +827,31 @@ void NeuralNetwork::hardReset()
 
 void NeuralNetwork::saveModel(std::string path)
 {
-    ModelSerializer::exportOnnx(path, layers, this->batchManager->getCategories());
+    std::vector<std::string> categories;
+    if (this->batchManager)
+    {
+        categories = this->batchManager->getCategories();
+    }
+
+    ModelSerializer::exportOnnx(path, layers, categories);
+}
+
+void NeuralNetwork::loadModel(const std::string &onnxPath,
+                              OptimizerType optimizerType,
+                              const std::unordered_map<std::string, double> &optimizer_params)
+{
+    std::vector<std::string> classNames;
+    ModelSerializer::importOnnx(onnxPath, layers, classNames);
+
+    flattenAdded = false;
+    for (const auto &l : layers)
+        if (dynamic_cast<FlattenLayer *>(l.get()))
+            flattenAdded = true;
+
+    // To implement
+    this->batchManager->updateClassNames(classNames);
+
+    compile(optimizerType, optimizer_params, false);
+
+    trained = true;
 }

@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+#include <unordered_map>
 
 // Layers
 #include "Layer.hpp"
@@ -34,6 +35,8 @@ namespace
     {
         return std::string(base) + std::to_string(idx);
     }
+
+    // ----------------------- EXPORT HELPERS -----------------------
 
     onnx::TensorProto makeTensor1f(const std::string &name, const Eigen::Tensor<double, 1> &t)
     {
@@ -111,7 +114,8 @@ namespace
         shape->add_dim()->set_dim_param("W");
     }
 
-    void addModelOutput(onnx::GraphProto &g, const std::string &name)
+    void addModelOutput(onnx::GraphProto &g,
+                        const std::string &name)
     {
         onnx::ValueInfoProto *v = g.add_output();
         v->set_name(name);
@@ -186,7 +190,266 @@ namespace
         perm->add_ints(2);
         perm->add_ints(1);
     }
+
+    // ----------------------- IMPORT HELPERS -----------------------
+
+    void readModelFromFile(onnx::ModelProto &model, const std::string &path)
+    {
+        std::ifstream ifs(path, std::ios::binary);
+        if (!ifs)
+            throw std::runtime_error("Failed to open ONNX file for import: " + path);
+
+        google::protobuf::io::IstreamInputStream in(&ifs);
+        if (!model.ParseFromZeroCopyStream(&in))
+            throw std::runtime_error("Failed to parse ONNX model: " + path);
+    }
+
+    std::unordered_map<std::string, onnx::TensorProto> buildInitializerMap(const onnx::GraphProto &g)
+    {
+        std::unordered_map<std::string, onnx::TensorProto> m;
+        m.reserve(static_cast<size_t>(g.initializer_size()));
+        for (const auto &tp : g.initializer())
+            m.emplace(tp.name(), tp);
+        return m;
+    }
+
+    const onnx::TensorProto &getInitOrThrow(const std::unordered_map<std::string, onnx::TensorProto> &m,
+                                            const std::string &name)
+    {
+        auto it = m.find(name);
+        if (it == m.end())
+            throw std::runtime_error("importOnnx: missing initializer: " + name);
+        return it->second;
+    }
+
+    std::vector<int64_t> dimsOf(const onnx::TensorProto &tp)
+    {
+        std::vector<int64_t> d;
+        d.reserve(static_cast<size_t>(tp.dims_size()));
+        for (int i = 0; i < tp.dims_size(); ++i)
+            d.push_back(tp.dims(i));
+        return d;
+    }
+
+    // Your exporter writes float_data, so we read float_data primarily.
+    inline float fAt(const onnx::TensorProto &tp, int idx)
+    {
+        return tp.float_data(idx);
+    }
+
+    Eigen::Tensor<double, 1> tensor1_from_tp(const onnx::TensorProto &tp)
+    {
+        auto d = dimsOf(tp);
+        if (d.size() != 1)
+            throw std::runtime_error("importOnnx: expected 1D tensor initializer: " + tp.name());
+
+        const int n = static_cast<int>(d[0]);
+        if (tp.float_data_size() != n)
+            throw std::runtime_error("importOnnx: bad float_data_size for 1D tensor: " + tp.name());
+
+        Eigen::Tensor<double, 1> t(n);
+        for (int i = 0; i < n; ++i)
+            t(i) = static_cast<double>(fAt(tp, i));
+        return t;
+    }
+
+    // IMPORTANT: recreate in the exact nested-loop order used in makeTensor4f.
+    Eigen::Tensor<double, 4> tensor4_from_tp(const onnx::TensorProto &tp)
+    {
+        auto d = dimsOf(tp);
+        if (d.size() != 4)
+            throw std::runtime_error("importOnnx: expected 4D tensor initializer: " + tp.name());
+
+        const int d0 = static_cast<int>(d[0]);
+        const int d1 = static_cast<int>(d[1]);
+        const int d2 = static_cast<int>(d[2]);
+        const int d3 = static_cast<int>(d[3]);
+
+        const int64_t total = static_cast<int64_t>(d0) * d1 * d2 * d3;
+        if (tp.float_data_size() != total)
+            throw std::runtime_error("importOnnx: bad float_data_size for 4D tensor: " + tp.name());
+
+        Eigen::Tensor<double, 4> t(d0, d1, d2, d3);
+
+        int idx = 0;
+        for (int i0 = 0; i0 < d0; ++i0)
+            for (int i1 = 0; i1 < d1; ++i1)
+                for (int i2 = 0; i2 < d2; ++i2)
+                    for (int i3 = 0; i3 < d3; ++i3, ++idx)
+                        t(i0, i1, i2, i3) = static_cast<double>(fAt(tp, idx));
+
+        return t;
+    }
+
+    // FC weights are stored in ONNX as 2D [out,in] by makeFCWeight2f.
+    Eigen::Tensor<double, 4> fc_w4_from_tp_2d(const onnx::TensorProto &tp)
+    {
+        auto d = dimsOf(tp);
+        if (d.size() != 2)
+            throw std::runtime_error("importOnnx: expected 2D FC weight tensor: " + tp.name());
+
+        const int out = static_cast<int>(d[0]);
+        const int in = static_cast<int>(d[1]);
+
+        const int64_t total = static_cast<int64_t>(out) * in;
+        if (tp.float_data_size() != total)
+            throw std::runtime_error("importOnnx: bad float_data_size for FC 2D weight: " + tp.name());
+
+        Eigen::Tensor<double, 4> w4(out, 1, 1, in);
+
+        int idx = 0;
+        for (int o = 0; o < out; ++o)
+            for (int i = 0; i < in; ++i, ++idx)
+                w4(o, 0, 0, i) = static_cast<double>(fAt(tp, idx));
+
+        return w4;
+    }
+
+    std::vector<int> getIntsAttr(const onnx::NodeProto &n, const std::string &name)
+    {
+        for (const auto &a : n.attribute())
+        {
+            if (a.name() == name && a.type() == onnx::AttributeProto_AttributeType_INTS)
+            {
+                std::vector<int> out;
+                out.reserve(static_cast<size_t>(a.ints_size()));
+                for (int i = 0; i < a.ints_size(); ++i)
+                    out.push_back(static_cast<int>(a.ints(i)));
+                return out;
+            }
+        }
+        return {};
+    }
+
+    float getFloatAttr(const onnx::NodeProto &n, const std::string &name, float def)
+    {
+        for (const auto &a : n.attribute())
+        {
+            if (a.name() == name && a.type() == onnx::AttributeProto_AttributeType_FLOAT)
+                return a.f();
+        }
+        return def;
+    }
+
+    int getIntAttr(const onnx::NodeProto &n, const std::string &name, int def)
+    {
+        for (const auto &a : n.attribute())
+        {
+            if (a.name() == name && a.type() == onnx::AttributeProto_AttributeType_INT)
+                return static_cast<int>(a.i());
+        }
+        return def;
+    }
+
+    bool isExportTransposeNCHW_to_NWHC(const onnx::NodeProto &n)
+    {
+        if (n.op_type() != "Transpose")
+            return false;
+        auto perm = getIntsAttr(n, "perm");
+        return (perm.size() == 4 && perm[0] == 0 && perm[1] == 3 && perm[2] == 2 && perm[3] == 1);
+    }
+
+    std::vector<std::string> readClassMappingJsonNextToOnnx(const std::string &onnxPath)
+    {
+        namespace fs = std::filesystem;
+        const fs::path jsonP = fs::path(onnxPath).parent_path() / "class_mapping.json";
+
+        std::vector<std::string> out;
+        if (!fs::exists(jsonP))
+            return out; // optional file
+
+        std::ifstream ifs(jsonP.string());
+        if (!ifs)
+            throw std::runtime_error("Failed to open: " + jsonP.string());
+
+        std::string s;
+        s.assign(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
+
+        struct Pair
+        {
+            std::string name;
+            int index;
+        };
+        std::vector<Pair> pairs;
+
+        size_t i = 0;
+        while (i < s.size())
+        {
+            while (i < s.size() && s[i] != '"')
+                ++i;
+            if (i >= s.size())
+                break;
+
+            size_t j = i + 1;
+            while (j < s.size() && s[j] != '"')
+                ++j;
+            if (j >= s.size())
+                break;
+
+            std::string name = s.substr(i + 1, j - (i + 1));
+            i = j + 1;
+
+            while (i < s.size() && s[i] != ':')
+                ++i;
+            if (i >= s.size())
+                break;
+            ++i;
+
+            while (i < s.size() && std::isspace(static_cast<unsigned char>(s[i])))
+                ++i;
+
+            bool neg = false;
+            if (i < s.size() && s[i] == '-')
+            {
+                neg = true;
+                ++i;
+            }
+
+            if (i >= s.size() || !std::isdigit(static_cast<unsigned char>(s[i])))
+            {
+                continue;
+            }
+
+            int val = 0;
+            while (i < s.size() && std::isdigit(static_cast<unsigned char>(s[i])))
+            {
+                val = val * 10 + (s[i] - '0');
+                ++i;
+            }
+            if (neg)
+                val = -val;
+
+            if (val >= 0)
+                pairs.push_back({name, val});
+        }
+
+        int maxIdx = -1;
+        for (const auto &p : pairs)
+            if (p.index > maxIdx)
+                maxIdx = p.index;
+
+        if (maxIdx < 0)
+            return {};
+
+        out.assign(static_cast<size_t>(maxIdx + 1), std::string{});
+        for (const auto &p : pairs)
+        {
+            if (p.index >= 0 && p.index < static_cast<int>(out.size()))
+                out[static_cast<size_t>(p.index)] = p.name;
+        }
+
+        for (size_t k = 0; k < out.size(); ++k)
+        {
+            if (out[k].empty())
+                throw std::runtime_error("class_mapping.json has missing index: " + std::to_string(k));
+        }
+
+        return out;
+    }
+
 } // namespace
+
+// ======================= EXPORT =======================
 
 void ModelSerializer::exportOnnx(const std::string &onnxPath,
                                  const std::vector<std::shared_ptr<Layer>> &layers,
@@ -522,4 +785,217 @@ void ModelSerializer::exportOnnx(const std::string &onnxPath,
     writeClassMappingJsonNextToOnnx(onnxPath, classNames);
 
     std::cout << "ONNX export finished: " << onnxPath << "\n";
+}
+
+void ModelSerializer::importOnnx(const std::string &onnxPath,
+                                 std::vector<std::shared_ptr<Layer>> &layers,
+                                 std::vector<std::string> &classNamesOut)
+{
+    layers.clear();
+    classNamesOut.clear();
+
+    onnx::ModelProto model;
+    readModelFromFile(model, onnxPath);
+
+    const onnx::GraphProto &g = model.graph();
+    const auto inits = buildInitializerMap(g);
+
+    bool currentIs2D = false;
+
+    for (int ni = 0; ni < g.node_size(); ++ni)
+    {
+        const onnx::NodeProto &n = g.node(ni);
+
+        if (isExportTransposeNCHW_to_NWHC(n))
+            continue;
+
+        if (n.op_type() == "Conv")
+        {
+            if (n.input_size() < 3)
+                throw std::runtime_error("importOnnx: Conv node missing inputs.");
+
+            const auto &wTp = getInitOrThrow(inits, n.input(1));
+            const auto &bTp = getInitOrThrow(inits, n.input(2));
+
+            // Reconstruct tensors
+            Eigen::Tensor<double, 4> kernels = tensor4_from_tp(wTp);
+            Eigen::Tensor<double, 1> biases = tensor1_from_tp(bTp);
+
+            // Attributes
+            const auto strides = getIntsAttr(n, "strides");
+            const int stride = strides.empty() ? 1 : strides[0];
+
+            const auto pads = getIntsAttr(n, "pads");
+            const int padding = pads.empty() ? 0 : pads[0];
+
+            const auto kshape = getIntsAttr(n, "kernel_shape");
+            const int kernel_size = kshape.empty() ? static_cast<int>(kernels.dimension(2)) : kshape[0];
+
+            auto conv = std::make_shared<ConvolutionLayer>(
+                static_cast<int>(kernels.dimension(0)),
+                kernel_size,
+                stride,
+                padding,
+                ConvKernelInitialization::HE,
+                ConvBiasInitialization::ZERO);
+
+            conv->setInputDepth(static_cast<int>(kernels.dimension(1)), false);
+            conv->setKernels(kernels);
+            conv->setBiases(biases);
+
+            layers.push_back(conv);
+            currentIs2D = false;
+            continue;
+        }
+
+        if (n.op_type() == "BatchNormalization")
+        {
+            // Inputs: [X, scale(gamma), bias(beta), mean, var]
+            if (n.input_size() < 5)
+                throw std::runtime_error("importOnnx: BatchNormalization node missing inputs.");
+
+            const auto &scaleTp = getInitOrThrow(inits, n.input(1));
+            const auto &biasTp = getInitOrThrow(inits, n.input(2));
+
+            Eigen::Tensor<double, 1> gamma = tensor1_from_tp(scaleTp);
+            Eigen::Tensor<double, 1> beta = tensor1_from_tp(biasTp);
+
+            const double eps = static_cast<double>(getFloatAttr(n, "epsilon", 1e-5f));
+            const double mom = static_cast<double>(getFloatAttr(n, "momentum", 0.9f));
+
+            auto bn = std::make_shared<BatchNormalizationLayer>(eps, mom);
+
+            if (layers.empty())
+                throw std::runtime_error("importOnnx: BN cannot be first layer.");
+
+            if (dynamic_cast<ConvolutionLayer *>(layers.back().get()))
+                bn->setTarget(BNTarget::ConvolutionLayer);
+            else if (dynamic_cast<FullyConnectedLayer *>(layers.back().get()))
+                bn->setTarget(BNTarget::DenseLayer);
+            else
+                throw std::runtime_error("importOnnx: BN after unsupported layer type.");
+
+            bn->setGamma(gamma);
+            bn->setBeta(beta);
+
+            layers.push_back(bn);
+            continue;
+        }
+
+        if (n.op_type() == "MaxPool")
+        {
+            const auto kshape = getIntsAttr(n, "kernel_shape");
+            const auto strides = getIntsAttr(n, "strides");
+
+            const int pool_size = kshape.empty() ? 2 : kshape[0];
+            const int stride = strides.empty() ? pool_size : strides[0];
+
+            layers.push_back(std::make_shared<MaxPoolingLayer>(pool_size, stride));
+            currentIs2D = false;
+            continue;
+        }
+
+        if (n.op_type() == "AveragePool")
+        {
+            const auto kshape = getIntsAttr(n, "kernel_shape");
+            const auto strides = getIntsAttr(n, "strides");
+
+            const int pool_size = kshape.empty() ? 2 : kshape[0];
+            const int stride = strides.empty() ? pool_size : strides[0];
+
+            layers.push_back(std::make_shared<AveragePoolingLayer>(pool_size, stride));
+            currentIs2D = false;
+            continue;
+        }
+
+        if (n.op_type() == "Flatten")
+        {
+            layers.push_back(std::make_shared<FlattenLayer>());
+            currentIs2D = true;
+            continue;
+        }
+
+        // Activations
+        if (n.op_type() == "Relu")
+        {
+            layers.push_back(std::make_shared<ActivationLayer>(ActivationType::RELU));
+            continue;
+        }
+        if (n.op_type() == "LeakyRelu")
+        {
+            auto act = std::make_shared<ActivationLayer>(ActivationType::LEAKY_RELU);
+            layers.push_back(act);
+            continue;
+        }
+        if (n.op_type() == "Sigmoid")
+        {
+            layers.push_back(std::make_shared<ActivationLayer>(ActivationType::SIGMOID));
+            continue;
+        }
+        if (n.op_type() == "Tanh")
+        {
+            layers.push_back(std::make_shared<ActivationLayer>(ActivationType::TANH));
+            continue;
+        }
+        if (n.op_type() == "Elu")
+        {
+            auto act = std::make_shared<ActivationLayer>(ActivationType::ELU);
+            layers.push_back(act);
+            continue;
+        }
+        if (n.op_type() == "Softmax")
+        {
+            layers.push_back(std::make_shared<ActivationLayer>(ActivationType::SOFTMAX));
+            continue;
+        }
+
+        if (n.op_type() == "Gemm")
+        {
+            // Inputs: [A, W, B]
+            if (n.input_size() < 3)
+                throw std::runtime_error("importOnnx: Gemm node missing inputs.");
+
+            const auto &wTp = getInitOrThrow(inits, n.input(1));
+            const auto &bTp = getInitOrThrow(inits, n.input(2));
+
+            const int transB = getIntAttr(n, "transB", 1);
+            if (transB != 1)
+                throw std::runtime_error("importOnnx: Gemm transB != 1 not supported for CNN-CPP export.");
+
+            Eigen::Tensor<double, 4> w4 = fc_w4_from_tp_2d(wTp);
+            Eigen::Tensor<double, 1> b1 = tensor1_from_tp(bTp);
+
+            const int outFeatures = static_cast<int>(w4.dimension(0));
+            const int inFeatures = static_cast<int>(w4.dimension(3));
+
+            auto fc = std::make_shared<FullyConnectedLayer>(
+                outFeatures,
+                DenseWeightInitialization::XAVIER,
+                DenseBiasInitialization::ZERO);
+
+            fc->setInputSize(inFeatures, false);
+
+            fc->setWeights(w4);
+            fc->setBiases(b1);
+
+            layers.push_back(fc);
+            currentIs2D = true;
+            continue;
+        }
+
+        throw std::runtime_error("importOnnx: unsupported op_type encountered: " + n.op_type());
+    }
+
+    if (layers.empty())
+        throw std::runtime_error("importOnnx: produced empty layer list (bad/unsupported model?).");
+
+    classNamesOut = readClassMappingJsonNextToOnnx(onnxPath);
+
+    std::cout << "ONNX import finished: " << onnxPath << "\n";
+    if (!classNamesOut.empty())
+        std::cout << "Loaded class mapping (" << classNamesOut.size() << " classes) from class_mapping.json\n";
+    else
+        std::cout << "No class_mapping.json found next to model (will fall back to dataset label order).\n";
+
+    std::cout << "ONNX import finished: " << onnxPath << "\n";
 }

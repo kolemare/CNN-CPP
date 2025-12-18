@@ -449,3 +449,26 @@ const std::vector<std::string> &BatchManager::getCategories() const
 {
     return categories;
 }
+
+void BatchManager::updateClassNames(const std::vector<std::string> &classNames)
+{
+    if (classNames.empty())
+    {
+        return;
+    }
+
+    categories.clear();
+
+    for (const auto &name : classNames)
+    {
+        categories.emplace_back(name.c_str());
+    }
+
+    categoryToIndex.clear();
+    categoryToIndex.reserve(categories.size());
+
+    for (size_t i = 0; i < categories.size(); ++i)
+    {
+        categoryToIndex[categories[i]] = static_cast<int>(i);
+    }
+}

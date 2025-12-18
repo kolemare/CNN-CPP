@@ -69,4 +69,7 @@ void cnn_cd_elrales_e25()
     double learning_rate = 0.0001;
     cnn.train(container, epochs, batch_size, learning_rate);
     cnn.makeSinglePredictions(container);
+
+    const std::string onnx_path = "torchtest/model.onnx";
+    cnn.saveModel(onnx_path);
 }
