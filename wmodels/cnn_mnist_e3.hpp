@@ -53,6 +53,6 @@ void cnn_mnist_e3()
     cnn.train(container, epochs, batch_size, learning_rate);
     cnn.makeSinglePredictions(container);
 
-    const std::string onnx_path = "torchtest/model.onnx";
+    const std::string onnx_path = "examples/torchimport/model.onnx";
     cnn.saveModel(onnx_path);
 }

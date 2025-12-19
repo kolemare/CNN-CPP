@@ -205,6 +205,13 @@ public:
      */
     std::tuple<double, double> evaluate(const ImageContainer &imageContainer);
 
+    std::unordered_map<std::string, double> thoroughEvaluation(const ImageContainer &imageContainer);
+
+    void thoroughEvaluationToJson(
+        const ImageContainer &imageContainer,
+        const std::string &jsonPath,
+        bool pretty = true);
+
     /**
      * @brief Makes predictions on single images and outputs the results.
      *
@@ -303,6 +310,7 @@ private:
     std::vector<ELRALES_StateMachine> elralesStateMachineTimeLine{};         ///< Timeline of ELRALES state machine states.
     BatchMode batchMode = BatchMode::ShuffleOnly;                            ///< Batch Manager batch organization mode.
     std::unique_ptr<BatchManager> batchManager;
+    LossType lossType;
 
     std::unique_ptr<LearningDecay> learningDecay;                  ///< Learning decay strategy.
     LearningDecayType learningDecayMode = LearningDecayType::NONE; ///< Type of learning decay used.
@@ -324,6 +332,8 @@ private:
      *
      */
     void hardReset();
+
+    static std::string jsonEscape(const std::string &s);
 };
 
 #endif // NEURALNETWORK_HPP

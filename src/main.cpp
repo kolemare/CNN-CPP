@@ -36,6 +36,7 @@ SOFTWARE.
 #include "cnn_sanity_5_colors.hpp"
 #include "cnn_sanity_5_shapes.hpp"
 #include "cnn_load_model.hpp"
+#include "cnn_evaluate_model.hpp"
 
 #include "ImageLoader.hpp"
 #include "ImageAugmentor.hpp"
@@ -75,6 +76,7 @@ int main(int argc, char **argv)
             // cnn_sanity_5_shapes();
             // cnn_example();
             cnn_load_model();
+            // cnn_evaluate_model();
         }
         catch (const std::exception &e)
         {

@@ -38,6 +38,7 @@ NeuralNetwork::NeuralNetwork()
     this->logLevel = LogLevel::None;
     this->progressLevel = ProgressLevel::None;
     this->batchMode = BatchMode::ShuffleOnly;
+    this->lossType = LossType::MEAN_SQUARED_ERROR;
     outputCSV = "logs/cnn.csv";
 }
 
@@ -162,6 +163,7 @@ void NeuralNetwork::addBatchNormalizationLayer(double epsilon,
 
 void NeuralNetwork::setLossFunction(LossType type)
 {
+    this->lossType = type;
     lossFunction = LossFunction::create(type);
     if (LogLevel::LayerSummary == logLevel)
     {
@@ -593,7 +595,7 @@ std::tuple<double, double> NeuralNetwork::evaluate(const ImageContainer &imageCo
     // Set the Batch Normalization mode to Inference
     BatchNormalizationLayer::setMode(BNMode::Inference);
 
-    batchManager = std::make_unique<BatchManager>(
+    BatchManager batchManager = BatchManager(
         imageContainer,
         imageContainer.getTestImages().size(),
         BatchType::Testing,
@@ -605,7 +607,7 @@ std::tuple<double, double> NeuralNetwork::evaluate(const ImageContainer &imageCo
     int correct_predictions = 0;
     int num_samples = 0;
 
-    while (batchManager->getNextBatch(batch_input, batch_label))
+    while (batchManager.getNextBatch(batch_input, batch_label))
     {
         Eigen::Tensor<double, 4> predictions = forward(batch_input);
 
@@ -660,6 +662,452 @@ std::tuple<double, double> NeuralNetwork::evaluate(const ImageContainer &imageCo
     double accuracy = static_cast<double>(correct_predictions) / num_samples;
 
     return std::make_tuple(accuracy, average_loss);
+}
+
+std::unordered_map<std::string, double>
+NeuralNetwork::thoroughEvaluation(const ImageContainer &imageContainer)
+{
+    if (!compiled)
+        throw std::runtime_error("Network must be compiled before evaluation.");
+    if (!lossFunction)
+        throw std::runtime_error("Loss function must be set before evaluation.");
+
+    BatchNormalizationLayer::setMode(BNMode::Inference);
+
+    batchManager = std::make_unique<BatchManager>(
+        imageContainer,
+        static_cast<int>(imageContainer.getTestImages().size()),
+        BatchType::Testing,
+        this->batchMode);
+
+    Eigen::Tensor<double, 4> batch_input;
+    Eigen::Tensor<int, 2> batch_label;
+
+    double total_loss = 0.0;
+    int64_t num_samples = 0;
+    int64_t correct = 0;
+
+    bool confusionInit = false;
+    int C = 0;
+    Eigen::Matrix<long long, Eigen::Dynamic, Eigen::Dynamic> confusion;
+
+    while (batchManager->getNextBatch(batch_input, batch_label))
+    {
+        Eigen::Tensor<double, 4> preds = forward(batch_input);
+
+        const int N = static_cast<int>(preds.dimension(0));
+        const int predC = static_cast<int>(preds.dimension(3));
+        const int labelC = static_cast<int>(batch_label.dimension(1));
+
+        if (N <= 0)
+            continue;
+
+        // ---------- CONFUSION MATRIX INIT ----------
+        if (!confusionInit)
+        {
+            C = labelC;
+
+            // If you're doing BCE with [N,1] labels, C should be 2 for metrics.
+            // But in your pipeline BatchManager produces one-hot => labelC==2, so this is normally fine.
+            if (C <= 0)
+                throw std::runtime_error("thoroughEvaluation: invalid class count from labels.");
+
+            confusion = Eigen::Matrix<long long, Eigen::Dynamic, Eigen::Dynamic>::Zero(C, C);
+            confusionInit = true;
+        }
+
+        // ---------- LOSS (branch by lossType) ----------
+        double batch_loss = 0.0;
+
+        if (lossType == LossType::CATEGORICAL_CROSS_ENTROPY)
+        {
+            // Your CCE expects:
+            // preds: [N,1,1,C], targets: [N,C] one-hot
+            batch_loss = lossFunction->compute(preds, batch_label);
+        }
+        else if (lossType == LossType::BINARY_CROSS_ENTROPY)
+        {
+            // Your BCE expects:
+            // preds: [N,1,1,1], targets: [N,1] with values 0/1
+
+            if (predC != 1)
+            {
+                throw std::runtime_error(
+                    "thoroughEvaluation: BCE selected but model output predC != 1. "
+                    "Binary head should output [N,1,1,1].");
+            }
+
+            // Case A: batch_label is already [N,1]
+            if (labelC == 1)
+            {
+                batch_loss = lossFunction->compute(preds, batch_label);
+            }
+            // Case B: batch_label is one-hot [N,2] (your BatchManager does this)
+            else if (labelC == 2)
+            {
+                Eigen::Tensor<int, 2> bceTargets(N, 1);
+
+                // IMPORTANT: define what "positive" means.
+                // With one-hot, simplest convention:
+                // class 0 => y=0, class 1 => y=1
+                // (this matches your predicted_label thresholding which returns 0 or 1)
+                for (int i = 0; i < N; ++i)
+                {
+                    // argmax on [2] -> {0,1}
+                    int best = 0;
+                    int bestVal = batch_label(i, 0);
+                    for (int j = 1; j < 2; ++j)
+                    {
+                        const int v = batch_label(i, j);
+                        if (v > bestVal)
+                        {
+                            bestVal = v;
+                            best = j;
+                        }
+                    }
+                    bceTargets(i, 0) = best; // 0 or 1
+                }
+
+                batch_loss = lossFunction->compute(preds, bceTargets); // uses your original BCE implementation
+            }
+            else
+            {
+                throw std::runtime_error(
+                    "thoroughEvaluation: BCE selected but labelC is neither 1 nor 2.");
+            }
+        }
+        else
+        {
+            throw std::runtime_error("thoroughEvaluation: Unsupported lossType for this evaluation.");
+        }
+
+        total_loss += batch_loss * static_cast<double>(N);
+
+        // ---------- METRICS UPDATE (confusion + accuracy) ----------
+        for (int i = 0; i < N; ++i)
+        {
+            // TRUE LABEL:
+            // - if one-hot: argmax
+            // - if [N,1] binary: use 0/1 directly
+            int true_label = 0;
+            if (labelC == 1)
+            {
+                true_label = batch_label(i, 0);
+            }
+            else
+            {
+                int best = 0;
+                int bestVal = batch_label(i, 0);
+                for (int j = 1; j < C; ++j)
+                {
+                    const int v = batch_label(i, j);
+                    if (v > bestVal)
+                    {
+                        bestVal = v;
+                        best = j;
+                    }
+                }
+                true_label = best;
+            }
+
+            // PRED LABEL:
+            int predicted_label = 0;
+            if (predC == 1)
+            {
+                predicted_label = (preds(i, 0, 0, 0) >= 0.5) ? 1 : 0;
+            }
+            else
+            {
+                int best = 0;
+                double bestVal = preds(i, 0, 0, 0);
+                for (int j = 1; j < predC; ++j)
+                {
+                    const double v = preds(i, 0, 0, j);
+                    if (v > bestVal)
+                    {
+                        bestVal = v;
+                        best = j;
+                    }
+                }
+                predicted_label = best;
+            }
+
+            if (predicted_label == true_label)
+                ++correct;
+
+            if (true_label >= 0 && true_label < C &&
+                predicted_label >= 0 && predicted_label < C)
+            {
+                confusion(true_label, predicted_label)++;
+            }
+
+            ++num_samples;
+        }
+    }
+
+    if (!confusionInit || num_samples == 0)
+        throw std::runtime_error("thoroughEvaluation: no samples were evaluated.");
+
+    const double accuracy = static_cast<double>(correct) / static_cast<double>(num_samples);
+    const double avg_loss = total_loss / static_cast<double>(num_samples);
+
+    // ---------- PER-CLASS PRECISION/RECALL/F1 ----------
+    std::vector<double> precision(C, 0.0), recall(C, 0.0), f1(C, 0.0), support(C, 0.0);
+
+    long long totalTP = 0, totalFP = 0, totalFN = 0;
+
+    for (int k = 0; k < C; ++k)
+    {
+        const long long TP = confusion(k, k);
+
+        long long rowSum = 0;
+        long long colSum = 0;
+        for (int j = 0; j < C; ++j)
+        {
+            rowSum += confusion(k, j); // true=k predicted=j
+            colSum += confusion(j, k); // true=j predicted=k
+        }
+
+        const long long FN = rowSum - TP;
+        const long long FP = colSum - TP;
+
+        support[k] = static_cast<double>(rowSum);
+
+        const double p = (TP + FP) > 0 ? static_cast<double>(TP) / static_cast<double>(TP + FP) : 0.0;
+        const double r = (TP + FN) > 0 ? static_cast<double>(TP) / static_cast<double>(TP + FN) : 0.0;
+        const double f = (p + r) > 0 ? (2.0 * p * r) / (p + r) : 0.0;
+
+        precision[k] = p;
+        recall[k] = r;
+        f1[k] = f;
+
+        totalTP += TP;
+        totalFP += FP;
+        totalFN += FN;
+    }
+
+    // ---------- MACRO ----------
+    double macro_precision = 0.0, macro_recall = 0.0, macro_f1 = 0.0;
+    for (int k = 0; k < C; ++k)
+    {
+        macro_precision += precision[k];
+        macro_recall += recall[k];
+        macro_f1 += f1[k];
+    }
+    macro_precision = (C > 0) ? macro_precision / static_cast<double>(C) : 0.0;
+    macro_recall = (C > 0) ? macro_recall / static_cast<double>(C) : 0.0;
+    macro_f1 = (C > 0) ? macro_f1 / static_cast<double>(C) : 0.0;
+
+    // Balanced accuracy = macro recall
+    const double balanced_accuracy = macro_recall;
+
+    // ---------- MICRO ----------
+    const double micro_precision = (totalTP + totalFP) > 0
+                                       ? static_cast<double>(totalTP) / static_cast<double>(totalTP + totalFP)
+                                       : 0.0;
+
+    const double micro_recall = (totalTP + totalFN) > 0
+                                    ? static_cast<double>(totalTP) / static_cast<double>(totalTP + totalFN)
+                                    : 0.0;
+
+    const double micro_f1 = (micro_precision + micro_recall) > 0
+                                ? (2.0 * micro_precision * micro_recall) / (micro_precision + micro_recall)
+                                : 0.0;
+
+    // ---------- PACK INTO HASHMAP ----------
+    std::unordered_map<std::string, double> metrics;
+    metrics.reserve(static_cast<size_t>(16 + 4 * C + C * C));
+
+    metrics["samples"] = static_cast<double>(num_samples);
+
+    metrics["loss/avg"] = avg_loss; // BCE or CCE depending on lossType
+    metrics["accuracy/top1"] = accuracy;
+    metrics["accuracy/balanced"] = balanced_accuracy;
+
+    metrics["precision/macro"] = macro_precision;
+    metrics["recall/macro"] = macro_recall;
+    metrics["f1/macro"] = macro_f1;
+
+    metrics["precision/micro"] = micro_precision;
+    metrics["recall/micro"] = micro_recall;
+    metrics["f1/micro"] = micro_f1;
+
+    for (int k = 0; k < C; ++k)
+    {
+        std::string cname;
+        try
+        {
+            cname = batchManager->getCategoryName(k);
+        }
+        catch (...)
+        {
+            cname = "class_" + std::to_string(k);
+        }
+
+        metrics["class/" + cname + "/precision"] = precision[k];
+        metrics["class/" + cname + "/recall"] = recall[k];
+        metrics["class/" + cname + "/f1"] = f1[k];
+        metrics["class/" + cname + "/support"] = support[k];
+    }
+
+    for (int t = 0; t < C; ++t)
+    {
+        std::string tname;
+        try
+        {
+            tname = batchManager->getCategoryName(t);
+        }
+        catch (...)
+        {
+            tname = "class_" + std::to_string(t);
+        }
+
+        for (int p = 0; p < C; ++p)
+        {
+            std::string pname;
+            try
+            {
+                pname = batchManager->getCategoryName(p);
+            }
+            catch (...)
+            {
+                pname = "class_" + std::to_string(p);
+            }
+
+            metrics["confusion/true=" + tname + "/pred=" + pname] =
+                static_cast<double>(confusion(t, p));
+        }
+    }
+
+    // ---------- PRINTS ----------
+    std::cout << "\n========== Thorough Evaluation ==========\n";
+    std::cout << "Samples: " << num_samples << "\n";
+    std::cout << "Loss (avg): " << avg_loss
+              << ((lossType == LossType::BINARY_CROSS_ENTROPY) ? " (BCE)" : (lossType == LossType::CATEGORICAL_CROSS_ENTROPY) ? " (CCE)"
+                                                                                                                              : "")
+              << "\n";
+    std::cout << "Top-1 Accuracy: " << accuracy << "\n";
+    std::cout << "Balanced Accuracy: " << balanced_accuracy << "\n";
+    std::cout << "Macro Precision/Recall/F1: "
+              << macro_precision << " / " << macro_recall << " / " << macro_f1 << "\n";
+    std::cout << "Micro Precision/Recall/F1: "
+              << micro_precision << " / " << micro_recall << " / " << micro_f1 << "\n";
+
+    std::cout << "\n---- Per-class metrics ----\n";
+    std::cout << "Class\tSupport\tPrecision\tRecall\tF1\n";
+    for (int k = 0; k < C; ++k)
+    {
+        std::string cname;
+        try
+        {
+            cname = batchManager->getCategoryName(k);
+        }
+        catch (...)
+        {
+            cname = "class_" + std::to_string(k);
+        }
+
+        std::cout << cname << "\t"
+                  << static_cast<long long>(support[k]) << "\t"
+                  << precision[k] << "\t"
+                  << recall[k] << "\t"
+                  << f1[k] << "\n";
+    }
+
+    std::cout << "\n---- Confusion Matrix (rows=true, cols=pred) ----\n";
+    std::cout << "\t";
+    for (int p = 0; p < C; ++p)
+    {
+        std::string pname;
+        try
+        {
+            pname = batchManager->getCategoryName(p);
+        }
+        catch (...)
+        {
+            pname = "class_" + std::to_string(p);
+        }
+        std::cout << pname << "\t";
+    }
+    std::cout << "\n";
+
+    for (int t = 0; t < C; ++t)
+    {
+        std::string tname;
+        try
+        {
+            tname = batchManager->getCategoryName(t);
+        }
+        catch (...)
+        {
+            tname = "class_" + std::to_string(t);
+        }
+
+        std::cout << tname << "\t";
+        for (int p = 0; p < C; ++p)
+            std::cout << confusion(t, p) << "\t";
+        std::cout << "\n";
+    }
+    std::cout << "========================================\n\n";
+
+    return metrics;
+}
+
+void NeuralNetwork::thoroughEvaluationToJson(
+    const ImageContainer &imageContainer,
+    const std::string &jsonPath,
+    bool pretty)
+{
+    // 1) Compute metrics
+    std::unordered_map<std::string, double> metrics =
+        thoroughEvaluation(imageContainer);
+
+    // 2) Stable ordering (useful for diffs & reproducibility)
+    std::vector<std::string> keys;
+    keys.reserve(metrics.size());
+    for (const auto &kv : metrics)
+        keys.push_back(kv.first);
+    std::sort(keys.begin(), keys.end());
+
+    // 3) Open output file
+    std::ofstream out(jsonPath, std::ios::out | std::ios::trunc);
+    if (!out.is_open())
+        throw std::runtime_error(
+            "thoroughEvaluationToJson: failed to open file: " + jsonPath);
+
+    const std::string indent = pretty ? "  " : "";
+    const std::string nl = pretty ? "\n" : "";
+    const std::string sp = pretty ? " " : "";
+
+    out << "{" << nl;
+    out << std::setprecision(std::numeric_limits<double>::max_digits10);
+
+    for (size_t i = 0; i < keys.size(); ++i)
+    {
+        const std::string &k = keys[i];
+        const double v = metrics.at(k);
+
+        out << indent
+            << "\"" << jsonEscape(k) << "\":" << sp;
+
+        // JSON has no NaN/Inf → write null
+        if (std::isfinite(v))
+            out << v;
+        else
+            out << "null";
+
+        if (i + 1 < keys.size())
+            out << ",";
+
+        out << nl;
+    }
+
+    out << "}" << nl;
+    out.close();
+
+    if (!out)
+        throw std::runtime_error(
+            "thoroughEvaluationToJson: write failed for file: " + jsonPath);
 }
 
 void NeuralNetwork::makeSinglePredictions(const ImageContainer &imageContainer)
@@ -854,4 +1302,53 @@ void NeuralNetwork::loadModel(const std::string &onnxPath,
     compile(optimizerType, optimizer_params, false);
 
     trained = true;
+}
+
+std::string NeuralNetwork::jsonEscape(const std::string &s)
+{
+    std::string out;
+    out.reserve(s.size() + 8);
+
+    for (unsigned char c : s)
+    {
+        switch (c)
+        {
+        case '\"':
+            out += "\\\"";
+            break;
+        case '\\':
+            out += "\\\\";
+            break;
+        case '\b':
+            out += "\\b";
+            break;
+        case '\f':
+            out += "\\f";
+            break;
+        case '\n':
+            out += "\\n";
+            break;
+        case '\r':
+            out += "\\r";
+            break;
+        case '\t':
+            out += "\\t";
+            break;
+        default:
+            if (c < 0x20)
+            {
+                std::ostringstream oss;
+                oss << "\\u00"
+                    << std::hex << std::uppercase
+                    << std::setw(2) << std::setfill('0')
+                    << static_cast<int>(c);
+                out += oss.str();
+            }
+            else
+            {
+                out += static_cast<char>(c);
+            }
+        }
+    }
+    return out;
 }

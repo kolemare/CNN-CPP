@@ -2,7 +2,7 @@
 #include "ImageAugmentor.hpp"
 #include "NeuralNetwork.hpp"
 
-void cnn_load_model()
+void cnn_evaluate_model()
 {
     std::string datasetPath = "datasets/cifar10";
 
@@ -22,6 +22,7 @@ void cnn_load_model()
     cnn.setLossFunction(LossType::CATEGORICAL_CROSS_ENTROPY);
     cnn.loadModel("examples/cifar10/model.onnx");
 
-    cnn.setBatchSize(1);
+    cnn.setBatchSize(80);
     cnn.makeSinglePredictions(container);
+    cnn.thoroughEvaluationToJson(container, "examples/cifar10/evaluation_metrics.json", true);
 }

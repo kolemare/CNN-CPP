@@ -37,6 +37,8 @@ BatchManager::BatchManager(const ImageContainer &imageContainer,
     this->currentBatchIndex = 0;
     this->batchType = batchType;
     this->batchMode = batchMode;
+    this->categories.clear();
+    this->categoryToIndex.clear();
 
     // Get unique categories from the image container
     categories = imageContainer.getUniqueLabels();

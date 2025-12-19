@@ -18,8 +18,10 @@ pip install \
   numpy \
   scipy \
   onnx \
+  onnxscript \
   onnxruntime \
   torch \
+  torchvision \
   opencv-python
 
 echo "Virtual environment ready."

@@ -4,6 +4,8 @@ import csv
 import subprocess
 import zipfile
 import matplotlib.pyplot as plt
+import json
+from typing import Dict, List, Tuple
 
 def clean_build():
     print("Cleaning build directory...")
@@ -237,3 +239,173 @@ def generate_pdf():
         print(f"PDF generated successfully and located at: {pdf_path}")
     else:
         print("Failed to generate the PDF. Please check for LaTeX errors.")
+
+
+def plot_eval_json(json_path: str, out_dir: str, top_k: int = 15) -> None:
+    os.makedirs(out_dir, exist_ok=True)
+
+    with open(json_path, "r") as f:
+        metrics: Dict[str, float] = json.load(f)
+
+    class_names = _find_classes(metrics)
+    if not class_names:
+        raise RuntimeError("plot_eval_json: couldn't find class names (expected keys like 'class/<name>/recall').")
+
+    class_names = sorted(class_names)
+    idx = {name: i for i, name in enumerate(class_names)}
+    C = len(class_names)
+
+    confusion = [[0.0] * C for _ in range(C)]
+    for key, val in metrics.items():
+        if not isinstance(key, str) or not key.startswith("confusion/true="):
+            continue
+
+        tname, pname = _split_conf_key(key)
+        if tname is None or pname is None:
+            continue
+        if tname not in idx or pname not in idx:
+            continue
+
+        confusion[idx[tname]][idx[pname]] = float(val)
+
+    if sum(sum(r) for r in confusion) <= 0:
+        raise RuntimeError("plot_eval_json: confusion matrix not found or empty.")
+
+    # 1) confusion heatmap (row-normalized)
+    row_norm = _normalize_rows(confusion)
+    _save_confusion_heatmap(
+        row_norm,
+        class_names,
+        os.path.join(out_dir, "confusion_row_normalized.png"),
+    )
+
+    # 2) per-class recall
+    recalls = [float(metrics.get(f"class/{name}/recall", 0.0)) for name in class_names]
+    _save_bar_chart(
+        values=recalls,
+        labels=class_names,
+        title="Per-class Recall",
+        ylabel="Recall",
+        out_path=os.path.join(out_dir, "per_class_recall.png"),
+        ylim=(0.0, 1.0),
+    )
+
+    # 3) top off-diagonal confusions
+    pairs = []
+    for i, tname in enumerate(class_names):
+        for j, pname in enumerate(class_names):
+            if i == j:
+                continue
+            v = confusion[i][j]
+            if v > 0:
+                pairs.append((v, tname, pname))
+
+    pairs.sort(key=lambda x: x[0], reverse=True)
+    pairs = pairs[:max(1, top_k)]
+
+    if pairs:
+        vals = [p[0] for p in pairs]
+        labels = [f"{p[1]} → {p[2]}" for p in pairs]
+        _save_barh_chart(
+            values=vals,
+            labels=labels,
+            title=f"Top {len(pairs)} Confusions",
+            xlabel="Count",
+            out_path=os.path.join(out_dir, "top_confusions.png"),
+        )
+    else:
+        # If there are no off-diagonal entries (perfect model), still emit an image
+        _save_barh_chart(
+            values=[0],
+            labels=["(none)"],
+            title="Top Confusions",
+            xlabel="Count",
+            out_path=os.path.join(out_dir, "top_confusions.png"),
+        )
+
+
+def _find_classes(metrics: Dict[str, float]) -> List[str]:
+    names = set()
+    for k in metrics.keys():
+        if not isinstance(k, str):
+            continue
+        if k.startswith("class/") and k.endswith("/recall"):
+            parts = k.split("/")
+            if len(parts) == 3:
+                names.add(parts[1])
+    return list(names)
+
+
+def _split_conf_key(key: str) -> Tuple[str | None, str | None]:
+    # "confusion/true=airplane/pred=ship"
+    parts = key.split("/")
+    if len(parts) != 3:
+        return None, None
+
+    tpart, ppart = parts[1], parts[2]
+    if not tpart.startswith("true=") or not ppart.startswith("pred="):
+        return None, None
+
+    return tpart[5:], ppart[5:]
+
+
+def _normalize_rows(mat: List[List[float]]) -> List[List[float]]:
+    out = []
+    for row in mat:
+        s = float(sum(row))
+        if s <= 0.0:
+            out.append([0.0] * len(row))
+            continue
+        out.append([v / s for v in row])
+    return out
+
+
+def _save_confusion_heatmap(mat: List[List[float]], labels: List[str], out_path: str) -> None:
+    plt.figure(figsize=(10, 8))
+    plt.imshow(mat, interpolation="nearest")
+    plt.title("Confusion Matrix (row-normalized)")
+    plt.xlabel("Predicted")
+    plt.ylabel("True")
+    plt.colorbar()
+
+    ticks = range(len(labels))
+    plt.xticks(ticks, labels, rotation=45, ha="right")
+    plt.yticks(ticks, labels)
+
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=200)
+    plt.close()
+
+
+def _save_bar_chart(
+    values: List[float],
+    labels: List[str],
+    title: str,
+    ylabel: str,
+    out_path: str,
+    ylim: Tuple[float, float] | None = None,
+) -> None:
+    plt.figure(figsize=(10, 6))
+    x = range(len(labels))
+    plt.bar(x, values)
+    plt.title(title)
+    plt.ylabel(ylabel)
+    plt.xticks(x, labels, rotation=45, ha="right")
+    if ylim is not None:
+        plt.ylim(ylim[0], ylim[1])
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=200)
+    plt.close()
+
+
+def _save_barh_chart(values: List[float], labels: List[str], title: str, xlabel: str, out_path: str) -> None:
+    plt.figure(figsize=(12, 7))
+    y = range(len(labels))
+    plt.barh(y, values)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.yticks(y, labels)
+    plt.gca().invert_yaxis()
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=200)
+    plt.close()
