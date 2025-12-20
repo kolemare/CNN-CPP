@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # Update package list
 echo "Updating package list..."
@@ -30,12 +31,9 @@ apt-get install -y \
     python3 \
     python3-pip \
     doxygen \
-    texlive-full
-
-# Upgrade pip and install Python packages
-echo "Upgrading pip and installing Python packages..."
-pip3 install --upgrade pip
-pip3 install requests matplotlib invoke tensorflow keras numpy scipy
+    texlive-full \
+    protobuf-compiler \
+    libprotobuf-dev
 
 # Clean up unnecessary packages and cache
 echo "Cleaning up unnecessary packages and cache..."

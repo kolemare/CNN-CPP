@@ -52,8 +52,11 @@ void cnn_sanity_5_shapes()
     cnn.enableGradientClipping();
     cnn.compile(OptimizerType::Adam);
 
-    int epochs = 5;
+    int epochs = 1;
     int batch_size = 10;
     cnn.train(container, epochs, batch_size);
     cnn.makeSinglePredictions(container);
+
+    const std::string onnx_path = "examples/torchimport/model.onnx";
+    cnn.saveModel(onnx_path);
 }

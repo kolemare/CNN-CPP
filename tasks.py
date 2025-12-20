@@ -12,7 +12,8 @@ from tools import (
     delete_docs_vscode,
     clean_datasets,
     extract_datasets,
-    generate_pdf
+    generate_pdf,
+    plot_eval_json
 )
 
 @task
@@ -113,3 +114,18 @@ def doxygen(ctx):
     :param ctx: Context instance (automatically passed by Invoke).
     """
     generate_pdf()
+
+@task
+def ploteval(ctx, json="metrics.json", out="plots_eval"):
+    """
+    Plot evaluation JSON metrics:
+      1) row-normalized confusion matrix heatmap
+      2) per-class recall bar chart
+      3) top off-diagonal confusions bar chart
+
+    Usage:
+      invoke plot-eval --json path/to/metrics.json --out plots_eval
+    """
+    os.makedirs(out, exist_ok=True)
+    plot_eval_json(json_path=json, out_dir=out)
+    print(f"Saved evaluation plots to: {out}")

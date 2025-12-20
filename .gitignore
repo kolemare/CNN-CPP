@@ -17,6 +17,9 @@
 # Do not ignore CMakeLists.txt
 !CMakeLists.txt
 
+# Ignore the venv directory
+venv
+
 # Ignore build directory
 /build/
 
@@ -49,6 +52,10 @@ Thumbs.db
 # Ignore the logs directory
 /logs/*
 !/logs/.gitkeep
+
+# Ignore the torchtest directory
+/torchtest/*
+!/torchtest/testmodel.py
 
 # Ignore the plots directory
 /plots/*

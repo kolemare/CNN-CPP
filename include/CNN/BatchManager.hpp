@@ -2,24 +2,24 @@
 MIT License
 Copyright (c) 2024 Marko Kostić
 
-Permission is hereby granted, free of charge, to any person obtaining a copy 
-of this software and associated documentation files (the "Software"), to deal 
-in the Software without restriction, including without limitation the rights 
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
-copies of the Software, and to permit persons to whom the Software is 
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
 
-This project is the CNN-CPP Framework. Usage of this code is free, and 
-uploading and using the code is also free, with a humble request to mention 
-the origin of the implementation, the author Marko Kostić, and the repository 
+This project is the CNN-CPP Framework. Usage of this code is free, and
+uploading and using the code is also free, with a humble request to mention
+the origin of the implementation, the author Marko Kostić, and the repository
 link: https://github.com/kolemare/CNN-CPP.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
@@ -139,10 +139,14 @@ public:
      */
     size_t getTotalBatches() const;
 
+    const std::vector<std::string> &getCategories() const;
+
+    void updateClassNames(const std::vector<std::string> &classNames);
+
 private:
     const ImageContainer &imageContainer;                                                  ///< The container with images and labels.
     int batchSize;                                                                         ///< The size of each batch.
-    std::vector<std::string> categories;                                                   ///< The unique categories in the dataset.
+    static inline std::vector<std::string> categories;                                     ///< The unique categories in the dataset.
     std::unordered_map<std::string, std::vector<std::shared_ptr<cv::Mat>>> categoryImages; ///< Images categorized by labels.
     std::unordered_map<std::string, std::vector<std::string>> categoryLabels;              ///< Labels categorized by image category.
     std::unordered_map<std::string, std::shared_ptr<cv::Mat>> singlePredictionImages;      ///< Map of image names to single prediction images.
@@ -150,7 +154,7 @@ private:
     std::vector<std::string> allLabels;                                                    ///< All labels in the dataset.
     std::vector<std::shared_ptr<cv::Mat>> originalAllImages;                               ///< Original copy of all images for reuse.
     std::vector<std::string> originalAllLabels;                                            ///< Original copy of all labels for reuse.
-    std::unordered_map<std::string, int> categoryToIndex;                                  ///< Mapping from category names to indices.
+    static inline std::unordered_map<std::string, int> categoryToIndex;                    ///< Mapping from category names to indices.
     size_t currentBatchIndex;                                                              ///< The index of the current batch.
     size_t totalBatches;                                                                   ///< The total number of batches.
     BatchType batchType;                                                                   ///< The type of batch (training or testing).
